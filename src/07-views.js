@@ -79,7 +79,7 @@ function tableCnt(cells, item) {
     head: ['구분', 'MPP', '채널'].concat(W.map(w => `${w.n}주`), ['계'], secs.map(x => `${x}초`), ['주중', '주말', '주말 비중', '중CM', 'PIB', '전후CM 등', '중CM 비중', '중CM+PIB 비중']),
     headSub: W.map(w => w.range),
     rows: hierRows(cs, vals, r => sum(r.cells, c => c.cnt) > 0), pctCols: [o + 2, o + 6, o + 7], ck: `tc|${UI.media}|${item}`,
-    groups: [['주차별 송출수', nW + 1], ['소재 길이', nS], ['주말 여부', 3], ['CM 위치별 비중', 5]].filter(g => g[1] > 0), eq: 78,
+    groups: [['주차별 송출수', nW + 1], ['소재 길이', nS], ['주말 여부', 3], ['CM 위치별 비중', 5]].filter(g => g[1] > 0), eq: 72,
   };
 }
 // 같은 값이 이어지면 셀 병합(rowspan)
@@ -94,21 +94,25 @@ function spans(rows) {
 }
 function tableHtml(T, fmtVal) {
   const { s0, s1 } = spans(T.rows);
+  // 묶음 머리글 경계(값 열 번호) — 그 열 왼쪽에 굵은 세로선
+  const gs = new Set(); if (T.groups) { let j = 0; for (const [, n] of T.groups) { gs.add(j); j += n; } }
+  const gc = j => gs.has(j) ? ' gs' : '';
   const body = T.rows.map((r, i) => {
     let lab;
     if (r.t === 'row') lab = (s0[i] ? `<td class="mg" rowspan="${s0[i]}">${esc(r.lab[0])}</td>` : '') + (s1[i] ? `<td class="mg" rowspan="${s1[i]}">${esc(r.lab[1])}</td>` : '') + `<td>${esc(r.lab[2])}</td>`;
     else lab = `<td colspan="3">${esc(r.lab[0])}</td>`;
     const rk = T.ck ? `${T.ck}|${r.lab.join('/')}|` : '';
-    return `<tr class="${r.t === 'row' ? '' : r.t}">${lab}${r.vals.map((v, j) => `<td class="${(v == null || v === 0) ? 'z' : ''}"${rk ? ` data-ck="${esc(rk + T.head[3 + j])}"` : ''}>${fmtVal(v, j)}</td>`).join('')}</tr>`;
+    return `<tr class="${r.t === 'row' ? '' : r.t}">${lab}${r.vals.map((v, j) => `<td class="${(v == null || v === 0) ? 'z' : ''}${gc(j)}"${rk ? ` data-ck="${esc(rk + T.head[3 + j])}"` : ''}>${fmtVal(v, j)}</td>`).join('')}</tr>`;
   }).join('');
   // 묶음 머리글(주차별 송출수 · 소재 길이 · 주말 여부 · CM 위치별 비중)이 있으면 두 줄 머리글 · eq = 값 열 너비를 모두 같게
   const nv = T.head.length - 3, ew = T.eq === true || T.eq === 1 ? 96 : T.eq;
   const hc = (h, j) => `${esc(h)}${T.headSub && T.headSub[j] ? `<span class="rg">${esc(T.headSub[j])}</span>` : ''}`;
-  const colg = T.eq ? `<colgroup><col style="width:70px"><col style="width:112px"><col style="width:132px">${T.head.slice(3).map(() => `<col style="width:${ew}px">`).join('')}</colgroup>` : '';
+  const LW = T.eq ? [64, 100, 116] : null;
+  const colg = T.eq ? `<colgroup>${LW.map(w => `<col style="width:${w}px">`).join('')}${T.head.slice(3).map(() => `<col style="width:${ew}px">`).join('')}</colgroup>` : '';
   const head = T.groups
-    ? `<tr>${T.head.slice(0, 3).map(h => `<th rowspan="2">${esc(h)}</th>`).join('')}${T.groups.map(([g, n]) => `<th class="grph" colspan="${n}">${esc(g)}</th>`).join('')}</tr><tr>${T.head.slice(3).map((h, j) => `<th>${hc(h, j)}</th>`).join('')}</tr>`
+    ? `<tr>${T.head.slice(0, 3).map(h => `<th rowspan="2">${esc(h)}</th>`).join('')}${(() => { let j = 0; return T.groups.map(([g, n]) => { const h = `<th class="grph${gc(j)}" colspan="${n}">${esc(g)}</th>`; j += n; return h; }).join(''); })()}</tr><tr>${T.head.slice(3).map((h, j) => `<th class="${gc(j).trim()}">${hc(h, j)}</th>`).join('')}</tr>`
     : `<tr>${T.head.map(h => `<th>${esc(h)}</th>`).join('')}</tr>`;
-  return `<div class="tw free"><table class="t ctr${T.eq ? ' eqw' : ''}"${T.eq ? ` style="width:${70 + 112 + 132 + nv * ew}px"` : ''}>${colg}<thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+  return `<div class="tw free"><table class="t ctr${T.eq ? ' eqw' : ''}${T.groups ? ' grp' : ''}"${T.eq ? ` style="width:${LW[0] + LW[1] + LW[2] + nv * ew}px"` : ''}>${colg}<thead>${head}</thead><tbody>${body}</tbody></table></div>`;
 }
 function tableSheet(name, T, opts = {}) {
   const H = T.groups ? 2 : 1;
@@ -154,11 +158,16 @@ function opsTable() {
 }
 function opsHtml() {
   const T = opsTable();
-  return `<div class="tw free"><table class="t ops ctr"><thead><tr>${T.head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>
+  return `<div class="tw free"><table class="t ops ctr"><thead><tr>${T.head.map((h, i) => `<th${i === 9 ? ' class="pgh"' : ''}>${h}</th>`).join('')}</tr></thead><tbody>
   ${T.rows.map(r => `<tr class="${r.t === 'row' ? '' : r.t}">${r.vals.map((v, j) => {
     if (j < 2 && r.t === 'row') return r.span ? `<td class="mg" rowspan="${r.span}">${j === 1 ? `<span class="sw" style="background:${itemColor(r.item)};margin-right:6px"></span>` : ''}${esc(v)}</td>` : '';
     if (j < 3) return `<td>${esc(v)}</td>`;
-    if (j === 9) return r.t === 'row' && !readOnly() ? `<td class="wrap prog${r.manual ? ' manual' : ''}" contenteditable="plaintext-only" spellcheck="false" data-k="${esc(r.item + '|' + r.group)}" title="처음엔 이 품목·방송사의 본방 중CM 프로그램이 들어가요. 직접 고치면 그 글이 우선하고, 비우면 다시 본방 중CM 목록으로 돌아가요.">${esc(v)}</td>` : `<td class="wrap">${esc(v)}</td>`;
+    if (j === 9) {
+      // 자동 값은 칸 너비에 맞춰 나중에 채움(fitProgs) — 단가 낮은 프로그램부터 빼고 끝에 ' 등'
+      const auto = r.t === 'row' && !r.manual && r.src && r.src.autoList && r.src.autoList.length ? ` data-list="${esc(JSON.stringify(r.src.autoList))}"` : '';
+      const txt = auto ? '' : esc(v);
+      return r.t === 'row' && !readOnly() ? `<td class="wrap prog${r.manual ? ' manual' : ''}" contenteditable="plaintext-only" spellcheck="false" data-k="${esc(r.item + '|' + r.group)}"${auto} title="처음엔 이 품목·방송사의 본방 중CM 프로그램(3개 이하면 본방 전후CM도 단가 높은 순)이 칸 너비만큼 들어가요. 직접 고치면 그 글이 우선하고, 비우면 다시 자동으로 돌아가요.">${txt}</td>` : `<td class="wrap"${auto}>${txt}</td>`;
+    }
     const ck = ` data-ck="${esc(`ops|${r.item || ''}|${r.t === 'row' ? r.group : r.t}|${j}`)}"`;
     if (j === 3) return `<td${ck}>${v ? fmt.dec(v, 2) : '-'}</td>`;
     if (j === 4) return `<td${ck}>${fmt.int(v)}</td>`;
@@ -290,7 +299,21 @@ function renderSummary(root) {
     + mixSection('요일', '주중 · 주말 송출', [['주중', A.wd, MIXC.wd], ['주말', A.we, MIXC.we]]);
   mixDonutBind(root.querySelector('#mixbox'));
 }
+// 주요 프로그램 자동 값: 칸 너비(한 줄)에 맞게 단가 높은 순으로 넣고 끝에 ' 등'
+function fitProgs(root) {
+  const tds = [...root.querySelectorAll('table.ops td[data-list]')]; if (!tds.length) return;
+  const cv = fitProgs.cv || (fitProgs.cv = document.createElement('canvas')); const ctx = cv.getContext('2d');
+  const cs = getComputedStyle(tds[0]); ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  const w = tds[0].clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 6;
+  for (const td of tds) {
+    let list = []; try { list = JSON.parse(td.dataset.list); } catch (e) { }
+    let t = list[0] || '';
+    for (let i = 1; i < list.length; i++) { const x = t + ', ' + list[i]; if (ctx.measureText(x + ' 등').width > w) break; t = x; }
+    t = t ? t + ' 등' : ''; td.textContent = t; td.dataset.auto = t;
+  }
+}
 function bindOpsEdit(root) {
+  fitProgs(root);
   root.querySelectorAll('td.rv[data-rk]').forEach(td => {
     td.addEventListener('focus', () => { const r = document.createRange(); r.selectNodeContents(td); const s = getSelection(); s.removeAllRanges(); s.addRange(r); });
     td.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); td.blur(); } if (e.key === 'Escape') { td.dataset.esc = '1'; td.blur(); } });
@@ -315,7 +338,7 @@ function bindOpsEdit(root) {
       WS.opsNotes = WS.opsNotes || {};
       const [item, group] = k.split('|');
       const o = M.ops.find(x => x.item === item); const r = o && o.rows.find(x => x.group === group);
-      const auto = r ? r.auto : '';
+      const auto = td.dataset.auto != null ? td.dataset.auto : r ? r.auto : '';
       const before = WS.opsNotes[k];
       if (!t || t === auto) delete WS.opsNotes[k]; else WS.opsNotes[k] = t;
       if (before !== WS.opsNotes[k]) { td.classList.toggle('manual', !!WS.opsNotes[k]); if (!t) td.textContent = auto; App.changed('ops', true); }
@@ -425,16 +448,16 @@ function renderCueG(root) {
     html += `<div class="chhead"><h3>${esc(ch)}</h3><span class="meta tnum">${list.length}회 (유상 ${paid.length} · 보너스 ${list.length - paid.length}) · 예산 ${fmt.eok(sum(cc, c => c.budget), 2)} · 보너스 ${fmt.eok(sum(cc, c => c.bonus), 2)}</span>
       <span class="chips">${cc.map(c => `<span class="chipbtn" style="cursor:default"><span class="sw" style="background:${itemColor(c.item)}"></span>${esc(c.item)} ${c.cnt}회 · ${fmt.eok(c.budget, 2)}</span>`).join('')}</span></div>
     <div class="card"><div class="tw cgw" style="border:0"><table class="t cue qm cg"><thead><tr>
-      <th>구분</th><th>프로그램</th><th>요일</th><th>시간</th><th>시급</th><th>초수</th><th>단가</th><th>금액</th><th>CM지정</th><th>지정율</th><th>지정금액</th>${W.map(w => `<th class="wkh">${w.label}차<span class="rg">${w.range}</span></th>`).join('')}<th>횟수</th><th>주말구분</th><th>CM 구분</th><th>A.R(%)</th><th>Eq GRP</th><th>CPRP (원)</th><th>비고</th></tr></thead><tbody>
-      ${rows.map((r, i) => { const s = r.first; const same = i && rows[i - 1].first.prog === s.prog; return `<tr class="${r.live || r.cmg === '중CM' ? 'bon' : ''}${same ? ' same' : ''}">${r.kspan ? `<td class="info kind" rowspan="${r.kspan}"><span class="kl">${esc(r.kind)}</span></td>` : ''}<td class="info pg"><span>${progHtml(s.prog)}</span></td><td class="info">${esc(s.dowRaw || s.dow)}</td><td class="info">${esc(s.start)}~${esc(s.end)}</td><td class="info">${esc(s.grade)}</td><td class="info">${s.sec || ''}</td><td class="info r">${fmt.won(s.price)}</td>
+      <th class="fx">구분</th><th class="fx">프로그램</th><th>요일</th><th>시간</th><th>시급</th><th>초수</th><th>단가</th><th>금액</th><th>CM지정</th><th>지정율</th><th>지정금액</th>${W.map(w => `<th class="wkh">${w.label}차<span class="rg">${w.range}</span></th>`).join('')}<th>횟수</th><th>주말구분</th><th>CM 구분</th><th>A.R(%)</th><th>Eq GRP</th><th>CPRP (원)</th><th>비고</th></tr></thead><tbody>
+      ${rows.map((r, i) => { const s = r.first; const same = i && rows[i - 1].first.prog === s.prog; return `<tr class="${r.live || r.cmg === '중CM' ? 'bon' : ''}${same ? ' same' : ''}">${r.kspan ? `<td class="info kind fx" data-fx="0" rowspan="${r.kspan}"><span class="kl">${esc(r.kind)}</span></td>` : ''}<td class="info pg fx" data-fx="1"><span>${progHtml(s.prog)}</span></td><td class="info">${esc(s.dowRaw || s.dow)}</td><td class="info">${esc(s.start)}~${esc(s.end)}</td><td class="info">${esc(s.grade)}</td><td class="info">${s.sec || ''}</td><td class="info r">${fmt.won(s.price)}</td>
         <td class="info ${s.bonus ? 'c' : 'r'}">${s.bonus ? '<span class="tagb bon">보너스</span>' : `<span class="tagb paid">${fmt.won(s.amount)}</span>`}</td><td class="info">${esc(s.cmRaw)}</td><td class="info r">${s.rate ? fmt.pct(s.rate) : ''}</td><td class="info r">${r.desig ? fmt.won(r.desig) : '<span class="muted">-</span>'}</td>
         ${W.map(w => `<td class="wk" data-ck="${esc(`cg|${ch}|${r.k}|${w.n}`)}">${r.spots.filter(x => x.week === w.n).map(x => spotChip(x, 'g')).join('')}</td>`).join('')}<td class="info" data-ck="${esc(`cg|${ch}|${r.k}|n`)}">${r.spots.length}</td>
         <td class="info">${r.wkend}</td><td class="info">${r.cmg === '중CM' ? '<b class="cmtag">중CM</b>' : r.cmg}</td><td class="info r">${r.ar == null ? '' : fmt.dec(r.ar, 1)}</td><td class="info r">${r.eq ? fmt.dec(r.eq, 1) : ''}</td><td class="info r">${r.cprp ? fmt.won(r.cprp) : '<span class="muted">-</span>'}</td><td class="info l nt">${esc(s.note)}</td></tr>`; }).join('')}
-      <tr class="sub"><td class="l" colspan="7">${esc(ch)} 계</td><td class="r">${fmt.won(T.paid)}</td><td></td><td></td><td class="r">${fmt.won(T.desig)}</td>${W.map(w => `<td>${fmt.int(sum(rows, r => r.spots.filter(x => x.week === w.n).length))}</td>`).join('')}<td>${fmt.int(T.n)}</td><td></td><td></td><td></td><td class="r">${fmt.dec(T.eq, 1)}</td><td class="r">${T.cprp ? fmt.won(T.cprp) : '-'}</td><td></td></tr>
+      <tr class="sub"><td class="l fx" data-fx="0" colspan="2">${esc(ch)} 계</td><td colspan="5"></td><td class="r">${fmt.won(T.paid)}</td><td></td><td></td><td class="r">${fmt.won(T.desig)}</td>${W.map(w => `<td>${fmt.int(sum(rows, r => r.spots.filter(x => x.week === w.n).length))}</td>`).join('')}<td>${fmt.int(T.n)}</td><td></td><td></td><td></td><td class="r">${fmt.dec(T.eq, 1)}</td><td class="r">${T.cprp ? fmt.won(T.cprp) : '-'}</td><td></td></tr>
       </tbody></table></div></div>`;
   }
   root.innerHTML = html;
-  keepMergedVisible(root);
+  keepMergedVisible(root); cueHpager(root);
   bindChips(root, '[data-gch]', v => { UI.gCh = v; renderCueG(root); });
   bindChipBar(root, 'g', () => { const y = window.scrollY; renderCueG(root); window.scrollTo(0, y); });
   root.querySelector('[data-xl="cueg"]').onclick = () => exportCueG(chs);
@@ -540,12 +563,13 @@ function renderCueC(root) {
       ${cc.map(c => { const cs = M.creatives.filter(x => x.item === c.item); const k = j => `data-ck="${esc(`cc|${ch}|${c.item}|${j}`)}"`; return `<tr><td class="l"><span class="sw" style="background:${itemColor(c.item)};margin-right:6px"></span>${esc(c.item)}</td><td ${k(0)}>${fmt.won(c.budget)}</td><td ${k(1)}>${fmt.int(c.cnt)}</td><td ${k(2)}>${fmt.won(c.bonus)}</td><td ${k(3)}>${fmt.pct(c.rate)}</td><td class="l">${esc([...new Set(cs.map(x => x.period))].join(', '))}</td><td class="l">${esc(cs.map(x => x.cre + (x.cshare ? ` ${fmt.pct(x.cshare)}` : '')).join(' : '))}</td></tr>`; }).join('')}
       <tr class="sub"><td class="l">계</td><td>${fmt.won(sum(cc, c => c.budget))}</td><td>${fmt.int(sum(cc, c => c.cnt))}</td><td>${fmt.won(sum(cc, c => c.bonus))}</td><td>${fmt.pct(sum(cc, c => c.budget) ? sum(cc, c => c.bonus) / sum(cc, c => c.budget) : null)}</td><td></td><td></td></tr>
       </tbody></table></div></div>
-      <div class="tw" style="border:0;border-top:1px solid var(--rule2);border-radius:0 0 12px 12px;max-height:none"><table class="t cue qm" data-ch="${esc(ch)}"><thead><tr>${readOnly() ? '' : '<th></th>'}<th>프로그램명</th><th>요일</th><th>시작</th><th>종료</th><th>시급</th><th>횟수</th>${W.map(w => `<th class="wkh">${w.label}차<span class="rg">${w.range}</span></th>`).join('')}</tr></thead><tbody>
-      ${rows.map((r, i) => { const s = r.first; const same = i && rows[i - 1].first.prog === s.prog; return `<tr data-k="${esc(r.k)}" class="${r.live ? 'bon' : ''}${same ? ' same' : ''}">${readOnly() ? '' : '<td class="grip info" title="끌어서 순서 바꾸기">⋮⋮</td>'}<td class="info pg"><span>${progHtml(s.prog)}</span></td><td class="info">${esc(s.dowRaw || s.dow)}</td><td class="info">${esc(s.start)}</td><td class="info">${esc(s.end)}</td><td class="info">${esc(s.grade)}</td><td class="info" data-ck="${esc(`cq|${ch}|${r.k}|n`)}">${sum(r.spots, x => x.cnt)}</td>
+      <div class="tw" style="border:0;border-top:1px solid var(--rule2);border-radius:0 0 12px 12px;max-height:none"><table class="t cue qm" data-ch="${esc(ch)}"><thead><tr>${readOnly() ? '' : '<th class="fx"></th>'}<th class="fx">프로그램명</th><th>요일</th><th>시작</th><th>종료</th><th>시급</th><th>횟수</th>${W.map(w => `<th class="wkh">${w.label}차<span class="rg">${w.range}</span></th>`).join('')}</tr></thead><tbody>
+      ${rows.map((r, i) => { const s = r.first; const same = i && rows[i - 1].first.prog === s.prog; return `<tr data-k="${esc(r.k)}" class="${r.live ? 'bon' : ''}${same ? ' same' : ''}">${readOnly() ? '' : '<td class="grip info fx" data-fx="0" title="끌어서 순서 바꾸기">⋮⋮</td>'}<td class="info pg fx" data-fx="${readOnly() ? 0 : 1}"><span>${progHtml(s.prog)}</span></td><td class="info">${esc(s.dowRaw || s.dow)}</td><td class="info">${esc(s.start)}</td><td class="info">${esc(s.end)}</td><td class="info">${esc(s.grade)}</td><td class="info" data-ck="${esc(`cq|${ch}|${r.k}|n`)}">${sum(r.spots, x => x.cnt)}</td>
         ${W.map(w => `<td class="wk" data-ck="${esc(`cq|${ch}|${r.k}|${w.n}`)}">${r.spots.filter(x => x.week === w.n).map(x => spotChip(x, 'c')).join('')}</td>`).join('')}</tr>`; }).join('')}
       </tbody></table></div></section>`;
   }
   root.innerHTML = html;
+  cueHpager(root);
   const keep = () => { const y = window.scrollY; renderCueC(root); window.scrollTo(0, y); };
   bindChips(root, '[data-pp]', v => { UI.cabPP = v; UI.cabCh = 'all'; renderCueC(root); });
   bindChips(root, '[data-cch]', v => { UI.cabCh = v; renderCueC(root); });

@@ -277,7 +277,8 @@ function compute(WS) {
       const gc = its.filter(c => c.group === gname); if (!gc.length) continue;
       const r = { group: gname, budget: sum(gc, c => c.budget), cnt: sum(gc, c => c.cnt), grp: sum(gc, c => c.grp), eq: sum(gc, c => c.eq), value: sum(gc, c => c.value) };
       const pt = reachAt(reach[gname], r.grp); r.r1a = pt ? pt[1] : null; r.r3a = pt ? pt[2] : null; reachOv(r, item + '|' + gname);
-      r.auto = bonMidPrograms(spots.filter(s => s.item === item && s.group === gname));   // 처음 값 = 그 방송사 본방 중CM 프로그램 (직접 고치면 그 글이 우선)
+      r.autoList = opsProgCands(spots.filter(s => s.item === item && s.group === gname));   // 처음 값 = 그 방송사 본방 중CM 프로그램 (직접 고치면 그 글이 우선)
+      r.auto = progsText(r.autoList, 60);
       const ov = (WS.opsNotes || {})[item + '|' + gname];
       r.progs = ov != null && ov !== '' ? ov : r.auto; r.manual = ov != null && ov !== '';
       rows.push(r);
@@ -311,27 +312,22 @@ function compute(WS) {
 }
 
 function creMatch(a, b) { const x = norm(a).replace(/편$/, ''), y = norm(b).replace(/편$/, ''); return !!x && !!y && (x === y || x.includes(y) || y.includes(x)); }
-function topPrograms(list, n = 4) {
-  const pri = { 중CM: 0, PIB: 1, 전후CM: 2, 일반: 3 };
-  const sorted = list.slice().sort((a, b) => (pri[a.cmCls] - pri[b.cmCls]) || (b.price - a.price));
-  const seen = new Set(), out = [];
-  for (const s of sorted) {
-    const name = cleanProg(s.prog); if (!name) continue;
-    const key = name + '|' + (s.cmCls === '중CM' || s.cmCls === 'PIB' ? s.cmCls : '');
-    if (seen.has(name)) continue;
-    seen.add(name);
-    out.push(name + (s.cmCls === '중CM' || s.cmCls === 'PIB' ? ' ' + s.cmCls : ''));
-  }
-  return out.slice(0, n).join(', ') + (out.length > n ? ' 등' : '');
-}
 
 // 본방(생방 포함) 중CM으로 나간 프로그램 이름 — 많이 나간 순. 지상파는 재방 표시가 없으면 본방으로 봄
 function isBonSpot(s) { const p = String(s.prog || ''); if (/본방|생방/.test(p)) return true; return s.media === '지상파' && !/재방|[(（<\[]\s*재\s*[)）>\]]/.test(p); }
-function bonMidPrograms(list, n = 12) {
-  const m = new Map();
-  for (const s of list) { if (s.cmCls !== '중CM' || !isBonSpot(s)) continue; const name = cleanProg(s.prog); if (!name) continue; const x = m.get(name) || { n: 0, p: 0 }; x.n += s.cnt || 1; x.p = Math.max(x.p, s.price || 0); m.set(name, x); }
-  const out = [...m].sort((a, b) => b[1].n - a[1].n || b[1].p - a[1].p).map(x => x[0]);
-  return out.slice(0, n).join(', ') + (out.length > n ? ` 외 ${out.length - n}개` : '');
+// 운영 요약 주요 프로그램 후보: 본방 중CM(단가 높은 순) → 본방 중CM이 3개 이하면 본방 전후CM(PIB 포함)도 단가 높은 순으로 이어서
+// 화면에서는 칸 너비에 맞춰 단가 낮은 것부터 빼고 끝에 ' 등' (엑셀은 글자 수로)
+function opsProgCands(list) {
+  const by = ok => { const m = new Map(); for (const s of list) { if (!isBonSpot(s) || !ok(s.cmCls)) continue; const n = cleanProg(s.prog); if (!n) continue; m.set(n, Math.max(m.get(n) || 0, s.price || 0)); } return [...m].sort((a, b) => b[1] - a[1]).map(x => x[0]); };
+  const out = by(c => c === '중CM');
+  if (out.length <= 3) for (const n of by(c => c !== '중CM')) if (!out.includes(n)) out.push(n);
+  return out;
+}
+function progsText(list, maxChars) {
+  if (!list || !list.length) return '';
+  let t = list[0];
+  for (let i = 1; i < list.length; i++) { const x = t + ', ' + list[i]; if (maxChars && x.length > maxChars) break; t = x; }
+  return t + ' 등';
 }
 
 // 집계 도우미

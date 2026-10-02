@@ -86,7 +86,7 @@ class XGrid {
   constructor(host, o) {
     this.o = o; this.host = host; this.cols = o.cols; this.nc = o.cols.length;
     this.widths = this.loadWidths();
-    this.rows = []; this.hiddenIds = new Set(); this.filters = new Map(); this.view = [];
+    this.rows = []; this.hiddenIds = new Set(); this.filters = new Map(); this.preds = new Map(); this.view = [];   // preds: 조건 필터(본방만·중CM만 등)
     this.undoS = []; this.redoS = [];
     this.act = { r: 0, c: 0 }; this.anchor = { r: 0, c: 0 }; this.sel = { r1: 0, c1: 0, r2: 0, c2: 0 };
     this.editing = null; this.copyR = null; this.findQ = null; this.hits = new Set();
@@ -123,6 +123,7 @@ class XGrid {
     this.rows.forEach((r, i) => {
       if (this.hiddenIds.has(r.id)) { hid = true; return; }
       if (f.length && !this.isBlank(r)) for (const [c, set] of f) if (!set.has(this.fkey(r.v[c]))) return;
+      if (this.preds.size && !this.isBlank(r)) for (const fn of this.preds.values()) if (!fn(r.v)) return;
       if (hid) { this.gapBefore.add(i); hid = false; }
       this.view.push(i);
     });
@@ -218,7 +219,7 @@ class XGrid {
     return out;
   }
   renderHead() {
-    const s = this.sel; const S = this.sums(); const filt = this.filters.size > 0;
+    const s = this.sel; const S = this.sums(); const filt = this.fcount() > 0;
     const sf = (c, v) => c.money ? (Math.abs(v) >= 1e8 ? (Math.round(v / 1e6) / 100).toLocaleString('ko-KR') + '억' : Math.round(v).toLocaleString('ko-KR')) : (Math.round(v * 100) / 100).toLocaleString('ko-KR');
     let h = `<div class="xg-sumrow${filt ? ' f' : ''}"><div class="xg-scorner" title="${filt ? '필터에 맞는' : '보이는'} 행 수">${S.n.toLocaleString('ko-KR')}행</div>`;
     this.cols.forEach((c, i) => {
@@ -696,13 +697,15 @@ class XGrid {
     this.rows = filled.concat(blank);
     this.pushOp({ t: 'order', before, after: this.rows.map(r => r.id) }, '정렬');
   }
+  fcount() { return this.filters.size + this.preds.size; }
+  setPred(name, fn) { if (fn) this.preds.set(name, fn); else this.preds.delete(name); this.recalcView(); this.clampSel(); this.render(); if (this.o.onView) this.o.onView(); }
   setFilter(c, set) { if (set) this.filters.set(c, set); else this.filters.delete(c); this.recalcView(); this.clampSel(); this.render(); if (this.o.onView) this.o.onView(); }
-  clearFilters() { this.filters.clear(); this.recalcView(); this.clampSel(); this.render(); if (this.o.onView) this.o.onView(); }
+  clearFilters() { this.filters.clear(); this.preds.clear(); this.recalcView(); this.clampSel(); this.render(); if (this.o.onView) this.o.onView(); }
   gotoData(di, c) {
     let vr = this.view.indexOf(di);
     if (vr < 0) {
       const row = this.rows[di]; if (!row) return;
-      if (this.filters.size) { this.filters.clear(); this.recalcView(); this.render(); if (this.o.onView) this.o.onView(); }
+      if (this.fcount()) { this.filters.clear(); this.preds.clear(); this.recalcView(); this.render(); if (this.o.onView) this.o.onView(); }
       if (this.hiddenIds.has(row.id)) { this.hiddenIds.delete(row.id); this.pushOp({ t: 'hide', ids: [row.id], v: false }, '숨긴 행 표시'); }
       vr = this.view.indexOf(di);
     }
@@ -772,7 +775,7 @@ class XGrid {
     else items = [
       ro ? null : ['cut', '잘라내기', 'Ctrl+X'], ['copy', '복사', 'Ctrl+C'], ro ? null : ['paste', '붙여넣기', 'Ctrl+V'], '-',
       ro ? null : ['asc', `'${this.cols[c].t}' 오름차순 정렬`], ro ? null : ['desc', `'${this.cols[c].t}' 내림차순 정렬`],
-      ['fval', kind === 'cell' && row && row.v[c] !== '' ? `'${String(row.v[c]).slice(0, 14)}'만 보기` : null], ['fclr', this.filters.size ? '필터 모두 해제' : null],
+      ['fval', kind === 'cell' && row && row.v[c] !== '' ? `'${String(row.v[c]).slice(0, 14)}'만 보기` : null], ['fclr', this.fcount() ? '필터 모두 해제' : null],
     ];
     items = items.filter(i => i && (i === '-' || i[1]));
     while (items.length && items[items.length - 1] === '-') items.pop();

@@ -988,3 +988,42 @@ td.sat .cald b{color:#2f6fc4}td.sun .cald b{color:#d6453d}
 .cale.mid{background:#fceef4}
 .cale.mid .m{color:#e0005a;font-weight:700}
 #yearsel:empty,#monthsel:empty{display:none}
+/* ===== 10차 ===== */
+/* 송출 횟수 표: 묶음 경계 굵은 세로선 · 머리글은 줄바꿈(말줄임 없이) */
+table.t.grp th.gs,table.t.grp td.gs{border-left:2px solid #8fa3b6}
+table.t.grp th.grph{border-bottom:1px solid #c9d4de}
+table.t.eqw thead th{white-space:normal;line-height:1.25;vertical-align:middle;padding:6px 4px;word-break:keep-all}
+table.t.eqw thead tr:nth-child(2) th{top:31px}
+/* 운영 요약 주요 프로그램: 남는 폭을 모두 이 칸에 · 자동 값은 한 줄 */
+table.t.ops th.pgh{width:100%}
+table.t.ops td[data-list]{white-space:nowrap;overflow:hidden}
+/* 큐시트 캘린더: 토·일 머리글 모두 붉게 · 오늘 칸 · 지금 줄 · 방송 중 */
+table.calt th.we{background:#5a2b3a}
+table.calt td.today{box-shadow:inset 0 0 0 2px #e0005a;background:#fffafc}
+.cald em{font-style:normal;font-size:10.5px;font-weight:700;color:#fff;background:#e0005a;border-radius:4px;padding:0 5px;margin-left:6px;margin-right:auto;line-height:16px}
+.cald b+span{margin-left:auto}
+.calnow{position:relative;height:16px;margin:3px 0;display:flex;align-items:center}
+.calnow::before{content:'';position:absolute;left:0;right:0;top:50%;border-top:2px solid #e0005a}
+.calnow span{position:relative;margin-left:4px;background:#e0005a;color:#fff;font-size:10.5px;font-weight:700;border-radius:8px;padding:0 7px;line-height:16px}
+.calnowlg{color:#e0005a;font-weight:700}
+.cale .c{font-weight:600;color:#3b4652;white-space:nowrap;max-width:78px;overflow:hidden;text-overflow:ellipsis}
+.cale .t{font-weight:600;color:#1d2833}
+.cale.onair{background:#e0005a14;box-shadow:inset 0 0 0 1px #e0005a66}
+.cale.onair .t::after{content:'방송 중';margin-left:4px;font-size:9.5px;color:#fff;background:#e0005a;border-radius:3px;padding:0 3px}
+/* 큐시트 표 가로 이동: ‹ › 단추 · 왼쪽(구분·프로그램) 고정 */
+table.t.cue.qm th.fx,table.t.cue.qm td.fx{position:sticky;z-index:2}
+table.t.cue.qm thead th.fx{z-index:4}
+table.t.cue.qm td.pg.fx{box-shadow:inset -1px 0 0 #cfd3dc,3px 0 4px -2px rgba(29,40,51,.18)}
+table.t.cue.qm tr.sub td.fx{z-index:3}
+.tw.hpwrap.cgw{scrollbar-width:auto}
+.tw.hpwrap.cgw::-webkit-scrollbar{width:10px;height:0}
+.tw.hpwrap.cgw::-webkit-scrollbar-thumb{background:#c9d1d9;border-radius:6px;border:2px solid #fff}
+.tw.hpwrap.cgw::-webkit-scrollbar-track{background:transparent}
+.card.hpcard{position:relative}
+table.t.cue.qm.cg td.kind.fx{position:sticky;z-index:3}
+/* 캘린더 한 줄 = (시간 · 채널 · 초수 … CM) / 프로그램 */
+.cale{display:block;padding:2px 4px 2px 6px}
+.cale .l1{display:flex;gap:5px;align-items:baseline;min-width:0}
+.cale .l1 .m{margin-left:auto}
+.cale .p{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#3d4650;font-size:11px;-webkit-line-clamp:unset}
+.cale .c{max-width:none;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}

@@ -138,6 +138,6 @@ function emptyWorkspace(ym) {
       매칭규칙: [],
     },
     reach: {}, reachMeta: {}, hidden: {}, cueOrder: {}, opsNotes: {},
-    savedAt: Date.now(), palV: 2, itemV: 2, kindV: 1, itemLegacy: {}, opsReach: {}, view: {},
+    savedAt: Date.now(), palV: 3, itemV: 2, kindV: 1, itemLegacy: {}, opsReach: {}, view: {},
   };
 }

@@ -9,6 +9,8 @@ function fixWS(w) {
   w.hidden = w.hidden || {}; w.cueOrder = w.cueOrder || {}; w.opsNotes = w.opsNotes || {}; w.reach = w.reach || {}; w.reachMeta = w.reachMeta || {}; w.opsReach = w.opsReach || {};
   // 품목 색 팔레트 v2: 예전 기본색 그대로인 품목만 새 색으로 (직접 고른 색은 유지)
   if (!(w.palV >= 2)) { for (const r of w.sheets.품목 || []) { const c = String(r[3] || '').toLowerCase().replace(/^([0-9a-f]{6})$/, '#$1'); if (PALETTE_V2[c]) r[3] = PALETTE_V2[c]; } w.palV = 2; }
+  // 품목 색 v3: 같은 카테고리는 비슷한 계열로 — 기본색 그대로인 품목만 (직접 고른 색은 유지)
+  if (!(w.palV >= 3)) { for (const r of w.sheets.품목 || []) { const k = str(r[0]), c = String(r[3] || '').toLowerCase().replace(/^([0-9a-f]{6})$/, '#$1'); if (ITEM_COLOR_V2[k] && ITEM_COLOR_V2[k] === c) r[3] = ITEM_COLOR_V3[k]; } w.palV = 3; }
   // 품목 별칭 폐지 (v2): 별칭 칸은 '비고'로 바뀜 — 예전 별칭은 잘못 적힌 이름을 알아보는 데만 쓰도록 따로 보관
   w.itemLegacy = w.itemLegacy || {};
   if (!(w.itemV >= 2)) { for (const r of w.sheets.품목 || []) { const k = str(r[0]); if (k && str(r[4])) w.itemLegacy[k] = [w.itemLegacy[k], str(r[4])].filter(Boolean).join(', '); if (r.length > 4) r[4] = ''; } w.itemV = 2; }
@@ -317,7 +319,7 @@ const App = {
     const el = this.paneEl(tab);
     for (const k in this.panes) this.panes[k].hidden = k !== tab;
     if (GRID_SHEETS.includes(tab)) { window.scrollTo(0, 0); this.showGrid(tab); return; }
-    if (force || el.dataset.ver !== String(M.ver) || !el.firstChild) this.renderPane(tab);
+    if (force || tab === 'cal' || el.dataset.ver !== String(M.ver) || !el.firstChild) this.renderPane(tab);   // 캘린더는 '지금' 줄 때문에 열 때마다 새로
     if (prev !== tab) window.scrollTo(0, this.scrollMem[tab] || 0);
   },
   renderPane(tab) {
@@ -580,7 +582,7 @@ const App = {
     el.innerHTML = `<div class="sheetwrap"><section class="card sheetcard"><div class="hd"><h3>${def.label}</h3><span class="sub tnum" data-stat></span><div class="spacer"></div><span class="hint">${esc(def.hint)}</span>
       <div class="gridbar">
         <div class="grp">${B('undo', '↶ 되돌리기', 'Ctrl+Z')}${B('redo', '↷ 다시', 'Ctrl+Y')}</div>
-        <div class="grp">${B('find', '찾기', 'Ctrl+F')}${B('replace', '바꾸기', 'Ctrl+H')}${B('fclr', '필터 해제', '모든 열의 필터를 해제')}</div>
+        <div class="grp">${B('find', '찾기', 'Ctrl+F')}${B('replace', '바꾸기', 'Ctrl+H')}${B('bon', '본방만', name === '지상파' ? '본방 행만 보기 (지상파는 재방 표시가 없는 정규 편성 = 본방)' : '프로그램명에 <본방>·<생방>이 있는 행만 보기')}${B('mid', '중CM만', 'CM 위치가 중CM인 행만 보기')}${B('fclr', '필터 해제', '모든 열의 필터를 해제')}</div>
         <div class="grp">${B('all', '전체 선택', 'Ctrl+A')}${B('hide', '행 숨기기', '선택한 행을 숨겨요 (집계에는 포함)')}${B('unhide', '숨긴 행 표시', '숨긴 행을 모두 다시 보여줘요')}${B('add', '＋ 10행', '끝에 빈 행 10개')}</div>
         <div class="grp">${B('xlsx', '⤓ 이 시트 엑셀', '이 시트만 엑셀로 (숨긴 행 유지)')}<button class="btn sm ghost" data-a="wipe">시트 비우기</button></div>
         <span class="gridstat" data-gs></span>
@@ -630,6 +632,16 @@ const App = {
     else if (a === 'find') return g.openFind(false);
     else if (a === 'replace') return g.openFind(true);
     else if (a === 'fclr') g.clearFilters();
+    else if (a === 'bon' || a === 'mid') {
+      // 본방만 · 중CM만: 다시 누르면 해제 (둘 다 켜면 본방 중CM)
+      if (g.preds.has(a)) g.setPred(a, null);
+      else {
+        const media = SHEETS[name].media, ip = colIndex(name, 'prog'), ic = colIndex(name, 'cm');
+        g.setPred(a, a === 'bon' ? v => isBonSpot({ prog: v[ip], media }) : v => cmClassOf(M.MS, str(v[ic]), media).cls === '중CM');
+      }
+      const n = g.view.reduce((k, di) => k + (g.isBlank(g.rows[di]) ? 0 : 1), 0);
+      this.toast(g.preds.size ? `${[...g.preds.keys()].map(k => k === 'bon' ? '본방' : '중CM').join(' · ')}만 ${fmt.int(n)}행` : '본방·중CM 필터를 껐어요', 2200);
+    }
     else if (a === 'all') g.selectAll();
     else if (a === 'hide') { const n = g.hideRows(); this.toast(n ? `${n}행을 숨겼어요. 숨긴 행도 집계에는 그대로 들어가요.` : '숨길 행(내용 있는 행)을 먼저 선택하세요'); }
     else if (a === 'unhide') { const n = g.unhideRows(true); this.toast(n ? `숨긴 ${n}행을 모두 다시 보여줘요` : '숨긴 행이 없어요'); }
@@ -658,7 +670,7 @@ const App = {
   },
   gridStat(name) {
     const g = this.grids[name], el = this.panes[name]; if (!g || !el) return;
-    const n = g.rows.reduce((a, r) => a + (g.isBlank(r) ? 0 : 1), 0), hid = g.hiddenCount(), f = g.filters.size;
+    const n = g.rows.reduce((a, r) => a + (g.isBlank(r) ? 0 : 1), 0), hid = g.hiddenCount(), f = g.fcount();
     const shown = g.view.reduce((a, di) => a + (g.isBlank(g.rows[di]) ? 0 : 1), 0);
     const iss = M.issues.filter(i => i.sheet === name && i.row >= 0); const e = iss.filter(i => i.sev === 'err').length, w = iss.filter(i => i.sev === 'warn').length;
     el.querySelector('[data-stat]').innerHTML = `${fmt.int(n)}행${f || hid ? ` · 보이는 행 ${fmt.int(shown)}` : ''}${e ? ` · <span style="color:#8f3d35">오류 ${e}</span>` : ''}${w ? ` · <span style="color:#8a5a25">주의 ${w}</span>` : ''}`;
@@ -666,6 +678,7 @@ const App = {
     const btn = a => el.querySelector(`[data-a="${a}"]`);
     btn('unhide').textContent = hid ? `숨긴 행 표시 (${hid})` : '숨긴 행 표시'; btn('unhide').disabled = !hid;
     btn('fclr').textContent = f ? `필터 해제 (${f})` : '필터 해제'; btn('fclr').disabled = !f; btn('fclr').classList.toggle('on', !!f);
+    btn('bon').classList.toggle('on', g.preds.has('bon')); btn('mid').classList.toggle('on', g.preds.has('mid'));
     btn('undo').disabled = !g.undoS.length || g.ro; btn('redo').disabled = !g.redoS.length || g.ro;
     ['hide', 'add', 'wipe'].forEach(k => { const b = btn(k); if (b) b.disabled = g.ro; });
     // 엑셀 상태 표시줄처럼: 선택 범위 크기·합계
@@ -682,7 +695,7 @@ const App = {
   filterSummary(name, g, el) {
     const box = el.querySelector('[data-fsum]'); if (!box) return;
     const f = [...g.filters.keys()];
-    if (!f.length) { box.innerHTML = ''; box.hidden = true; return; }
+    if (!f.length && !g.preds.size) { box.innerHTML = ''; box.hidden = true; return; }
     const cols = SHEETS[name].cols, ci = k => cols.findIndex(c => c.k === k);
     const iCh = ci('ch'), iIt = ci('item'), iPr = ci('price'), iCnt = ci('cnt'), iAmt = ci('amount');
     let n = 0, cnt = 0, val = 0, paid = 0, paidN = 0; const combos = new Set();
@@ -695,9 +708,9 @@ const App = {
       if (c && it) combos.add(c.name + '|' + it);
     }
     // 예산은 채널·품목 열로만 걸렀을 때 그 조합의 예산 합 (다른 열로 거르면 예산을 나눌 수 없어 안 보여줌)
-    const onlyChIt = f.every(c => c === iCh || c === iIt);
+    const onlyChIt = !g.preds.size && f.every(c => c === iCh || c === iIt);
     const bud = onlyChIt ? sum([...combos], k => { const x = M.cellMap.get(k); return x ? x.budget : 0; }) : null;
-    const conds = f.map(c => { const set = g.filters.get(c); const vals = [...set]; return `${cols[c].t}: ${vals.length > 3 ? vals.slice(0, 3).map(esc).join(', ') + ` 외 ${vals.length - 3}` : vals.map(esc).join(', ')}`; }).join(' · ');
+    const conds = [...g.preds.keys()].map(k => k === 'bon' ? '본방만' : '중CM만').concat(f.map(c => { const set = g.filters.get(c); const vals = [...set]; return `${cols[c].t}: ${vals.length > 3 ? vals.slice(0, 3).map(esc).join(', ') + ` 외 ${vals.length - 3}` : vals.map(esc).join(', ')}`; })).join(' · ');
     box.hidden = false;
     box.innerHTML = `<span class="lb">필터 결과</span><span class="cond">${conds}</span><span class="v"><b>${fmt.int(cnt)}</b>회 송출</span><span class="v">단가 합 <b>${fmt.eok(val, 2)}</b></span>${iAmt >= 0 ? `<span class="v">유상 ${fmt.int(paidN)}회 · <b>${fmt.eok(paid, 2)}</b></span>` : ''}${bud != null ? `<span class="v">예산 <b>${fmt.eok(bud, 2)}</b>${combos.size ? ` <small>(${combos.size}개 채널×품목)</small>` : ''}</span>` : `<span class="v muted" title="예산은 채널·품목 열로 걸렀을 때만 계산해요">예산 -</span>`}`;
   },

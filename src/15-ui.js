@@ -25,7 +25,7 @@ function hpager(card, wrap, o) {
     const vt = Math.max(wr.top, top), vb = Math.min(wr.bottom, innerHeight - 10);
     const y = vb > vt ? (vt + vb) / 2 - cr.top : (wr.top + wr.bottom) / 2 - cr.top;
     L.style.top = R.style.top = Math.round(y) + 'px';
-    L.style.left = Math.round(wr.left - cr.left + 10) + 'px';
+    L.style.left = Math.round(wr.left - cr.left + 10 + (o.leftPad ? o.leftPad() : 0)) + 'px';   // 왼쪽 고정 열이 있으면 그 오른쪽에
     R.style.right = Math.round(cr.right - wr.right + 10) + 'px';
     return true;
   };
@@ -48,7 +48,8 @@ function hpager(card, wrap, o) {
 function hpGo(wrap, dir, o) {
   const view = wrap.clientWidth, max = wrap.scrollWidth - wrap.clientWidth, cur = wrap.scrollLeft, step = Math.max(160, view * 0.85);
   const pad = (o && o.pad) || 0;
-  const starts = [...wrap.children].filter(el => el.offsetWidth).map(el => el.offsetLeft - wrap.firstElementChild.offsetLeft - pad).filter(x => x >= 0);
+  // 멈출 자리: o.snap()이 주면 그 위치들(예: 큐시트 주차 열), 아니면 안쪽 블록 시작 위치
+  const starts = o && o.snap ? o.snap().filter(x => x >= 0) : [...wrap.children].filter(el => el.offsetWidth).map(el => el.offsetLeft - wrap.firstElementChild.offsetLeft - pad).filter(x => x >= 0);
   let to = dir > 0 ? cur + step : cur - step;
   if (dir > 0) { const c = starts.filter(x => x > cur + 8 && x <= to); if (c.length) to = c[c.length - 1]; }
   else { const c = starts.filter(x => x >= to && x < cur - 8); if (c.length) to = c[0]; }
@@ -210,6 +211,19 @@ function reorderBy(rows, order) {
 
 // ---------- 긴 병합 칸의 글자를 화면에 보이게 (지상파 큐시트 '정기물' 등) ----------
 // 원래는 병합 칸 높이의 가운데. 칸이 화면보다 길면 '지금 보이는 부분'의 가운데로 따라 움직임 (표 안 스크롤·페이지 스크롤 모두)
+// 큐시트 표 가로 이동: 스크롤바 대신 ‹ › 둥근 단추(미디어 대시보드와 같은 방식) · 왼쪽 열(구분·프로그램)은 고정, 주차 열 단위로 멈춤
+function cueHpager(root) {
+  root.querySelectorAll('table.cue.qm').forEach(tb => {
+    const wrap = tb.closest('.tw'), card = wrap && wrap.closest('.card'); if (!wrap || !card) return;
+    const fix = [...tb.querySelectorAll('thead th.fx')];
+    let x = 0; fix.forEach(th => { th.style.left = x + 'px'; x += th.offsetWidth; });
+    tb.style.setProperty('--fx', x + 'px');
+    // 고정 열의 왼쪽 위치를 몸통 칸에도 (표 첫 줄 기준)
+    const L = fix.map(th => th.style.left);
+    tb.querySelectorAll('tbody td.fx').forEach(td => { const k = +td.dataset.fx; if (L[k] != null) td.style.left = L[k]; });
+    hpager(card, wrap, { snap: () => [...tb.querySelectorAll('thead th.wkh')].map(th => th.offsetLeft - x), leftPad: () => x });
+  });
+}
 function keepMergedVisible(root) {
   const cells = [...root.querySelectorAll('td.kind')]; if (!cells.length) return;
   const paint = () => {

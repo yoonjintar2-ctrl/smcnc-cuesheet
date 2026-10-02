@@ -19,7 +19,9 @@ function readLegacy(wb, names) {
     const B = [['채널'].concat(items.slice(0, last + 1))];
     for (let i = hr + 1; i <= hr + 60; i++) {
       const r = op[i]; if (!r) continue;
-      const ch = str(r[hc]); if (!ch || ch === '0' || /total|합계/i.test(ch)) continue;
+      const ch = str(r[hc]);
+      if (/품목별|집행|^구분$|\d+\/\d+\s*~/.test(ch)) break;   // 예산표 아래 '품목별 집행 기간 및 소재' 표가 이어 붙어 있음 → 거기서 멈춤
+      if (!ch || ch === '0' || /total|합계/i.test(ch)) continue;
       const vals = []; for (let j = hc + 1; j <= hc + 1 + last; j++) { const v = num(r[j]); vals.push(v || ''); }
       B.push([ch].concat(vals));
     }

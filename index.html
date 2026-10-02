@@ -993,6 +993,45 @@ td.sat .cald b{color:#2f6fc4}td.sun .cald b{color:#d6453d}
 .cale.mid{background:#fceef4}
 .cale.mid .m{color:#e0005a;font-weight:700}
 #yearsel:empty,#monthsel:empty{display:none}
+/* ===== 10차 ===== */
+/* 송출 횟수 표: 묶음 경계 굵은 세로선 · 머리글은 줄바꿈(말줄임 없이) */
+table.t.grp th.gs,table.t.grp td.gs{border-left:2px solid #8fa3b6}
+table.t.grp th.grph{border-bottom:1px solid #c9d4de}
+table.t.eqw thead th{white-space:normal;line-height:1.25;vertical-align:middle;padding:6px 4px;word-break:keep-all}
+table.t.eqw thead tr:nth-child(2) th{top:31px}
+/* 운영 요약 주요 프로그램: 남는 폭을 모두 이 칸에 · 자동 값은 한 줄 */
+table.t.ops th.pgh{width:100%}
+table.t.ops td[data-list]{white-space:nowrap;overflow:hidden}
+/* 큐시트 캘린더: 토·일 머리글 모두 붉게 · 오늘 칸 · 지금 줄 · 방송 중 */
+table.calt th.we{background:#5a2b3a}
+table.calt td.today{box-shadow:inset 0 0 0 2px #e0005a;background:#fffafc}
+.cald em{font-style:normal;font-size:10.5px;font-weight:700;color:#fff;background:#e0005a;border-radius:4px;padding:0 5px;margin-left:6px;margin-right:auto;line-height:16px}
+.cald b+span{margin-left:auto}
+.calnow{position:relative;height:16px;margin:3px 0;display:flex;align-items:center}
+.calnow::before{content:'';position:absolute;left:0;right:0;top:50%;border-top:2px solid #e0005a}
+.calnow span{position:relative;margin-left:4px;background:#e0005a;color:#fff;font-size:10.5px;font-weight:700;border-radius:8px;padding:0 7px;line-height:16px}
+.calnowlg{color:#e0005a;font-weight:700}
+.cale .c{font-weight:600;color:#3b4652;white-space:nowrap;max-width:78px;overflow:hidden;text-overflow:ellipsis}
+.cale .t{font-weight:600;color:#1d2833}
+.cale.onair{background:#e0005a14;box-shadow:inset 0 0 0 1px #e0005a66}
+.cale.onair .t::after{content:'방송 중';margin-left:4px;font-size:9.5px;color:#fff;background:#e0005a;border-radius:3px;padding:0 3px}
+/* 큐시트 표 가로 이동: ‹ › 단추 · 왼쪽(구분·프로그램) 고정 */
+table.t.cue.qm th.fx,table.t.cue.qm td.fx{position:sticky;z-index:2}
+table.t.cue.qm thead th.fx{z-index:4}
+table.t.cue.qm td.pg.fx{box-shadow:inset -1px 0 0 #cfd3dc,3px 0 4px -2px rgba(29,40,51,.18)}
+table.t.cue.qm tr.sub td.fx{z-index:3}
+.tw.hpwrap.cgw{scrollbar-width:auto}
+.tw.hpwrap.cgw::-webkit-scrollbar{width:10px;height:0}
+.tw.hpwrap.cgw::-webkit-scrollbar-thumb{background:#c9d1d9;border-radius:6px;border:2px solid #fff}
+.tw.hpwrap.cgw::-webkit-scrollbar-track{background:transparent}
+.card.hpcard{position:relative}
+table.t.cue.qm.cg td.kind.fx{position:sticky;z-index:3}
+/* 캘린더 한 줄 = (시간 · 채널 · 초수 … CM) / 프로그램 */
+.cale{display:block;padding:2px 4px 2px 6px}
+.cale .l1{display:flex;gap:5px;align-items:baseline;min-width:0}
+.cale .l1 .m{margin-left:auto}
+.cale .p{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#3d4650;font-size:11px;-webkit-line-clamp:unset}
+.cale .c{max-width:none;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 </style>
 <script id="lib-chart">/*!
  * Chart.js v4.4.1
@@ -1193,7 +1232,7 @@ function cleanProg(p) {
   return s;
 }
 
-const DEFAULT_MASTER = {"품목":[["아이콘3","아이콘3","정수기","#3a77b8","아이콘 3"],["카페 얼음","카페 얼음정수기","정수기","#dcb155","카페얼음, 카페 얼음정수기, 카페얼음정수기"],["안마매트리스","안마매트리스","매트리스","#ca653c",""],["트리플체어2","트리플체어2","안마의자","#6654a1",""],["페블체어2","페블체어2","안마의자","#db86af","페블, 페블2, 페블체어"],["음처기","음식물처리기","음식물처리기","#2f9b79","음식물처리기"],["아이콘 얼음","아이콘 얼음정수기","정수기","#87a54d","아이콘얼음, 아이콘 얼음정수기, 아이콘얼음정수기"],["스매","스마트 매트리스","매트리스","#a43a41","스마트 매트리스, 스마트매트리스"],["아이콘프로","아이콘프로","정수기","#008b96",""],["노블","노블","청정기","#91803c",""],["히티브","히티브","청정기","#c38148",""],["비데","비데","비데","#7789c3",""],["마사지셋","마사지셋","마사지셋","#925b8d",""],["테라솔U","테라솔U","요실금치료기","#8b492a",""],["페스타","코웨이 페스타","공통","#7f8793","코웨이 페스타"]],"채널":[["KBS","","지상파","KBS","KBS"],["MBC","","지상파","MBC","MBC"],["SBS","","지상파","SBS","SBS"],["tvN","","케이블","CJ ENM","CJ ENM"],["tvN Show","","케이블","CJ ENM","CJ ENM"],["tvN Drama","","케이블","CJ ENM","CJ ENM"],["tvN Story","","케이블","CJ ENM","CJ ENM"],["JTBC","","케이블","JTBC 미디어컴","JTBC"],["JTBC2","","케이블","JTBC 미디어컴","JTBC"],["ENA","","케이블","KT ENA","기타"],["KBS Joy","","케이블","KBS","기타"],["MBC every1","","케이블","MBC","기타"],["MBC드라마넷","","케이블","MBC","기타"],["SBS Plus","","케이블","SBS","기타"],["SBS Golf","","케이블","SBS","기타"],["TV조선","","케이블","TV조선","기타"],["MBN","","케이블","MBN","기타"],["채널A","","케이블","미디어렙에이","기타"],["채널S","","케이블","미디어에스","기타"],["E채널","","케이블","t.cast","기타"],["Dramax","","케이블","iHQ","기타"],["DRAMAcube","","케이블","t.cast","기타"],["Discovery","","케이블","JTBC 미디어컴","JTBC"],["ENA Drama","","케이블","KT ENA","기타"],["ENA Play","","케이블","KT ENA","기타"],["JTBC GOLF&SPORTS","","케이블","JTBC 미디어컴","JTBC"],["JTBC Golf","","케이블","JTBC 미디어컴","JTBC"],["JTBC4","","케이블","JTBC 미디어컴","JTBC"],["KBS Drama","","케이블","KBS","기타"],["KBSN스포츠","","케이블","KBS","기타"],["MBC M","","케이블","MBC","기타"],["MBC SPORTS+","","케이블","MBC","기타"],["Mnet","","케이블","CJ ENM","CJ ENM"],["OCN","","케이블","CJ ENM","CJ ENM"],["OCN Movies","","케이블","CJ ENM","CJ ENM"],["OLIFE","","케이블","KT ENA","기타"],["Olive","","케이블","CJ ENM","CJ ENM"],["SANDBOX+","","케이블","iHQ","기타"],["SBS FunE","","케이블","SBS","기타"],["SBS Sports","","케이블","SBS","기타"],["SPOTV","","케이블","SPOTV","기타"],["SPOTV PRIME,PRIME2,PRIME+","","케이블","SPOTV","기타"],["SPOTV2","","케이블","SPOTV","기타"],["TV조선2","","케이블","TV조선","기타"],["iHQ","","케이블","iHQ","기타"],["iHQ drama","","케이블","iHQ","기타"],["iHQ show","","케이블","iHQ","기타"],["tvN SPORTS","","케이블","CJ ENM","CJ ENM"],["엣지티비","","케이블","엣지티비","기타"]],"CM위치":[["중CM","중CM"],["전END","PIB"],["전or후","전후CM"],["후TOP","PIB"],["후","전후CM"],["전","전후CM"],["중","중CM"],["후(후TOP)","PIB"],["전(전END)","PIB"],["후(PCM)","PIB"],["전CM","전후CM"],["후CM","전후CM"],["중CMTop","중CM"],["전CMEnd","PIB"],["후CMTop","PIB"],["PPIB","PIB"],["후TOP+1","PIB"],["전후CM","전후CM"],["PIB1","PIB"],["중간광고","중CM"],["PIB2","PIB"],["후CM_TOP","PIB"],["중 CM","중CM"],["전 CM","전후CM"],["전 END","PIB"],["후 CM","전후CM"],["후 TOP+1","PIB"],["전 END-2","PIB"],["전PIB","PIB"],["후PIB","PIB"],["전후 CM","전후CM"],["후 PIB A","PIB"],["전 PIB A","PIB"],["후 TOP+2","PIB"],["후 TOP","PIB"],["전END-2","PIB"],["후 TOP+3","PIB"],["전 END-1","PIB"],["후TOP + 1","PIB"],["전END - 1","PIB"],["중TOP + 1","중CM"],["전(PCM)","PIB"],["전 PIB B","PIB"],["중 TOP","중CM"],["PCM","PIB"],["후 PIB B","PIB"],["전CM_END","PIB"],["전END-1","PIB"],["중(중TOP)","중CM"],["전ENDCM","PIB"],["후TOPCM","PIB"],["PIB B","PIB"],["Live 중 CM","중CM"],["PIB","PIB"],["전PIB1","PIB"],["전(PIB)","PIB"],["후(PIB)","PIB"],["전or후","PIB"],["전PIB2","PIB"],["후PIB2","PIB"],["후PIB1","PIB"],["중TOP","중CM"],["후TOP+3","PIB"],["전PIB-3","PIB"],["전PIB-2","PIB"],["전or후CM","전후CM"],["전PIB-1","PIB"],["후PIB+1","PIB"],["중1CM","중CM"],["중2CM","중CM"],["중3CM","중CM"],["중4CM","중CM"],["중5CM","중CM"],["중6CM","중CM"],["중7CM","중CM"],["중8CM","중CM"],["중9CM","중CM"],["중10CM","중CM"],["중11CM","중CM"],["중12CM","중CM"],["중13CM","중CM"],["중CM(HB)","중CM(HB)"],["중CM(하프)","중CM(하프)"],["중CM(PRE)","중CM(PRE)"],["후(후TOP)CM","PIB"]],"목표CPRP":[["지상파","KBS",1570000],["지상파","MBC",1570000],["지상파","SBS",1570000],["케이블","CJ ENM",1800000],["케이블","JTBC 미디어컴",1370000],["케이블","KT ENA",700000],["케이블","KBS",1100000],["케이블","MBC",1100000],["케이블","SBS",1100000],["케이블","MBN",1300000],["케이블","미디어렙에이",1400000],["케이블","TV조선",1450000],["케이블","t.cast",800000],["케이블","iHQ",800000],["케이블","미디어에스",800000],["케이블","SPOTV",1000000]]};
+const DEFAULT_MASTER = {"품목":[["아이콘3","아이콘3","정수기","#3274bd","아이콘 3"],["카페 얼음","카페 얼음정수기","정수기","#86bce6","카페얼음, 카페 얼음정수기, 카페얼음정수기"],["안마매트리스","안마매트리스","매트리스","#c8602f",""],["트리플체어2","트리플체어2","안마의자","#86408f",""],["페블체어2","페블체어2","안마의자","#e08ab8","페블, 페블2, 페블체어"],["음처기","음식물처리기","음식물처리기","#2f9b79","음식물처리기"],["아이콘 얼음","아이콘 얼음정수기","정수기","#173a60","아이콘얼음, 아이콘 얼음정수기, 아이콘얼음정수기"],["스매","스마트 매트리스","매트리스","#f0b27a","스마트 매트리스, 스마트매트리스"],["아이콘프로","아이콘프로","정수기","#3aa3bd",""],["노블","노블","청정기","#8a9a3c",""],["히티브","히티브","청정기","#bcc56e",""],["비데","비데","비데","#7a6a58",""],["마사지셋","마사지셋","마사지셋","#b0477a",""],["테라솔U","테라솔U","요실금치료기","#a33a2c",""],["페스타","코웨이 페스타","공통","#7f8793","코웨이 페스타"]],"채널":[["KBS","","지상파","KBS","KBS"],["MBC","","지상파","MBC","MBC"],["SBS","","지상파","SBS","SBS"],["tvN","","케이블","CJ ENM","CJ ENM"],["tvN Show","","케이블","CJ ENM","CJ ENM"],["tvN Drama","","케이블","CJ ENM","CJ ENM"],["tvN Story","","케이블","CJ ENM","CJ ENM"],["JTBC","","케이블","JTBC 미디어컴","JTBC"],["JTBC2","","케이블","JTBC 미디어컴","JTBC"],["ENA","","케이블","KT ENA","기타"],["KBS Joy","","케이블","KBS","기타"],["MBC every1","","케이블","MBC","기타"],["MBC드라마넷","","케이블","MBC","기타"],["SBS Plus","","케이블","SBS","기타"],["SBS Golf","","케이블","SBS","기타"],["TV조선","","케이블","TV조선","기타"],["MBN","","케이블","MBN","기타"],["채널A","","케이블","미디어렙에이","기타"],["채널S","","케이블","미디어에스","기타"],["E채널","","케이블","t.cast","기타"],["Dramax","","케이블","iHQ","기타"],["DRAMAcube","","케이블","t.cast","기타"],["Discovery","","케이블","JTBC 미디어컴","JTBC"],["ENA Drama","","케이블","KT ENA","기타"],["ENA Play","","케이블","KT ENA","기타"],["JTBC GOLF&SPORTS","","케이블","JTBC 미디어컴","JTBC"],["JTBC Golf","","케이블","JTBC 미디어컴","JTBC"],["JTBC4","","케이블","JTBC 미디어컴","JTBC"],["KBS Drama","","케이블","KBS","기타"],["KBSN스포츠","","케이블","KBS","기타"],["MBC M","","케이블","MBC","기타"],["MBC SPORTS+","","케이블","MBC","기타"],["Mnet","","케이블","CJ ENM","CJ ENM"],["OCN","","케이블","CJ ENM","CJ ENM"],["OCN Movies","","케이블","CJ ENM","CJ ENM"],["OLIFE","","케이블","KT ENA","기타"],["Olive","","케이블","CJ ENM","CJ ENM"],["SANDBOX+","","케이블","iHQ","기타"],["SBS FunE","","케이블","SBS","기타"],["SBS Sports","","케이블","SBS","기타"],["SPOTV","","케이블","SPOTV","기타"],["SPOTV PRIME,PRIME2,PRIME+","","케이블","SPOTV","기타"],["SPOTV2","","케이블","SPOTV","기타"],["TV조선2","","케이블","TV조선","기타"],["iHQ","","케이블","iHQ","기타"],["iHQ drama","","케이블","iHQ","기타"],["iHQ show","","케이블","iHQ","기타"],["tvN SPORTS","","케이블","CJ ENM","CJ ENM"],["엣지티비","","케이블","엣지티비","기타"]],"CM위치":[["중CM","중CM"],["전END","PIB"],["전or후","전후CM"],["후TOP","PIB"],["후","전후CM"],["전","전후CM"],["중","중CM"],["후(후TOP)","PIB"],["전(전END)","PIB"],["후(PCM)","PIB"],["전CM","전후CM"],["후CM","전후CM"],["중CMTop","중CM"],["전CMEnd","PIB"],["후CMTop","PIB"],["PPIB","PIB"],["후TOP+1","PIB"],["전후CM","전후CM"],["PIB1","PIB"],["중간광고","중CM"],["PIB2","PIB"],["후CM_TOP","PIB"],["중 CM","중CM"],["전 CM","전후CM"],["전 END","PIB"],["후 CM","전후CM"],["후 TOP+1","PIB"],["전 END-2","PIB"],["전PIB","PIB"],["후PIB","PIB"],["전후 CM","전후CM"],["후 PIB A","PIB"],["전 PIB A","PIB"],["후 TOP+2","PIB"],["후 TOP","PIB"],["전END-2","PIB"],["후 TOP+3","PIB"],["전 END-1","PIB"],["후TOP + 1","PIB"],["전END - 1","PIB"],["중TOP + 1","중CM"],["전(PCM)","PIB"],["전 PIB B","PIB"],["중 TOP","중CM"],["PCM","PIB"],["후 PIB B","PIB"],["전CM_END","PIB"],["전END-1","PIB"],["중(중TOP)","중CM"],["전ENDCM","PIB"],["후TOPCM","PIB"],["PIB B","PIB"],["Live 중 CM","중CM"],["PIB","PIB"],["전PIB1","PIB"],["전(PIB)","PIB"],["후(PIB)","PIB"],["전or후","PIB"],["전PIB2","PIB"],["후PIB2","PIB"],["후PIB1","PIB"],["중TOP","중CM"],["후TOP+3","PIB"],["전PIB-3","PIB"],["전PIB-2","PIB"],["전or후CM","전후CM"],["전PIB-1","PIB"],["후PIB+1","PIB"],["중1CM","중CM"],["중2CM","중CM"],["중3CM","중CM"],["중4CM","중CM"],["중5CM","중CM"],["중6CM","중CM"],["중7CM","중CM"],["중8CM","중CM"],["중9CM","중CM"],["중10CM","중CM"],["중11CM","중CM"],["중12CM","중CM"],["중13CM","중CM"],["중CM(HB)","중CM(HB)"],["중CM(하프)","중CM(하프)"],["중CM(PRE)","중CM(PRE)"],["후(후TOP)CM","PIB"]],"목표CPRP":[["지상파","KBS",1570000],["지상파","MBC",1570000],["지상파","SBS",1570000],["케이블","CJ ENM",1800000],["케이블","JTBC 미디어컴",1370000],["케이블","KT ENA",700000],["케이블","KBS",1100000],["케이블","MBC",1100000],["케이블","SBS",1100000],["케이블","MBN",1300000],["케이블","미디어렙에이",1400000],["케이블","TV조선",1450000],["케이블","t.cast",800000],["케이블","iHQ",800000],["케이블","미디어에스",800000],["케이블","SPOTV",1000000]]};
 DEFAULT_MASTER.매칭규칙 = []; // 방송사 원본 가져오기에서 고른 매칭을 기억 (기본 규칙은 13-onboard.js의 QM_CH_RULES·QM_ITEM_RULES)
 
 // 품목 별칭은 더 이상 쓰지 않음 (2026-10) — 약칭만 정식 이름. 예전 별칭·정식명은 '잘못 적힌 이름'을 알아보고 고치라고 알려 주는 데만 씀
@@ -1340,7 +1379,7 @@ function emptyWorkspace(ym) {
       매칭규칙: [],
     },
     reach: {}, reachMeta: {}, hidden: {}, cueOrder: {}, opsNotes: {},
-    savedAt: Date.now(), palV: 2, itemV: 2, kindV: 1, itemLegacy: {}, opsReach: {}, view: {},
+    savedAt: Date.now(), palV: 3, itemV: 2, kindV: 1, itemLegacy: {}, opsReach: {}, view: {},
   };
 }
 
@@ -1623,7 +1662,8 @@ function compute(WS) {
       const gc = its.filter(c => c.group === gname); if (!gc.length) continue;
       const r = { group: gname, budget: sum(gc, c => c.budget), cnt: sum(gc, c => c.cnt), grp: sum(gc, c => c.grp), eq: sum(gc, c => c.eq), value: sum(gc, c => c.value) };
       const pt = reachAt(reach[gname], r.grp); r.r1a = pt ? pt[1] : null; r.r3a = pt ? pt[2] : null; reachOv(r, item + '|' + gname);
-      r.auto = bonMidPrograms(spots.filter(s => s.item === item && s.group === gname));   // 처음 값 = 그 방송사 본방 중CM 프로그램 (직접 고치면 그 글이 우선)
+      r.autoList = opsProgCands(spots.filter(s => s.item === item && s.group === gname));   // 처음 값 = 그 방송사 본방 중CM 프로그램 (직접 고치면 그 글이 우선)
+      r.auto = progsText(r.autoList, 60);
       const ov = (WS.opsNotes || {})[item + '|' + gname];
       r.progs = ov != null && ov !== '' ? ov : r.auto; r.manual = ov != null && ov !== '';
       rows.push(r);
@@ -1657,27 +1697,22 @@ function compute(WS) {
 }
 
 function creMatch(a, b) { const x = norm(a).replace(/편$/, ''), y = norm(b).replace(/편$/, ''); return !!x && !!y && (x === y || x.includes(y) || y.includes(x)); }
-function topPrograms(list, n = 4) {
-  const pri = { 중CM: 0, PIB: 1, 전후CM: 2, 일반: 3 };
-  const sorted = list.slice().sort((a, b) => (pri[a.cmCls] - pri[b.cmCls]) || (b.price - a.price));
-  const seen = new Set(), out = [];
-  for (const s of sorted) {
-    const name = cleanProg(s.prog); if (!name) continue;
-    const key = name + '|' + (s.cmCls === '중CM' || s.cmCls === 'PIB' ? s.cmCls : '');
-    if (seen.has(name)) continue;
-    seen.add(name);
-    out.push(name + (s.cmCls === '중CM' || s.cmCls === 'PIB' ? ' ' + s.cmCls : ''));
-  }
-  return out.slice(0, n).join(', ') + (out.length > n ? ' 등' : '');
-}
 
 // 본방(생방 포함) 중CM으로 나간 프로그램 이름 — 많이 나간 순. 지상파는 재방 표시가 없으면 본방으로 봄
 function isBonSpot(s) { const p = String(s.prog || ''); if (/본방|생방/.test(p)) return true; return s.media === '지상파' && !/재방|[(（<\[]\s*재\s*[)）>\]]/.test(p); }
-function bonMidPrograms(list, n = 12) {
-  const m = new Map();
-  for (const s of list) { if (s.cmCls !== '중CM' || !isBonSpot(s)) continue; const name = cleanProg(s.prog); if (!name) continue; const x = m.get(name) || { n: 0, p: 0 }; x.n += s.cnt || 1; x.p = Math.max(x.p, s.price || 0); m.set(name, x); }
-  const out = [...m].sort((a, b) => b[1].n - a[1].n || b[1].p - a[1].p).map(x => x[0]);
-  return out.slice(0, n).join(', ') + (out.length > n ? ` 외 ${out.length - n}개` : '');
+// 운영 요약 주요 프로그램 후보: 본방 중CM(단가 높은 순) → 본방 중CM이 3개 이하면 본방 전후CM(PIB 포함)도 단가 높은 순으로 이어서
+// 화면에서는 칸 너비에 맞춰 단가 낮은 것부터 빼고 끝에 ' 등' (엑셀은 글자 수로)
+function opsProgCands(list) {
+  const by = ok => { const m = new Map(); for (const s of list) { if (!isBonSpot(s) || !ok(s.cmCls)) continue; const n = cleanProg(s.prog); if (!n) continue; m.set(n, Math.max(m.get(n) || 0, s.price || 0)); } return [...m].sort((a, b) => b[1] - a[1]).map(x => x[0]); };
+  const out = by(c => c === '중CM');
+  if (out.length <= 3) for (const n of by(c => c !== '중CM')) if (!out.includes(n)) out.push(n);
+  return out;
+}
+function progsText(list, maxChars) {
+  if (!list || !list.length) return '';
+  let t = list[0];
+  for (let i = 1; i < list.length; i++) { const x = t + ', ' + list[i]; if (maxChars && x.length > maxChars) break; t = x; }
+  return t + ' 등';
 }
 
 // 집계 도우미
@@ -2154,7 +2189,7 @@ class XGrid {
   constructor(host, o) {
     this.o = o; this.host = host; this.cols = o.cols; this.nc = o.cols.length;
     this.widths = this.loadWidths();
-    this.rows = []; this.hiddenIds = new Set(); this.filters = new Map(); this.view = [];
+    this.rows = []; this.hiddenIds = new Set(); this.filters = new Map(); this.preds = new Map(); this.view = [];   // preds: 조건 필터(본방만·중CM만 등)
     this.undoS = []; this.redoS = [];
     this.act = { r: 0, c: 0 }; this.anchor = { r: 0, c: 0 }; this.sel = { r1: 0, c1: 0, r2: 0, c2: 0 };
     this.editing = null; this.copyR = null; this.findQ = null; this.hits = new Set();
@@ -2191,6 +2226,7 @@ class XGrid {
     this.rows.forEach((r, i) => {
       if (this.hiddenIds.has(r.id)) { hid = true; return; }
       if (f.length && !this.isBlank(r)) for (const [c, set] of f) if (!set.has(this.fkey(r.v[c]))) return;
+      if (this.preds.size && !this.isBlank(r)) for (const fn of this.preds.values()) if (!fn(r.v)) return;
       if (hid) { this.gapBefore.add(i); hid = false; }
       this.view.push(i);
     });
@@ -2286,7 +2322,7 @@ class XGrid {
     return out;
   }
   renderHead() {
-    const s = this.sel; const S = this.sums(); const filt = this.filters.size > 0;
+    const s = this.sel; const S = this.sums(); const filt = this.fcount() > 0;
     const sf = (c, v) => c.money ? (Math.abs(v) >= 1e8 ? (Math.round(v / 1e6) / 100).toLocaleString('ko-KR') + '억' : Math.round(v).toLocaleString('ko-KR')) : (Math.round(v * 100) / 100).toLocaleString('ko-KR');
     let h = `<div class="xg-sumrow${filt ? ' f' : ''}"><div class="xg-scorner" title="${filt ? '필터에 맞는' : '보이는'} 행 수">${S.n.toLocaleString('ko-KR')}행</div>`;
     this.cols.forEach((c, i) => {
@@ -2764,13 +2800,15 @@ class XGrid {
     this.rows = filled.concat(blank);
     this.pushOp({ t: 'order', before, after: this.rows.map(r => r.id) }, '정렬');
   }
+  fcount() { return this.filters.size + this.preds.size; }
+  setPred(name, fn) { if (fn) this.preds.set(name, fn); else this.preds.delete(name); this.recalcView(); this.clampSel(); this.render(); if (this.o.onView) this.o.onView(); }
   setFilter(c, set) { if (set) this.filters.set(c, set); else this.filters.delete(c); this.recalcView(); this.clampSel(); this.render(); if (this.o.onView) this.o.onView(); }
-  clearFilters() { this.filters.clear(); this.recalcView(); this.clampSel(); this.render(); if (this.o.onView) this.o.onView(); }
+  clearFilters() { this.filters.clear(); this.preds.clear(); this.recalcView(); this.clampSel(); this.render(); if (this.o.onView) this.o.onView(); }
   gotoData(di, c) {
     let vr = this.view.indexOf(di);
     if (vr < 0) {
       const row = this.rows[di]; if (!row) return;
-      if (this.filters.size) { this.filters.clear(); this.recalcView(); this.render(); if (this.o.onView) this.o.onView(); }
+      if (this.fcount()) { this.filters.clear(); this.preds.clear(); this.recalcView(); this.render(); if (this.o.onView) this.o.onView(); }
       if (this.hiddenIds.has(row.id)) { this.hiddenIds.delete(row.id); this.pushOp({ t: 'hide', ids: [row.id], v: false }, '숨긴 행 표시'); }
       vr = this.view.indexOf(di);
     }
@@ -2840,7 +2878,7 @@ class XGrid {
     else items = [
       ro ? null : ['cut', '잘라내기', 'Ctrl+X'], ['copy', '복사', 'Ctrl+C'], ro ? null : ['paste', '붙여넣기', 'Ctrl+V'], '-',
       ro ? null : ['asc', `'${this.cols[c].t}' 오름차순 정렬`], ro ? null : ['desc', `'${this.cols[c].t}' 내림차순 정렬`],
-      ['fval', kind === 'cell' && row && row.v[c] !== '' ? `'${String(row.v[c]).slice(0, 14)}'만 보기` : null], ['fclr', this.filters.size ? '필터 모두 해제' : null],
+      ['fval', kind === 'cell' && row && row.v[c] !== '' ? `'${String(row.v[c]).slice(0, 14)}'만 보기` : null], ['fclr', this.fcount() ? '필터 모두 해제' : null],
     ];
     items = items.filter(i => i && (i === '-' || i[1]));
     while (items.length && items[items.length - 1] === '-') items.pop();
@@ -2978,7 +3016,7 @@ function tableCnt(cells, item) {
     head: ['구분', 'MPP', '채널'].concat(W.map(w => `${w.n}주`), ['계'], secs.map(x => `${x}초`), ['주중', '주말', '주말 비중', '중CM', 'PIB', '전후CM 등', '중CM 비중', '중CM+PIB 비중']),
     headSub: W.map(w => w.range),
     rows: hierRows(cs, vals, r => sum(r.cells, c => c.cnt) > 0), pctCols: [o + 2, o + 6, o + 7], ck: `tc|${UI.media}|${item}`,
-    groups: [['주차별 송출수', nW + 1], ['소재 길이', nS], ['주말 여부', 3], ['CM 위치별 비중', 5]].filter(g => g[1] > 0), eq: 78,
+    groups: [['주차별 송출수', nW + 1], ['소재 길이', nS], ['주말 여부', 3], ['CM 위치별 비중', 5]].filter(g => g[1] > 0), eq: 72,
   };
 }
 // 같은 값이 이어지면 셀 병합(rowspan)
@@ -2993,21 +3031,25 @@ function spans(rows) {
 }
 function tableHtml(T, fmtVal) {
   const { s0, s1 } = spans(T.rows);
+  // 묶음 머리글 경계(값 열 번호) — 그 열 왼쪽에 굵은 세로선
+  const gs = new Set(); if (T.groups) { let j = 0; for (const [, n] of T.groups) { gs.add(j); j += n; } }
+  const gc = j => gs.has(j) ? ' gs' : '';
   const body = T.rows.map((r, i) => {
     let lab;
     if (r.t === 'row') lab = (s0[i] ? `<td class="mg" rowspan="${s0[i]}">${esc(r.lab[0])}</td>` : '') + (s1[i] ? `<td class="mg" rowspan="${s1[i]}">${esc(r.lab[1])}</td>` : '') + `<td>${esc(r.lab[2])}</td>`;
     else lab = `<td colspan="3">${esc(r.lab[0])}</td>`;
     const rk = T.ck ? `${T.ck}|${r.lab.join('/')}|` : '';
-    return `<tr class="${r.t === 'row' ? '' : r.t}">${lab}${r.vals.map((v, j) => `<td class="${(v == null || v === 0) ? 'z' : ''}"${rk ? ` data-ck="${esc(rk + T.head[3 + j])}"` : ''}>${fmtVal(v, j)}</td>`).join('')}</tr>`;
+    return `<tr class="${r.t === 'row' ? '' : r.t}">${lab}${r.vals.map((v, j) => `<td class="${(v == null || v === 0) ? 'z' : ''}${gc(j)}"${rk ? ` data-ck="${esc(rk + T.head[3 + j])}"` : ''}>${fmtVal(v, j)}</td>`).join('')}</tr>`;
   }).join('');
   // 묶음 머리글(주차별 송출수 · 소재 길이 · 주말 여부 · CM 위치별 비중)이 있으면 두 줄 머리글 · eq = 값 열 너비를 모두 같게
   const nv = T.head.length - 3, ew = T.eq === true || T.eq === 1 ? 96 : T.eq;
   const hc = (h, j) => `${esc(h)}${T.headSub && T.headSub[j] ? `<span class="rg">${esc(T.headSub[j])}</span>` : ''}`;
-  const colg = T.eq ? `<colgroup><col style="width:70px"><col style="width:112px"><col style="width:132px">${T.head.slice(3).map(() => `<col style="width:${ew}px">`).join('')}</colgroup>` : '';
+  const LW = T.eq ? [64, 100, 116] : null;
+  const colg = T.eq ? `<colgroup>${LW.map(w => `<col style="width:${w}px">`).join('')}${T.head.slice(3).map(() => `<col style="width:${ew}px">`).join('')}</colgroup>` : '';
   const head = T.groups
-    ? `<tr>${T.head.slice(0, 3).map(h => `<th rowspan="2">${esc(h)}</th>`).join('')}${T.groups.map(([g, n]) => `<th class="grph" colspan="${n}">${esc(g)}</th>`).join('')}</tr><tr>${T.head.slice(3).map((h, j) => `<th>${hc(h, j)}</th>`).join('')}</tr>`
+    ? `<tr>${T.head.slice(0, 3).map(h => `<th rowspan="2">${esc(h)}</th>`).join('')}${(() => { let j = 0; return T.groups.map(([g, n]) => { const h = `<th class="grph${gc(j)}" colspan="${n}">${esc(g)}</th>`; j += n; return h; }).join(''); })()}</tr><tr>${T.head.slice(3).map((h, j) => `<th class="${gc(j).trim()}">${hc(h, j)}</th>`).join('')}</tr>`
     : `<tr>${T.head.map(h => `<th>${esc(h)}</th>`).join('')}</tr>`;
-  return `<div class="tw free"><table class="t ctr${T.eq ? ' eqw' : ''}"${T.eq ? ` style="width:${70 + 112 + 132 + nv * ew}px"` : ''}>${colg}<thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+  return `<div class="tw free"><table class="t ctr${T.eq ? ' eqw' : ''}${T.groups ? ' grp' : ''}"${T.eq ? ` style="width:${LW[0] + LW[1] + LW[2] + nv * ew}px"` : ''}>${colg}<thead>${head}</thead><tbody>${body}</tbody></table></div>`;
 }
 function tableSheet(name, T, opts = {}) {
   const H = T.groups ? 2 : 1;
@@ -3053,11 +3095,16 @@ function opsTable() {
 }
 function opsHtml() {
   const T = opsTable();
-  return `<div class="tw free"><table class="t ops ctr"><thead><tr>${T.head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>
+  return `<div class="tw free"><table class="t ops ctr"><thead><tr>${T.head.map((h, i) => `<th${i === 9 ? ' class="pgh"' : ''}>${h}</th>`).join('')}</tr></thead><tbody>
   ${T.rows.map(r => `<tr class="${r.t === 'row' ? '' : r.t}">${r.vals.map((v, j) => {
     if (j < 2 && r.t === 'row') return r.span ? `<td class="mg" rowspan="${r.span}">${j === 1 ? `<span class="sw" style="background:${itemColor(r.item)};margin-right:6px"></span>` : ''}${esc(v)}</td>` : '';
     if (j < 3) return `<td>${esc(v)}</td>`;
-    if (j === 9) return r.t === 'row' && !readOnly() ? `<td class="wrap prog${r.manual ? ' manual' : ''}" contenteditable="plaintext-only" spellcheck="false" data-k="${esc(r.item + '|' + r.group)}" title="처음엔 이 품목·방송사의 본방 중CM 프로그램이 들어가요. 직접 고치면 그 글이 우선하고, 비우면 다시 본방 중CM 목록으로 돌아가요.">${esc(v)}</td>` : `<td class="wrap">${esc(v)}</td>`;
+    if (j === 9) {
+      // 자동 값은 칸 너비에 맞춰 나중에 채움(fitProgs) — 단가 낮은 프로그램부터 빼고 끝에 ' 등'
+      const auto = r.t === 'row' && !r.manual && r.src && r.src.autoList && r.src.autoList.length ? ` data-list="${esc(JSON.stringify(r.src.autoList))}"` : '';
+      const txt = auto ? '' : esc(v);
+      return r.t === 'row' && !readOnly() ? `<td class="wrap prog${r.manual ? ' manual' : ''}" contenteditable="plaintext-only" spellcheck="false" data-k="${esc(r.item + '|' + r.group)}"${auto} title="처음엔 이 품목·방송사의 본방 중CM 프로그램(3개 이하면 본방 전후CM도 단가 높은 순)이 칸 너비만큼 들어가요. 직접 고치면 그 글이 우선하고, 비우면 다시 자동으로 돌아가요.">${txt}</td>` : `<td class="wrap"${auto}>${txt}</td>`;
+    }
     const ck = ` data-ck="${esc(`ops|${r.item || ''}|${r.t === 'row' ? r.group : r.t}|${j}`)}"`;
     if (j === 3) return `<td${ck}>${v ? fmt.dec(v, 2) : '-'}</td>`;
     if (j === 4) return `<td${ck}>${fmt.int(v)}</td>`;
@@ -3189,7 +3236,21 @@ function renderSummary(root) {
     + mixSection('요일', '주중 · 주말 송출', [['주중', A.wd, MIXC.wd], ['주말', A.we, MIXC.we]]);
   mixDonutBind(root.querySelector('#mixbox'));
 }
+// 주요 프로그램 자동 값: 칸 너비(한 줄)에 맞게 단가 높은 순으로 넣고 끝에 ' 등'
+function fitProgs(root) {
+  const tds = [...root.querySelectorAll('table.ops td[data-list]')]; if (!tds.length) return;
+  const cv = fitProgs.cv || (fitProgs.cv = document.createElement('canvas')); const ctx = cv.getContext('2d');
+  const cs = getComputedStyle(tds[0]); ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  const w = tds[0].clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 6;
+  for (const td of tds) {
+    let list = []; try { list = JSON.parse(td.dataset.list); } catch (e) { }
+    let t = list[0] || '';
+    for (let i = 1; i < list.length; i++) { const x = t + ', ' + list[i]; if (ctx.measureText(x + ' 등').width > w) break; t = x; }
+    t = t ? t + ' 등' : ''; td.textContent = t; td.dataset.auto = t;
+  }
+}
 function bindOpsEdit(root) {
+  fitProgs(root);
   root.querySelectorAll('td.rv[data-rk]').forEach(td => {
     td.addEventListener('focus', () => { const r = document.createRange(); r.selectNodeContents(td); const s = getSelection(); s.removeAllRanges(); s.addRange(r); });
     td.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); td.blur(); } if (e.key === 'Escape') { td.dataset.esc = '1'; td.blur(); } });
@@ -3214,7 +3275,7 @@ function bindOpsEdit(root) {
       WS.opsNotes = WS.opsNotes || {};
       const [item, group] = k.split('|');
       const o = M.ops.find(x => x.item === item); const r = o && o.rows.find(x => x.group === group);
-      const auto = r ? r.auto : '';
+      const auto = td.dataset.auto != null ? td.dataset.auto : r ? r.auto : '';
       const before = WS.opsNotes[k];
       if (!t || t === auto) delete WS.opsNotes[k]; else WS.opsNotes[k] = t;
       if (before !== WS.opsNotes[k]) { td.classList.toggle('manual', !!WS.opsNotes[k]); if (!t) td.textContent = auto; App.changed('ops', true); }
@@ -3324,16 +3385,16 @@ function renderCueG(root) {
     html += `<div class="chhead"><h3>${esc(ch)}</h3><span class="meta tnum">${list.length}회 (유상 ${paid.length} · 보너스 ${list.length - paid.length}) · 예산 ${fmt.eok(sum(cc, c => c.budget), 2)} · 보너스 ${fmt.eok(sum(cc, c => c.bonus), 2)}</span>
       <span class="chips">${cc.map(c => `<span class="chipbtn" style="cursor:default"><span class="sw" style="background:${itemColor(c.item)}"></span>${esc(c.item)} ${c.cnt}회 · ${fmt.eok(c.budget, 2)}</span>`).join('')}</span></div>
     <div class="card"><div class="tw cgw" style="border:0"><table class="t cue qm cg"><thead><tr>
-      <th>구분</th><th>프로그램</th><th>요일</th><th>시간</th><th>시급</th><th>초수</th><th>단가</th><th>금액</th><th>CM지정</th><th>지정율</th><th>지정금액</th>${W.map(w => `<th class="wkh">${w.label}차<span class="rg">${w.range}</span></th>`).join('')}<th>횟수</th><th>주말구분</th><th>CM 구분</th><th>A.R(%)</th><th>Eq GRP</th><th>CPRP (원)</th><th>비고</th></tr></thead><tbody>
-      ${rows.map((r, i) => { const s = r.first; const same = i && rows[i - 1].first.prog === s.prog; return `<tr class="${r.live || r.cmg === '중CM' ? 'bon' : ''}${same ? ' same' : ''}">${r.kspan ? `<td class="info kind" rowspan="${r.kspan}"><span class="kl">${esc(r.kind)}</span></td>` : ''}<td class="info pg"><span>${progHtml(s.prog)}</span></td><td class="info">${esc(s.dowRaw || s.dow)}</td><td class="info">${esc(s.start)}~${esc(s.end)}</td><td class="info">${esc(s.grade)}</td><td class="info">${s.sec || ''}</td><td class="info r">${fmt.won(s.price)}</td>
+      <th class="fx">구분</th><th class="fx">프로그램</th><th>요일</th><th>시간</th><th>시급</th><th>초수</th><th>단가</th><th>금액</th><th>CM지정</th><th>지정율</th><th>지정금액</th>${W.map(w => `<th class="wkh">${w.label}차<span class="rg">${w.range}</span></th>`).join('')}<th>횟수</th><th>주말구분</th><th>CM 구분</th><th>A.R(%)</th><th>Eq GRP</th><th>CPRP (원)</th><th>비고</th></tr></thead><tbody>
+      ${rows.map((r, i) => { const s = r.first; const same = i && rows[i - 1].first.prog === s.prog; return `<tr class="${r.live || r.cmg === '중CM' ? 'bon' : ''}${same ? ' same' : ''}">${r.kspan ? `<td class="info kind fx" data-fx="0" rowspan="${r.kspan}"><span class="kl">${esc(r.kind)}</span></td>` : ''}<td class="info pg fx" data-fx="1"><span>${progHtml(s.prog)}</span></td><td class="info">${esc(s.dowRaw || s.dow)}</td><td class="info">${esc(s.start)}~${esc(s.end)}</td><td class="info">${esc(s.grade)}</td><td class="info">${s.sec || ''}</td><td class="info r">${fmt.won(s.price)}</td>
         <td class="info ${s.bonus ? 'c' : 'r'}">${s.bonus ? '<span class="tagb bon">보너스</span>' : `<span class="tagb paid">${fmt.won(s.amount)}</span>`}</td><td class="info">${esc(s.cmRaw)}</td><td class="info r">${s.rate ? fmt.pct(s.rate) : ''}</td><td class="info r">${r.desig ? fmt.won(r.desig) : '<span class="muted">-</span>'}</td>
         ${W.map(w => `<td class="wk" data-ck="${esc(`cg|${ch}|${r.k}|${w.n}`)}">${r.spots.filter(x => x.week === w.n).map(x => spotChip(x, 'g')).join('')}</td>`).join('')}<td class="info" data-ck="${esc(`cg|${ch}|${r.k}|n`)}">${r.spots.length}</td>
         <td class="info">${r.wkend}</td><td class="info">${r.cmg === '중CM' ? '<b class="cmtag">중CM</b>' : r.cmg}</td><td class="info r">${r.ar == null ? '' : fmt.dec(r.ar, 1)}</td><td class="info r">${r.eq ? fmt.dec(r.eq, 1) : ''}</td><td class="info r">${r.cprp ? fmt.won(r.cprp) : '<span class="muted">-</span>'}</td><td class="info l nt">${esc(s.note)}</td></tr>`; }).join('')}
-      <tr class="sub"><td class="l" colspan="7">${esc(ch)} 계</td><td class="r">${fmt.won(T.paid)}</td><td></td><td></td><td class="r">${fmt.won(T.desig)}</td>${W.map(w => `<td>${fmt.int(sum(rows, r => r.spots.filter(x => x.week === w.n).length))}</td>`).join('')}<td>${fmt.int(T.n)}</td><td></td><td></td><td></td><td class="r">${fmt.dec(T.eq, 1)}</td><td class="r">${T.cprp ? fmt.won(T.cprp) : '-'}</td><td></td></tr>
+      <tr class="sub"><td class="l fx" data-fx="0" colspan="2">${esc(ch)} 계</td><td colspan="5"></td><td class="r">${fmt.won(T.paid)}</td><td></td><td></td><td class="r">${fmt.won(T.desig)}</td>${W.map(w => `<td>${fmt.int(sum(rows, r => r.spots.filter(x => x.week === w.n).length))}</td>`).join('')}<td>${fmt.int(T.n)}</td><td></td><td></td><td></td><td class="r">${fmt.dec(T.eq, 1)}</td><td class="r">${T.cprp ? fmt.won(T.cprp) : '-'}</td><td></td></tr>
       </tbody></table></div></div>`;
   }
   root.innerHTML = html;
-  keepMergedVisible(root);
+  keepMergedVisible(root); cueHpager(root);
   bindChips(root, '[data-gch]', v => { UI.gCh = v; renderCueG(root); });
   bindChipBar(root, 'g', () => { const y = window.scrollY; renderCueG(root); window.scrollTo(0, y); });
   root.querySelector('[data-xl="cueg"]').onclick = () => exportCueG(chs);
@@ -3439,12 +3500,13 @@ function renderCueC(root) {
       ${cc.map(c => { const cs = M.creatives.filter(x => x.item === c.item); const k = j => `data-ck="${esc(`cc|${ch}|${c.item}|${j}`)}"`; return `<tr><td class="l"><span class="sw" style="background:${itemColor(c.item)};margin-right:6px"></span>${esc(c.item)}</td><td ${k(0)}>${fmt.won(c.budget)}</td><td ${k(1)}>${fmt.int(c.cnt)}</td><td ${k(2)}>${fmt.won(c.bonus)}</td><td ${k(3)}>${fmt.pct(c.rate)}</td><td class="l">${esc([...new Set(cs.map(x => x.period))].join(', '))}</td><td class="l">${esc(cs.map(x => x.cre + (x.cshare ? ` ${fmt.pct(x.cshare)}` : '')).join(' : '))}</td></tr>`; }).join('')}
       <tr class="sub"><td class="l">계</td><td>${fmt.won(sum(cc, c => c.budget))}</td><td>${fmt.int(sum(cc, c => c.cnt))}</td><td>${fmt.won(sum(cc, c => c.bonus))}</td><td>${fmt.pct(sum(cc, c => c.budget) ? sum(cc, c => c.bonus) / sum(cc, c => c.budget) : null)}</td><td></td><td></td></tr>
       </tbody></table></div></div>
-      <div class="tw" style="border:0;border-top:1px solid var(--rule2);border-radius:0 0 12px 12px;max-height:none"><table class="t cue qm" data-ch="${esc(ch)}"><thead><tr>${readOnly() ? '' : '<th></th>'}<th>프로그램명</th><th>요일</th><th>시작</th><th>종료</th><th>시급</th><th>횟수</th>${W.map(w => `<th class="wkh">${w.label}차<span class="rg">${w.range}</span></th>`).join('')}</tr></thead><tbody>
-      ${rows.map((r, i) => { const s = r.first; const same = i && rows[i - 1].first.prog === s.prog; return `<tr data-k="${esc(r.k)}" class="${r.live ? 'bon' : ''}${same ? ' same' : ''}">${readOnly() ? '' : '<td class="grip info" title="끌어서 순서 바꾸기">⋮⋮</td>'}<td class="info pg"><span>${progHtml(s.prog)}</span></td><td class="info">${esc(s.dowRaw || s.dow)}</td><td class="info">${esc(s.start)}</td><td class="info">${esc(s.end)}</td><td class="info">${esc(s.grade)}</td><td class="info" data-ck="${esc(`cq|${ch}|${r.k}|n`)}">${sum(r.spots, x => x.cnt)}</td>
+      <div class="tw" style="border:0;border-top:1px solid var(--rule2);border-radius:0 0 12px 12px;max-height:none"><table class="t cue qm" data-ch="${esc(ch)}"><thead><tr>${readOnly() ? '' : '<th class="fx"></th>'}<th class="fx">프로그램명</th><th>요일</th><th>시작</th><th>종료</th><th>시급</th><th>횟수</th>${W.map(w => `<th class="wkh">${w.label}차<span class="rg">${w.range}</span></th>`).join('')}</tr></thead><tbody>
+      ${rows.map((r, i) => { const s = r.first; const same = i && rows[i - 1].first.prog === s.prog; return `<tr data-k="${esc(r.k)}" class="${r.live ? 'bon' : ''}${same ? ' same' : ''}">${readOnly() ? '' : '<td class="grip info fx" data-fx="0" title="끌어서 순서 바꾸기">⋮⋮</td>'}<td class="info pg fx" data-fx="${readOnly() ? 0 : 1}"><span>${progHtml(s.prog)}</span></td><td class="info">${esc(s.dowRaw || s.dow)}</td><td class="info">${esc(s.start)}</td><td class="info">${esc(s.end)}</td><td class="info">${esc(s.grade)}</td><td class="info" data-ck="${esc(`cq|${ch}|${r.k}|n`)}">${sum(r.spots, x => x.cnt)}</td>
         ${W.map(w => `<td class="wk" data-ck="${esc(`cq|${ch}|${r.k}|${w.n}`)}">${r.spots.filter(x => x.week === w.n).map(x => spotChip(x, 'c')).join('')}</td>`).join('')}</tr>`; }).join('')}
       </tbody></table></div></section>`;
   }
   root.innerHTML = html;
+  cueHpager(root);
   const keep = () => { const y = window.scrollY; renderCueC(root); window.scrollTo(0, y); };
   bindChips(root, '[data-pp]', v => { UI.cabPP = v; UI.cabCh = 'all'; renderCueC(root); });
   bindChips(root, '[data-cch]', v => { UI.cabCh = v; renderCueC(root); });
@@ -3513,6 +3575,8 @@ function fixWS(w) {
   w.hidden = w.hidden || {}; w.cueOrder = w.cueOrder || {}; w.opsNotes = w.opsNotes || {}; w.reach = w.reach || {}; w.reachMeta = w.reachMeta || {}; w.opsReach = w.opsReach || {};
   // 품목 색 팔레트 v2: 예전 기본색 그대로인 품목만 새 색으로 (직접 고른 색은 유지)
   if (!(w.palV >= 2)) { for (const r of w.sheets.품목 || []) { const c = String(r[3] || '').toLowerCase().replace(/^([0-9a-f]{6})$/, '#$1'); if (PALETTE_V2[c]) r[3] = PALETTE_V2[c]; } w.palV = 2; }
+  // 품목 색 v3: 같은 카테고리는 비슷한 계열로 — 기본색 그대로인 품목만 (직접 고른 색은 유지)
+  if (!(w.palV >= 3)) { for (const r of w.sheets.품목 || []) { const k = str(r[0]), c = String(r[3] || '').toLowerCase().replace(/^([0-9a-f]{6})$/, '#$1'); if (ITEM_COLOR_V2[k] && ITEM_COLOR_V2[k] === c) r[3] = ITEM_COLOR_V3[k]; } w.palV = 3; }
   // 품목 별칭 폐지 (v2): 별칭 칸은 '비고'로 바뀜 — 예전 별칭은 잘못 적힌 이름을 알아보는 데만 쓰도록 따로 보관
   w.itemLegacy = w.itemLegacy || {};
   if (!(w.itemV >= 2)) { for (const r of w.sheets.품목 || []) { const k = str(r[0]); if (k && str(r[4])) w.itemLegacy[k] = [w.itemLegacy[k], str(r[4])].filter(Boolean).join(', '); if (r.length > 4) r[4] = ''; } w.itemV = 2; }
@@ -3821,7 +3885,7 @@ const App = {
     const el = this.paneEl(tab);
     for (const k in this.panes) this.panes[k].hidden = k !== tab;
     if (GRID_SHEETS.includes(tab)) { window.scrollTo(0, 0); this.showGrid(tab); return; }
-    if (force || el.dataset.ver !== String(M.ver) || !el.firstChild) this.renderPane(tab);
+    if (force || tab === 'cal' || el.dataset.ver !== String(M.ver) || !el.firstChild) this.renderPane(tab);   // 캘린더는 '지금' 줄 때문에 열 때마다 새로
     if (prev !== tab) window.scrollTo(0, this.scrollMem[tab] || 0);
   },
   renderPane(tab) {
@@ -4084,7 +4148,7 @@ const App = {
     el.innerHTML = `<div class="sheetwrap"><section class="card sheetcard"><div class="hd"><h3>${def.label}</h3><span class="sub tnum" data-stat></span><div class="spacer"></div><span class="hint">${esc(def.hint)}</span>
       <div class="gridbar">
         <div class="grp">${B('undo', '↶ 되돌리기', 'Ctrl+Z')}${B('redo', '↷ 다시', 'Ctrl+Y')}</div>
-        <div class="grp">${B('find', '찾기', 'Ctrl+F')}${B('replace', '바꾸기', 'Ctrl+H')}${B('fclr', '필터 해제', '모든 열의 필터를 해제')}</div>
+        <div class="grp">${B('find', '찾기', 'Ctrl+F')}${B('replace', '바꾸기', 'Ctrl+H')}${B('bon', '본방만', name === '지상파' ? '본방 행만 보기 (지상파는 재방 표시가 없는 정규 편성 = 본방)' : '프로그램명에 <본방>·<생방>이 있는 행만 보기')}${B('mid', '중CM만', 'CM 위치가 중CM인 행만 보기')}${B('fclr', '필터 해제', '모든 열의 필터를 해제')}</div>
         <div class="grp">${B('all', '전체 선택', 'Ctrl+A')}${B('hide', '행 숨기기', '선택한 행을 숨겨요 (집계에는 포함)')}${B('unhide', '숨긴 행 표시', '숨긴 행을 모두 다시 보여줘요')}${B('add', '＋ 10행', '끝에 빈 행 10개')}</div>
         <div class="grp">${B('xlsx', '⤓ 이 시트 엑셀', '이 시트만 엑셀로 (숨긴 행 유지)')}<button class="btn sm ghost" data-a="wipe">시트 비우기</button></div>
         <span class="gridstat" data-gs></span>
@@ -4134,6 +4198,16 @@ const App = {
     else if (a === 'find') return g.openFind(false);
     else if (a === 'replace') return g.openFind(true);
     else if (a === 'fclr') g.clearFilters();
+    else if (a === 'bon' || a === 'mid') {
+      // 본방만 · 중CM만: 다시 누르면 해제 (둘 다 켜면 본방 중CM)
+      if (g.preds.has(a)) g.setPred(a, null);
+      else {
+        const media = SHEETS[name].media, ip = colIndex(name, 'prog'), ic = colIndex(name, 'cm');
+        g.setPred(a, a === 'bon' ? v => isBonSpot({ prog: v[ip], media }) : v => cmClassOf(M.MS, str(v[ic]), media).cls === '중CM');
+      }
+      const n = g.view.reduce((k, di) => k + (g.isBlank(g.rows[di]) ? 0 : 1), 0);
+      this.toast(g.preds.size ? `${[...g.preds.keys()].map(k => k === 'bon' ? '본방' : '중CM').join(' · ')}만 ${fmt.int(n)}행` : '본방·중CM 필터를 껐어요', 2200);
+    }
     else if (a === 'all') g.selectAll();
     else if (a === 'hide') { const n = g.hideRows(); this.toast(n ? `${n}행을 숨겼어요. 숨긴 행도 집계에는 그대로 들어가요.` : '숨길 행(내용 있는 행)을 먼저 선택하세요'); }
     else if (a === 'unhide') { const n = g.unhideRows(true); this.toast(n ? `숨긴 ${n}행을 모두 다시 보여줘요` : '숨긴 행이 없어요'); }
@@ -4162,7 +4236,7 @@ const App = {
   },
   gridStat(name) {
     const g = this.grids[name], el = this.panes[name]; if (!g || !el) return;
-    const n = g.rows.reduce((a, r) => a + (g.isBlank(r) ? 0 : 1), 0), hid = g.hiddenCount(), f = g.filters.size;
+    const n = g.rows.reduce((a, r) => a + (g.isBlank(r) ? 0 : 1), 0), hid = g.hiddenCount(), f = g.fcount();
     const shown = g.view.reduce((a, di) => a + (g.isBlank(g.rows[di]) ? 0 : 1), 0);
     const iss = M.issues.filter(i => i.sheet === name && i.row >= 0); const e = iss.filter(i => i.sev === 'err').length, w = iss.filter(i => i.sev === 'warn').length;
     el.querySelector('[data-stat]').innerHTML = `${fmt.int(n)}행${f || hid ? ` · 보이는 행 ${fmt.int(shown)}` : ''}${e ? ` · <span style="color:#8f3d35">오류 ${e}</span>` : ''}${w ? ` · <span style="color:#8a5a25">주의 ${w}</span>` : ''}`;
@@ -4170,6 +4244,7 @@ const App = {
     const btn = a => el.querySelector(`[data-a="${a}"]`);
     btn('unhide').textContent = hid ? `숨긴 행 표시 (${hid})` : '숨긴 행 표시'; btn('unhide').disabled = !hid;
     btn('fclr').textContent = f ? `필터 해제 (${f})` : '필터 해제'; btn('fclr').disabled = !f; btn('fclr').classList.toggle('on', !!f);
+    btn('bon').classList.toggle('on', g.preds.has('bon')); btn('mid').classList.toggle('on', g.preds.has('mid'));
     btn('undo').disabled = !g.undoS.length || g.ro; btn('redo').disabled = !g.redoS.length || g.ro;
     ['hide', 'add', 'wipe'].forEach(k => { const b = btn(k); if (b) b.disabled = g.ro; });
     // 엑셀 상태 표시줄처럼: 선택 범위 크기·합계
@@ -4186,7 +4261,7 @@ const App = {
   filterSummary(name, g, el) {
     const box = el.querySelector('[data-fsum]'); if (!box) return;
     const f = [...g.filters.keys()];
-    if (!f.length) { box.innerHTML = ''; box.hidden = true; return; }
+    if (!f.length && !g.preds.size) { box.innerHTML = ''; box.hidden = true; return; }
     const cols = SHEETS[name].cols, ci = k => cols.findIndex(c => c.k === k);
     const iCh = ci('ch'), iIt = ci('item'), iPr = ci('price'), iCnt = ci('cnt'), iAmt = ci('amount');
     let n = 0, cnt = 0, val = 0, paid = 0, paidN = 0; const combos = new Set();
@@ -4199,9 +4274,9 @@ const App = {
       if (c && it) combos.add(c.name + '|' + it);
     }
     // 예산은 채널·품목 열로만 걸렀을 때 그 조합의 예산 합 (다른 열로 거르면 예산을 나눌 수 없어 안 보여줌)
-    const onlyChIt = f.every(c => c === iCh || c === iIt);
+    const onlyChIt = !g.preds.size && f.every(c => c === iCh || c === iIt);
     const bud = onlyChIt ? sum([...combos], k => { const x = M.cellMap.get(k); return x ? x.budget : 0; }) : null;
-    const conds = f.map(c => { const set = g.filters.get(c); const vals = [...set]; return `${cols[c].t}: ${vals.length > 3 ? vals.slice(0, 3).map(esc).join(', ') + ` 외 ${vals.length - 3}` : vals.map(esc).join(', ')}`; }).join(' · ');
+    const conds = [...g.preds.keys()].map(k => k === 'bon' ? '본방만' : '중CM만').concat(f.map(c => { const set = g.filters.get(c); const vals = [...set]; return `${cols[c].t}: ${vals.length > 3 ? vals.slice(0, 3).map(esc).join(', ') + ` 외 ${vals.length - 3}` : vals.map(esc).join(', ')}`; })).join(' · ');
     box.hidden = false;
     box.innerHTML = `<span class="lb">필터 결과</span><span class="cond">${conds}</span><span class="v"><b>${fmt.int(cnt)}</b>회 송출</span><span class="v">단가 합 <b>${fmt.eok(val, 2)}</b></span>${iAmt >= 0 ? `<span class="v">유상 ${fmt.int(paidN)}회 · <b>${fmt.eok(paid, 2)}</b></span>` : ''}${bud != null ? `<span class="v">예산 <b>${fmt.eok(bud, 2)}</b>${combos.size ? ` <small>(${combos.size}개 채널×품목)</small>` : ''}</span>` : `<span class="v muted" title="예산은 채널·품목 열로 걸렀을 때만 계산해요">예산 -</span>`}`;
   },
@@ -4610,7 +4685,11 @@ if (typeof window !== 'undefined') window.addEventListener('DOMContentLoaded', (
 // ===== 09-forms.js : 웹 입력 화면 (마스터 · 예산 · 소재) =====
 // 원칙: 품목·채널 이름은 마스터에서만 만들고, 예산·소재·큐시트는 마스터 목록에서 골라 쓴다.
 // 품목 색: 채도를 낮추고 밝기를 맞춘 조화로운 팔레트 (앞 6색은 색약 구분 검사 통과 · 2026-10 변경)
-const PALETTE = ['#3a77b8', '#ca653c', '#2f9b79', '#dcb155', '#db86af', '#87a54d', '#6654a1', '#a43a41', '#008b96', '#91803c', '#c38148', '#7789c3', '#925b8d', '#8b492a', '#7f8793'];
+// 품목 색 v3 (10-03): 같은 카테고리는 비슷한 계열 — 정수기 파랑 · 매트리스 주황 · 안마의자/마사지 자주·분홍 · 청정기 올리브 · 음식물처리기 초록
+// 같은 달에 같이 나오는 품목끼리는 정상 시각 ΔE 15 이상(검사함). 새 품목은 아래 순서로 안 쓴 색
+const PALETTE = ['#3274bd', '#c8602f', '#2f9b79', '#86408f', '#e08ab8', '#86bce6', '#f0b27a', '#173a60', '#7a6a58', '#3aa3bd', '#8a9a3c', '#b0477a', '#bcc56e', '#a33a2c', '#7f8793'];
+const ITEM_COLOR_V2 = {"아이콘3": "#3a77b8", "카페 얼음": "#dcb155", "안마매트리스": "#ca653c", "트리플체어2": "#6654a1", "페블체어2": "#db86af", "음처기": "#2f9b79", "아이콘 얼음": "#87a54d", "스매": "#a43a41", "아이콘프로": "#008b96", "노블": "#91803c", "히티브": "#c38148", "비데": "#7789c3", "마사지셋": "#925b8d", "테라솔U": "#8b492a", "페스타": "#7f8793"};
+const ITEM_COLOR_V3 = {"아이콘3": "#3274bd", "카페 얼음": "#86bce6", "안마매트리스": "#c8602f", "트리플체어2": "#86408f", "페블체어2": "#e08ab8", "음처기": "#2f9b79", "아이콘 얼음": "#173a60", "스매": "#f0b27a", "아이콘프로": "#3aa3bd", "노블": "#8a9a3c", "히티브": "#bcc56e", "비데": "#7a6a58", "마사지셋": "#b0477a", "테라솔U": "#a33a2c", "페스타": "#7f8793"};
 // 예전 기본 팔레트 → 새 팔레트 (직접 고른 색은 그대로 두고, 예전 기본색인 것만 바꿈)
 const PALETTE_V2 = {'#2a78d6': '#3a77b8', '#eda100': '#dcb155', '#eb6834': '#ca653c', '#4a3aa7': '#6654a1', '#e87ba4': '#db86af', '#1baf7a': '#2f9b79', '#008300': '#87a54d', '#e34948': '#a43a41', '#0e7c86': '#008b96', '#8c6d1f': '#91803c', '#b0721a': '#c38148', '#5b7fbf': '#7789c3', '#a24f8f': '#925b8d', '#9a4a24': '#8b492a', '#6f7680': '#7f8793'};
 function nextColor() { const used = new Set((WS.sheets.품목 || []).map(r => str(r[3]).toLowerCase())); return PALETTE.find(c => !used.has(c)) || '#6f7680'; }
@@ -7730,7 +7809,7 @@ function hpager(card, wrap, o) {
     const vt = Math.max(wr.top, top), vb = Math.min(wr.bottom, innerHeight - 10);
     const y = vb > vt ? (vt + vb) / 2 - cr.top : (wr.top + wr.bottom) / 2 - cr.top;
     L.style.top = R.style.top = Math.round(y) + 'px';
-    L.style.left = Math.round(wr.left - cr.left + 10) + 'px';
+    L.style.left = Math.round(wr.left - cr.left + 10 + (o.leftPad ? o.leftPad() : 0)) + 'px';   // 왼쪽 고정 열이 있으면 그 오른쪽에
     R.style.right = Math.round(cr.right - wr.right + 10) + 'px';
     return true;
   };
@@ -7753,7 +7832,8 @@ function hpager(card, wrap, o) {
 function hpGo(wrap, dir, o) {
   const view = wrap.clientWidth, max = wrap.scrollWidth - wrap.clientWidth, cur = wrap.scrollLeft, step = Math.max(160, view * 0.85);
   const pad = (o && o.pad) || 0;
-  const starts = [...wrap.children].filter(el => el.offsetWidth).map(el => el.offsetLeft - wrap.firstElementChild.offsetLeft - pad).filter(x => x >= 0);
+  // 멈출 자리: o.snap()이 주면 그 위치들(예: 큐시트 주차 열), 아니면 안쪽 블록 시작 위치
+  const starts = o && o.snap ? o.snap().filter(x => x >= 0) : [...wrap.children].filter(el => el.offsetWidth).map(el => el.offsetLeft - wrap.firstElementChild.offsetLeft - pad).filter(x => x >= 0);
   let to = dir > 0 ? cur + step : cur - step;
   if (dir > 0) { const c = starts.filter(x => x > cur + 8 && x <= to); if (c.length) to = c[c.length - 1]; }
   else { const c = starts.filter(x => x >= to && x < cur - 8); if (c.length) to = c[0]; }
@@ -7915,6 +7995,19 @@ function reorderBy(rows, order) {
 
 // ---------- 긴 병합 칸의 글자를 화면에 보이게 (지상파 큐시트 '정기물' 등) ----------
 // 원래는 병합 칸 높이의 가운데. 칸이 화면보다 길면 '지금 보이는 부분'의 가운데로 따라 움직임 (표 안 스크롤·페이지 스크롤 모두)
+// 큐시트 표 가로 이동: 스크롤바 대신 ‹ › 둥근 단추(미디어 대시보드와 같은 방식) · 왼쪽 열(구분·프로그램)은 고정, 주차 열 단위로 멈춤
+function cueHpager(root) {
+  root.querySelectorAll('table.cue.qm').forEach(tb => {
+    const wrap = tb.closest('.tw'), card = wrap && wrap.closest('.card'); if (!wrap || !card) return;
+    const fix = [...tb.querySelectorAll('thead th.fx')];
+    let x = 0; fix.forEach(th => { th.style.left = x + 'px'; x += th.offsetWidth; });
+    tb.style.setProperty('--fx', x + 'px');
+    // 고정 열의 왼쪽 위치를 몸통 칸에도 (표 첫 줄 기준)
+    const L = fix.map(th => th.style.left);
+    tb.querySelectorAll('tbody td.fx').forEach(td => { const k = +td.dataset.fx; if (L[k] != null) td.style.left = L[k]; });
+    hpager(card, wrap, { snap: () => [...tb.querySelectorAll('thead th.wkh')].map(th => th.offsetLeft - x), leftPad: () => x });
+  });
+}
 function keepMergedVisible(root) {
   const cells = [...root.querySelectorAll('td.kind')]; if (!cells.length) return;
   const paint = () => {
@@ -8336,9 +8429,11 @@ const LOCK = {
 };
 
 // ===== 18-cal.js : 큐시트 캘린더 — Q-Mate의 달력형 큐시트 (월~일 7칸 × 주 단위, 날짜 칸마다 그날 나간 광고) =====
-// 한 줄 = 채널 · 시작 시간 · 초수 · 프로그램 · CM 위치 (품목은 왼쪽 색 띠). 같은 날 같은 송출이 여러 번이면 ×N
+// 한 줄 = 시작 시간 · 채널 · 초수 · 프로그램 · CM 위치 (품목은 왼쪽 색 띠) — 채널로 묶지 않고 광고 시작 시간 순. 같은 날 같은 송출이 여러 번이면 ×N
+// 이번 달이면 오늘 칸을 강조하고, 오늘 칸 안에 '지금' 줄(지금 방송 중인 광고는 강조)을 1분마다 옮김
 const CAL_WD = ['월', '화', '수', '목', '금', '토', '일'];
-function calUI() { if (!UI.cal) UI.cal = { media: 'all', ch: null, item: null, sort: 'ch' }; return UI.cal; }
+function calUI() { if (!UI.cal) UI.cal = { media: 'all', ch: null, item: null }; return UI.cal; }
+function calNow() { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() + 1, d: d.getDate(), min: d.getHours() * 60 + d.getMinutes(), hm: `${pad2(d.getHours())}:${pad2(d.getMinutes())}` }; }
 function calRows() {
   const f = calUI();
   return M.spots.filter(s => s.day && (s.chRaw || s.prog) && (f.media === 'all' || s.media === f.media) && (!f.ch || f.ch.has(s.ch)) && (!f.item || f.item.has(s.item || s.itemRaw)));
@@ -8351,11 +8446,10 @@ function calGrid(rows) {
     const cm = s.cmRaw || (s.cmCls === '일반' ? '' : s.cmCls);
     const k = [s.ch, s.start, s.sec, s.prog, cm, s.item || s.itemRaw].join('|');
     const x = by[s.day].get(k);
-    if (x) x.n += s.cnt || 1; else by[s.day].set(k, { ch: s.ch, media: s.media, st: s.start, sec: s.sec, prog: s.prog, cm, cmCls: s.cmCls, item: s.item, itemRaw: s.itemRaw, n: s.cnt || 1 });
+    if (x) x.n += s.cnt || 1; else by[s.day].set(k, { ch: s.ch, media: s.media, st: s.start, en: s.end, sec: s.sec, prog: s.prog, cm, cmCls: s.cmCls, item: s.item, itemRaw: s.itemRaw, n: s.cnt || 1 });
   }
-  const sortE = l => l.sort((a, b) => f.sort === 'time'
-    ? timeToMin(a.st) - timeToMin(b.st) || chOrd(a.ch) - chOrd(b.ch)
-    : (a.media === b.media ? 0 : a.media === '지상파' ? -1 : 1) || chOrd(a.ch) - chOrd(b.ch) || String(a.ch).localeCompare(String(b.ch), 'ko') || timeToMin(a.st) - timeToMin(b.st));
+  // 광고 노출 시작 시간 순 (같은 시간이면 지상파 → 채널 순)
+  const sortE = l => l.sort((a, b) => timeToMin(a.st) - timeToMin(b.st) || (a.media === b.media ? 0 : a.media === '지상파' ? -1 : 1) || chOrd(a.ch) - chOrd(b.ch));
   const weeks = []; let cur = null;
   for (let d = 1; d <= days; d++) {
     const wd = (new Date(y, m - 1, d).getDay() + 6) % 7;   // 월=0 … 일=6
@@ -8380,30 +8474,41 @@ function renderCal(root) {
   const chOpts = chs.map(c => { const x = M.MS.chByName.get(c); return { v: c, t: c, sub: x ? (x.media === '지상파' ? '지상파' : x.mpp) : '' }; });
   const itOpts = items.map(k => ({ v: k, t: k, color: itemColor(k) }));
   const shownItems = items.filter(k => rows.some(s => s.item === k));
-  root.innerHTML = `<div class="viewhead"><div><h2>큐시트 캘린더</h2><div class="sub">${ymLabel()} · 날짜 칸마다 그날 나간 광고 — 채널 · 시작 시간 · 초수 · 프로그램 · CM 위치 (왼쪽 색 = 품목)</div></div><div class="spacer"></div>${xlBtn('cal', '캘린더 엑셀')}</div>
+  const now = calNow(), isNowMonth = now.y === M.ym.y && now.m === M.ym.m;
+  root.innerHTML = `<div class="viewhead"><div><h2>큐시트 캘린더</h2><div class="sub">${ymLabel()} · 날짜 칸마다 그날 나간 광고를 <b>시작 시간 순</b>으로 — 시간 · 채널 · 초수 · 프로그램 · CM 위치 (왼쪽 색 = 품목)${isNowMonth ? ` · <span class="calnowlg">오늘 ${now.m}/${now.d} · 지금 ${now.hm}</span>` : ''}</div></div><div class="spacer"></div>${isNowMonth ? '<button class="btn sm" id="cal-today">오늘로</button>' : ''}${xlBtn('cal', '캘린더 엑셀')}</div>
     <section class="card cafilter"><div class="bd">
       ${segHtml('calmedia', [['all', '전체'], ['지상파', '지상파'], ['케이블', '케이블']], f.media)}
       ${mselHtml('calch', '채널', chOpts, f.ch)}
       ${mselHtml('calit', '품목', itOpts, f.item)}
       ${f.ch || f.item || f.media !== 'all' ? '<button class="btn sm ghost" id="cal-reset">필터 해제</button>' : ''}
-      <div class="spacer"></div><span class="ml">정렬</span>${segHtml('calsort', [['ch', '채널 순'], ['time', '시간 순']], f.sort)}
     </div></section>
     <div class="castat"><span>방송사 <b class="tnum">${new Set(rows.map(s => s.ch)).size}</b>개</span><span>횟수 <b class="tnum">${fmt.int(n)}</b>회</span><span>단가 합 <b class="tnum">${fmt.eok(amt, 2)}</b></span>${d0 ? `<span>기간 <b>${M.ym.m}/${d0}~${M.ym.m}/${d1}</b></span>` : ''}<span class="muted">중CM ${fmt.pct(n ? cmN('중CM') / n : 0)} · PIB ${fmt.pct(n ? cmN('PIB') / n : 0)} · 전후CM 등 ${fmt.pct(n ? 1 - (cmN('중CM') + cmN('PIB')) / n : 0)}</span>
       <div class="spacer"></div><span class="qmlegend">${shownItems.map(k => `<span><i style="background:${itemColor(k)}"></i>${esc(k)}</span>`).join('')}</span></div>
-    <section class="card calcard"><div class="calw"><table class="calt"><colgroup>${CAL_WD.map(() => '<col>').join('')}</colgroup><thead><tr>${CAL_WD.map((w, i) => `<th class="${i === 5 ? 'sat' : i === 6 ? 'sun' : ''}">${w}</th>`).join('')}</tr></thead><tbody>
+    <section class="card calcard"><div class="calw"><table class="calt"><colgroup>${CAL_WD.map(() => '<col>').join('')}</colgroup><thead><tr>${CAL_WD.map((w, i) => `<th class="${i >= 5 ? 'we' : ''}">${w}</th>`).join('')}</tr></thead><tbody>
     ${weeks.map(wk => `<tr>${wk.map((c, i) => {
       if (!c) return '<td class="off"></td>';
-      const cls = i === 5 ? 'sat' : i === 6 ? 'sun' : '';
-      return `<td class="${cls}"><div class="cald"><b>${c.d}</b><span class="tnum">${c.n ? fmt.int(c.n) + '회' : ''}</span></div>${c.list.map((e, k) => {
+      const today = isNowMonth && c.d === now.d;
+      const cls = (i === 5 ? 'sat' : i === 6 ? 'sun' : '') + (today ? ' today' : '');
+      let nowDone = !today;
+      const line = e => {
         const it = M.MS.items.get(e.item); const col = it ? it.color : '#b9c2cb';
-        const head = f.sort === 'ch' && (k === 0 || c.list[k - 1].ch !== e.ch);
-        return `${head ? `<div class="calch">${esc(e.ch)}</div>` : ''}<div class="cale${e.cmCls === '중CM' ? ' mid' : ''}" style="--b:${col}" title="${esc(`${e.ch} · ${e.st} · ${e.sec || ''}초 · ${e.prog} · ${e.cm || ''} · ${e.item || e.itemRaw || ''}${e.n > 1 ? ` · ${e.n}회` : ''}`)}">${f.sort === 'time' ? `<span class="c">${esc(e.ch)}</span>` : ''}<span class="t tnum">${esc(e.st)}</span><span class="s tnum">${e.sec ? e.sec + '″' : ''}</span><span class="p">${progHtml(e.prog)}</span><span class="m">${esc(e.cm)}</span>${e.n > 1 ? `<span class="x">×${e.n}</span>` : ''}</div>`;
-      }).join('')}</td>`;
+        const a = timeToMin(e.st), b = e.en ? timeToMin(e.en) : a + 60; const onair = today && a <= now.min && now.min < (b > a ? b : a + 60);
+        let pre = '';
+        if (!nowDone && a > now.min) { nowDone = true; pre = `<div class="calnow" data-now><span>지금 ${now.hm}</span></div>`; }
+        return pre + `<div class="cale${e.cmCls === '중CM' ? ' mid' : ''}${onair ? ' onair' : ''}" style="--b:${col}" title="${esc(`${e.st}${e.en ? '~' + e.en : ''} · ${e.ch} · ${e.sec || ''}초 · ${e.prog} · ${e.cm || ''} · ${e.item || e.itemRaw || ''}${e.n > 1 ? ` · ${e.n}회` : ''}${onair ? ' · 지금 방송 중' : ''}`)}"><div class="l1"><span class="t tnum">${esc(e.st)}</span><span class="c">${esc(e.ch)}</span><span class="s tnum">${e.sec ? e.sec + '″' : ''}</span>${e.n > 1 ? `<span class="x">×${e.n}</span>` : ''}<span class="m">${esc(e.cm)}</span></div><span class="p">${progHtml(e.prog)}</span></div>`;
+      };
+      const body = c.list.map(line).join('') + (nowDone ? '' : `<div class="calnow" data-now><span>지금 ${now.hm}</span></div>`);
+      return `<td class="${cls.trim()}"${today ? ' id="cal-td-today"' : ''}><div class="cald"><b>${c.d}</b>${today ? '<em>오늘</em>' : ''}<span class="tnum">${c.n ? fmt.int(c.n) + '회' : ''}</span></div>${body}</td>`;
     }).join('')}</tr>`).join('')}
     </tbody></table></div></section>`;
   const re = () => { const y = window.scrollY; renderCal(root); window.scrollTo(0, y); };
   bindSeg(root, 'calmedia', v => { f.media = v; re(); });
-  bindSeg(root, 'calsort', v => { f.sort = v; re(); });
+  const goToday = smooth => { const td = root.querySelector('#cal-td-today'); if (!td) return; const mk = td.querySelector('[data-now]') || td; const top = mk.getBoundingClientRect().top + window.scrollY - (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--shellh'), 10) || 100) - 120; window.scrollTo({ top: Math.max(0, top), behavior: smooth && !reduceMotion() ? 'smooth' : 'auto' }); };
+  const tb = root.querySelector('#cal-today'); if (tb) tb.onclick = () => goToday(true);
+  // 처음 열 때는 오늘 칸(지금 줄)으로 · 1분마다 '지금' 줄을 옮김
+  if (isNowMonth && !calUI().seen) { calUI().seen = true; requestAnimationFrame(() => goToday(false)); }
+  clearInterval(renderCal.t);
+  if (isNowMonth) renderCal.t = setInterval(() => { if (App.tab !== 'cal' || !root.isConnected || root.hidden) return clearInterval(renderCal.t); if (calNow().hm !== now.hm) re(); }, 20000);
   bindMsel(root, 'calch', chOpts, f.ch, v => { f.ch = v; re(); });
   bindMsel(root, 'calit', itOpts, f.item, v => { f.item = v; re(); });
   const rs = root.querySelector('#cal-reset'); if (rs) rs.onclick = () => { Object.assign(f, { media: 'all', ch: null, item: null }); re(); };

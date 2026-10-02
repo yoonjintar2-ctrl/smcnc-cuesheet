@@ -1,7 +1,9 @@
 // ===== 18-cal.js : 큐시트 캘린더 — Q-Mate의 달력형 큐시트 (월~일 7칸 × 주 단위, 날짜 칸마다 그날 나간 광고) =====
-// 한 줄 = 채널 · 시작 시간 · 초수 · 프로그램 · CM 위치 (품목은 왼쪽 색 띠). 같은 날 같은 송출이 여러 번이면 ×N
+// 한 줄 = 시작 시간 · 채널 · 초수 · 프로그램 · CM 위치 (품목은 왼쪽 색 띠) — 채널로 묶지 않고 광고 시작 시간 순. 같은 날 같은 송출이 여러 번이면 ×N
+// 이번 달이면 오늘 칸을 강조하고, 오늘 칸 안에 '지금' 줄(지금 방송 중인 광고는 강조)을 1분마다 옮김
 const CAL_WD = ['월', '화', '수', '목', '금', '토', '일'];
-function calUI() { if (!UI.cal) UI.cal = { media: 'all', ch: null, item: null, sort: 'ch' }; return UI.cal; }
+function calUI() { if (!UI.cal) UI.cal = { media: 'all', ch: null, item: null }; return UI.cal; }
+function calNow() { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() + 1, d: d.getDate(), min: d.getHours() * 60 + d.getMinutes(), hm: `${pad2(d.getHours())}:${pad2(d.getMinutes())}` }; }
 function calRows() {
   const f = calUI();
   return M.spots.filter(s => s.day && (s.chRaw || s.prog) && (f.media === 'all' || s.media === f.media) && (!f.ch || f.ch.has(s.ch)) && (!f.item || f.item.has(s.item || s.itemRaw)));
@@ -14,11 +16,10 @@ function calGrid(rows) {
     const cm = s.cmRaw || (s.cmCls === '일반' ? '' : s.cmCls);
     const k = [s.ch, s.start, s.sec, s.prog, cm, s.item || s.itemRaw].join('|');
     const x = by[s.day].get(k);
-    if (x) x.n += s.cnt || 1; else by[s.day].set(k, { ch: s.ch, media: s.media, st: s.start, sec: s.sec, prog: s.prog, cm, cmCls: s.cmCls, item: s.item, itemRaw: s.itemRaw, n: s.cnt || 1 });
+    if (x) x.n += s.cnt || 1; else by[s.day].set(k, { ch: s.ch, media: s.media, st: s.start, en: s.end, sec: s.sec, prog: s.prog, cm, cmCls: s.cmCls, item: s.item, itemRaw: s.itemRaw, n: s.cnt || 1 });
   }
-  const sortE = l => l.sort((a, b) => f.sort === 'time'
-    ? timeToMin(a.st) - timeToMin(b.st) || chOrd(a.ch) - chOrd(b.ch)
-    : (a.media === b.media ? 0 : a.media === '지상파' ? -1 : 1) || chOrd(a.ch) - chOrd(b.ch) || String(a.ch).localeCompare(String(b.ch), 'ko') || timeToMin(a.st) - timeToMin(b.st));
+  // 광고 노출 시작 시간 순 (같은 시간이면 지상파 → 채널 순)
+  const sortE = l => l.sort((a, b) => timeToMin(a.st) - timeToMin(b.st) || (a.media === b.media ? 0 : a.media === '지상파' ? -1 : 1) || chOrd(a.ch) - chOrd(b.ch));
   const weeks = []; let cur = null;
   for (let d = 1; d <= days; d++) {
     const wd = (new Date(y, m - 1, d).getDay() + 6) % 7;   // 월=0 … 일=6
@@ -43,30 +44,41 @@ function renderCal(root) {
   const chOpts = chs.map(c => { const x = M.MS.chByName.get(c); return { v: c, t: c, sub: x ? (x.media === '지상파' ? '지상파' : x.mpp) : '' }; });
   const itOpts = items.map(k => ({ v: k, t: k, color: itemColor(k) }));
   const shownItems = items.filter(k => rows.some(s => s.item === k));
-  root.innerHTML = `<div class="viewhead"><div><h2>큐시트 캘린더</h2><div class="sub">${ymLabel()} · 날짜 칸마다 그날 나간 광고 — 채널 · 시작 시간 · 초수 · 프로그램 · CM 위치 (왼쪽 색 = 품목)</div></div><div class="spacer"></div>${xlBtn('cal', '캘린더 엑셀')}</div>
+  const now = calNow(), isNowMonth = now.y === M.ym.y && now.m === M.ym.m;
+  root.innerHTML = `<div class="viewhead"><div><h2>큐시트 캘린더</h2><div class="sub">${ymLabel()} · 날짜 칸마다 그날 나간 광고를 <b>시작 시간 순</b>으로 — 시간 · 채널 · 초수 · 프로그램 · CM 위치 (왼쪽 색 = 품목)${isNowMonth ? ` · <span class="calnowlg">오늘 ${now.m}/${now.d} · 지금 ${now.hm}</span>` : ''}</div></div><div class="spacer"></div>${isNowMonth ? '<button class="btn sm" id="cal-today">오늘로</button>' : ''}${xlBtn('cal', '캘린더 엑셀')}</div>
     <section class="card cafilter"><div class="bd">
       ${segHtml('calmedia', [['all', '전체'], ['지상파', '지상파'], ['케이블', '케이블']], f.media)}
       ${mselHtml('calch', '채널', chOpts, f.ch)}
       ${mselHtml('calit', '품목', itOpts, f.item)}
       ${f.ch || f.item || f.media !== 'all' ? '<button class="btn sm ghost" id="cal-reset">필터 해제</button>' : ''}
-      <div class="spacer"></div><span class="ml">정렬</span>${segHtml('calsort', [['ch', '채널 순'], ['time', '시간 순']], f.sort)}
     </div></section>
     <div class="castat"><span>방송사 <b class="tnum">${new Set(rows.map(s => s.ch)).size}</b>개</span><span>횟수 <b class="tnum">${fmt.int(n)}</b>회</span><span>단가 합 <b class="tnum">${fmt.eok(amt, 2)}</b></span>${d0 ? `<span>기간 <b>${M.ym.m}/${d0}~${M.ym.m}/${d1}</b></span>` : ''}<span class="muted">중CM ${fmt.pct(n ? cmN('중CM') / n : 0)} · PIB ${fmt.pct(n ? cmN('PIB') / n : 0)} · 전후CM 등 ${fmt.pct(n ? 1 - (cmN('중CM') + cmN('PIB')) / n : 0)}</span>
       <div class="spacer"></div><span class="qmlegend">${shownItems.map(k => `<span><i style="background:${itemColor(k)}"></i>${esc(k)}</span>`).join('')}</span></div>
-    <section class="card calcard"><div class="calw"><table class="calt"><colgroup>${CAL_WD.map(() => '<col>').join('')}</colgroup><thead><tr>${CAL_WD.map((w, i) => `<th class="${i === 5 ? 'sat' : i === 6 ? 'sun' : ''}">${w}</th>`).join('')}</tr></thead><tbody>
+    <section class="card calcard"><div class="calw"><table class="calt"><colgroup>${CAL_WD.map(() => '<col>').join('')}</colgroup><thead><tr>${CAL_WD.map((w, i) => `<th class="${i >= 5 ? 'we' : ''}">${w}</th>`).join('')}</tr></thead><tbody>
     ${weeks.map(wk => `<tr>${wk.map((c, i) => {
       if (!c) return '<td class="off"></td>';
-      const cls = i === 5 ? 'sat' : i === 6 ? 'sun' : '';
-      return `<td class="${cls}"><div class="cald"><b>${c.d}</b><span class="tnum">${c.n ? fmt.int(c.n) + '회' : ''}</span></div>${c.list.map((e, k) => {
+      const today = isNowMonth && c.d === now.d;
+      const cls = (i === 5 ? 'sat' : i === 6 ? 'sun' : '') + (today ? ' today' : '');
+      let nowDone = !today;
+      const line = e => {
         const it = M.MS.items.get(e.item); const col = it ? it.color : '#b9c2cb';
-        const head = f.sort === 'ch' && (k === 0 || c.list[k - 1].ch !== e.ch);
-        return `${head ? `<div class="calch">${esc(e.ch)}</div>` : ''}<div class="cale${e.cmCls === '중CM' ? ' mid' : ''}" style="--b:${col}" title="${esc(`${e.ch} · ${e.st} · ${e.sec || ''}초 · ${e.prog} · ${e.cm || ''} · ${e.item || e.itemRaw || ''}${e.n > 1 ? ` · ${e.n}회` : ''}`)}">${f.sort === 'time' ? `<span class="c">${esc(e.ch)}</span>` : ''}<span class="t tnum">${esc(e.st)}</span><span class="s tnum">${e.sec ? e.sec + '″' : ''}</span><span class="p">${progHtml(e.prog)}</span><span class="m">${esc(e.cm)}</span>${e.n > 1 ? `<span class="x">×${e.n}</span>` : ''}</div>`;
-      }).join('')}</td>`;
+        const a = timeToMin(e.st), b = e.en ? timeToMin(e.en) : a + 60; const onair = today && a <= now.min && now.min < (b > a ? b : a + 60);
+        let pre = '';
+        if (!nowDone && a > now.min) { nowDone = true; pre = `<div class="calnow" data-now><span>지금 ${now.hm}</span></div>`; }
+        return pre + `<div class="cale${e.cmCls === '중CM' ? ' mid' : ''}${onair ? ' onair' : ''}" style="--b:${col}" title="${esc(`${e.st}${e.en ? '~' + e.en : ''} · ${e.ch} · ${e.sec || ''}초 · ${e.prog} · ${e.cm || ''} · ${e.item || e.itemRaw || ''}${e.n > 1 ? ` · ${e.n}회` : ''}${onair ? ' · 지금 방송 중' : ''}`)}"><div class="l1"><span class="t tnum">${esc(e.st)}</span><span class="c">${esc(e.ch)}</span><span class="s tnum">${e.sec ? e.sec + '″' : ''}</span>${e.n > 1 ? `<span class="x">×${e.n}</span>` : ''}<span class="m">${esc(e.cm)}</span></div><span class="p">${progHtml(e.prog)}</span></div>`;
+      };
+      const body = c.list.map(line).join('') + (nowDone ? '' : `<div class="calnow" data-now><span>지금 ${now.hm}</span></div>`);
+      return `<td class="${cls.trim()}"${today ? ' id="cal-td-today"' : ''}><div class="cald"><b>${c.d}</b>${today ? '<em>오늘</em>' : ''}<span class="tnum">${c.n ? fmt.int(c.n) + '회' : ''}</span></div>${body}</td>`;
     }).join('')}</tr>`).join('')}
     </tbody></table></div></section>`;
   const re = () => { const y = window.scrollY; renderCal(root); window.scrollTo(0, y); };
   bindSeg(root, 'calmedia', v => { f.media = v; re(); });
-  bindSeg(root, 'calsort', v => { f.sort = v; re(); });
+  const goToday = smooth => { const td = root.querySelector('#cal-td-today'); if (!td) return; const mk = td.querySelector('[data-now]') || td; const top = mk.getBoundingClientRect().top + window.scrollY - (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--shellh'), 10) || 100) - 120; window.scrollTo({ top: Math.max(0, top), behavior: smooth && !reduceMotion() ? 'smooth' : 'auto' }); };
+  const tb = root.querySelector('#cal-today'); if (tb) tb.onclick = () => goToday(true);
+  // 처음 열 때는 오늘 칸(지금 줄)으로 · 1분마다 '지금' 줄을 옮김
+  if (isNowMonth && !calUI().seen) { calUI().seen = true; requestAnimationFrame(() => goToday(false)); }
+  clearInterval(renderCal.t);
+  if (isNowMonth) renderCal.t = setInterval(() => { if (App.tab !== 'cal' || !root.isConnected || root.hidden) return clearInterval(renderCal.t); if (calNow().hm !== now.hm) re(); }, 20000);
   bindMsel(root, 'calch', chOpts, f.ch, v => { f.ch = v; re(); });
   bindMsel(root, 'calit', itOpts, f.item, v => { f.item = v; re(); });
   const rs = root.querySelector('#cal-reset'); if (rs) rs.onclick = () => { Object.assign(f, { media: 'all', ch: null, item: null }); re(); };
