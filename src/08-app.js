@@ -146,7 +146,10 @@ const App = {
       this.renderMonth();
       this.go(this.tabAllowed(CLOUD.qs('t')) ? CLOUD.qs('t') : 'summary');
       this.status(CLOUD.admin ? '<b>●</b> 온라인 저장 켜짐' : '');
-    } catch (e) { console.error(e); return this.gate(`<h2>불러오지 못했어요</h2><p class="muted">${esc(e.message)}</p><button class="btn" onclick="location.reload()">다시 시도</button>`); }
+    } catch (e) {
+      // 예전(다른 DB) 관리자 접속이 남아 있으면 → 접속을 지우고 뷰어로 다시 열기 (그다음 비밀번호로 다시 접속)
+      if (e.status === 401 && !CLOUD.admin && !this._rel) { this._rel = 1; return location.reload(); }
+      console.error(e); return this.gate(`<h2>불러오지 못했어요</h2><p class="muted">${esc(e.message)}</p><button class="btn" onclick="location.reload()">다시 시도</button>`); }
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) { if (CLOUD.admin) this.cloudSave(); return; }
       this.checkRemote();
