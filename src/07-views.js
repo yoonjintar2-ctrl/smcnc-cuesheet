@@ -1,5 +1,5 @@
 // ===== 07-views.js : 결과 화면 (요약 · 지상파/케이블 큐시트) =====
-const UI = { cmUnit: 'pp', cmSort: 'mid', tab: 'summary', media: 'all', metric: 'budget', t2item: 'all', t3item: 'all', cabPP: null, cabCh: 'all', gCh: 'all', issueSev: 'all', reachG: '지상파케이블', master: '품목', donutItem: 'all', donutMode: 'amount', dailyFocus: null };
+const UI = { cmUnit: 'pp', cmSort: 'mid', tab: 'summary', media: 'all', dnMedia: 'all', metric: 'budget', tcItem: 'all', cabPP: null, cabCh: 'all', gCh: 'all', issueSev: 'all', reachG: '지상파케이블', master: '품목', donutItem: 'all', donutMode: 'amount', dailyFocus: null };
 const CHARTS = {};
 function killCharts(...keys) { for (const k of (keys.length ? keys : Object.keys(CHARTS))) { try { if (CHARTS[k] && CHARTS[k].destroy) CHARTS[k].destroy(); } catch (e) { } delete CHARTS[k]; } }
 const CHART_INK = { muted: '#8794a0', grid: '#e6eaee', ink2: '#55636f' };
@@ -63,22 +63,24 @@ function table1(cells, metric) {
   const rows = hierRows(cells, list => items.map(k => aggMetric(list.filter(c => c.item === k), metric)).concat([aggMetric(list, metric)]));
   return { head: ['구분', 'MPP', '채널'].concat(items, ['계']), items, rows, ck: `t1|${UI.media}|${metric}` };
 }
-function table2(cells, item) {
+// 송출 횟수: 주차별 송출수 + 소재 길이(데이터에 있는 초수마다 열) + 주말 여부 + CM 위치별 비중을 한 표로
+function tableCnt(cells, item) {
   const cs = item === 'all' ? cells : cells.filter(c => c.item === item);
   const W = M.weeks;
-  const rows = hierRows(cs, list => { const v = W.map((_, i) => sum(list, c => c.wk[i])); return v.concat([sum(v)]); }, r => sum(r.cells, c => c.cnt) > 0);
-  return { head: ['구분', 'MPP', '채널'].concat(W.map(w => `${w.n}주 (${w.range})`), ['계']), rows, ck: `t2|${UI.media}|${item}` };
-}
-function table3(cells, item) {
-  const cs = item === 'all' ? cells : cells.filter(c => c.item === item);
+  const secs = [...new Set(cs.flatMap(c => Object.keys(c.sec).filter(k => c.sec[k] > 0).map(Number)))].filter(x => x > 0).sort((a, b) => a - b);
   const vals = list => {
     const a = aggCells(list); const n = a.cnt || 0;
-    const s15 = a.sec[15] || 0, s30 = a.sec[30] || 0, so = n - s15 - s30;
+    const wk = W.map((_, i) => sum(list, c => c.wk[i]));
     const mid = a.cmc.중CM || 0, pib = a.cmc.PIB || 0;
-    return [s15, s30, so, a.wd, a.we, n ? a.we / n : null, mid, pib, n - mid - pib, n ? mid / n : null, n ? (mid + pib) / n : null];
+    return wk.concat([n], secs.map(x => a.sec[x] || 0), [a.wd, a.we, n ? a.we / n : null, mid, pib, n - mid - pib, n ? mid / n : null, n ? (mid + pib) / n : null]);
   };
-  return { head: ['구분', 'MPP', '채널', '15초', '30초', '기타 초수', '주중', '주말', '주말 비중', '중CM', 'PIB', '전후CM 등', '중CM 비중', '중CM+PIB 비중'], rows: hierRows(cs, vals, r => sum(r.cells, c => c.cnt) > 0), pctCols: [5, 9, 10], ck: `t3|${UI.media}|${item}`,
-    groups: [['소재 길이', 3], ['주말 여부', 3], ['CM 위치별 비중', 5]], eq: 1 };
+  const nW = W.length, nS = secs.length, o = nW + 1 + nS;
+  return {
+    head: ['구분', 'MPP', '채널'].concat(W.map(w => `${w.n}주`), ['계'], secs.map(x => `${x}초`), ['주중', '주말', '주말 비중', '중CM', 'PIB', '전후CM 등', '중CM 비중', '중CM+PIB 비중']),
+    headSub: W.map(w => w.range),
+    rows: hierRows(cs, vals, r => sum(r.cells, c => c.cnt) > 0), pctCols: [o + 2, o + 6, o + 7], ck: `tc|${UI.media}|${item}`,
+    groups: [['주차별 송출수', nW + 1], ['소재 길이', nS], ['주말 여부', 3], ['CM 위치별 비중', 5]].filter(g => g[1] > 0), eq: 78,
+  };
 }
 // 같은 값이 이어지면 셀 병합(rowspan)
 function spans(rows) {
@@ -94,25 +96,26 @@ function tableHtml(T, fmtVal) {
   const { s0, s1 } = spans(T.rows);
   const body = T.rows.map((r, i) => {
     let lab;
-    if (r.t === 'row') lab = (s0[i] ? `<td class="l mg" rowspan="${s0[i]}">${esc(r.lab[0])}</td>` : '') + (s1[i] ? `<td class="l mg" rowspan="${s1[i]}">${esc(r.lab[1])}</td>` : '') + `<td class="l">${esc(r.lab[2])}</td>`;
-    else lab = `<td class="l" colspan="3">${esc(r.lab[0])}</td>`;
+    if (r.t === 'row') lab = (s0[i] ? `<td class="mg" rowspan="${s0[i]}">${esc(r.lab[0])}</td>` : '') + (s1[i] ? `<td class="mg" rowspan="${s1[i]}">${esc(r.lab[1])}</td>` : '') + `<td>${esc(r.lab[2])}</td>`;
+    else lab = `<td colspan="3">${esc(r.lab[0])}</td>`;
     const rk = T.ck ? `${T.ck}|${r.lab.join('/')}|` : '';
     return `<tr class="${r.t === 'row' ? '' : r.t}">${lab}${r.vals.map((v, j) => `<td class="${(v == null || v === 0) ? 'z' : ''}"${rk ? ` data-ck="${esc(rk + T.head[3 + j])}"` : ''}>${fmtVal(v, j)}</td>`).join('')}</tr>`;
   }).join('');
-  // 묶음 머리글(소재 길이 · 주말 여부 · CM 위치별 비중 …)이 있으면 두 줄 머리글 · eq = 값 열 너비를 모두 같게
-  const nv = T.head.length - 3;
-  const colg = T.eq ? `<colgroup><col style="width:70px"><col style="width:112px"><col style="width:132px">${T.head.slice(3).map(() => '<col style="width:96px">').join('')}</colgroup>` : '';
+  // 묶음 머리글(주차별 송출수 · 소재 길이 · 주말 여부 · CM 위치별 비중)이 있으면 두 줄 머리글 · eq = 값 열 너비를 모두 같게
+  const nv = T.head.length - 3, ew = T.eq === true || T.eq === 1 ? 96 : T.eq;
+  const hc = (h, j) => `${esc(h)}${T.headSub && T.headSub[j] ? `<span class="rg">${esc(T.headSub[j])}</span>` : ''}`;
+  const colg = T.eq ? `<colgroup><col style="width:70px"><col style="width:112px"><col style="width:132px">${T.head.slice(3).map(() => `<col style="width:${ew}px">`).join('')}</colgroup>` : '';
   const head = T.groups
-    ? `<tr>${T.head.slice(0, 3).map(h => `<th class="l" rowspan="2">${esc(h)}</th>`).join('')}${T.groups.map(([g, n]) => `<th class="grph" colspan="${n}">${esc(g)}</th>`).join('')}</tr><tr>${T.head.slice(3).map(h => `<th>${esc(h)}</th>`).join('')}</tr>`
-    : `<tr>${T.head.map((h, i) => `<th class="${i < 3 ? 'l' : ''}">${esc(h)}</th>`).join('')}</tr>`;
-  return `<div class="tw free"><table class="t${T.eq ? ' eqw' : ''}"${T.eq ? ` style="width:${70 + 112 + 132 + nv * 96}px"` : ''}>${colg}<thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+    ? `<tr>${T.head.slice(0, 3).map(h => `<th rowspan="2">${esc(h)}</th>`).join('')}${T.groups.map(([g, n]) => `<th class="grph" colspan="${n}">${esc(g)}</th>`).join('')}</tr><tr>${T.head.slice(3).map((h, j) => `<th>${hc(h, j)}</th>`).join('')}</tr>`
+    : `<tr>${T.head.map(h => `<th>${esc(h)}</th>`).join('')}</tr>`;
+  return `<div class="tw free"><table class="t ctr${T.eq ? ' eqw' : ''}"${T.eq ? ` style="width:${70 + 112 + 132 + nv * ew}px"` : ''}>${colg}<thead>${head}</thead><tbody>${body}</tbody></table></div>`;
 }
 function tableSheet(name, T, opts = {}) {
   const H = T.groups ? 2 : 1;
   const aoa = []; const merges = [];
   if (T.groups) {
     const g = T.head.slice(0, 3); for (const [lab, n] of T.groups) { g.push(lab); for (let k = 1; k < n; k++) g.push(''); }
-    aoa.push(g); aoa.push(['', '', ''].concat(T.head.slice(3)));
+    aoa.push(g); aoa.push(['', '', ''].concat(T.head.slice(3).map((h, j) => T.headSub && T.headSub[j] ? `${h} (${T.headSub[j]})` : h)));
     for (let c = 0; c < 3; c++) merges.push({ s: { r: 0, c }, e: { r: 1, c } });
     let c0 = 3; for (const [, n] of T.groups) { if (n > 1) merges.push({ s: { r: 0, c: c0 }, e: { r: 0, c: c0 + n - 1 } }); c0 += n; }
   } else aoa.push(T.head);
@@ -129,10 +132,10 @@ function tableStyler(T, H = 1) {
   return (r, c) => {
     if (r < H) return null;
     const row = T.rows[r - H]; if (!row) return null;
-    if (row.t === 'sub') return xsMerge(XS.total, { alignment: { horizontal: c < 3 ? 'left' : 'right', vertical: 'center' } });
-    if (row.t === 'tot') return xsMerge(XS.total, { fill: { fgColor: { rgb: 'E7EDF2' } }, font: { bold: true, sz: 10, color: { rgb: '2B4256' } } });
-    if (c < 2) return xsMerge(XS.cell, { alignment: { vertical: 'center', horizontal: 'left' } });
-    return null;
+    const al = { horizontal: 'center', vertical: 'center' };
+    if (row.t === 'sub') return xsMerge(XS.total, { alignment: al });
+    if (row.t === 'tot') return xsMerge(XS.total, { fill: { fgColor: { rgb: 'E7EDF2' } }, font: { bold: true, sz: 10, color: { rgb: '2B4256' } }, alignment: al });
+    return xsMerge(XS.cell, { alignment: al });
   };
 }
 function moneyTxt(v) { return v == null ? '-' : fmt.won(v); }
@@ -151,11 +154,11 @@ function opsTable() {
 }
 function opsHtml() {
   const T = opsTable();
-  return `<div class="tw free"><table class="t ops"><thead><tr>${T.head.map((h, i) => `<th class="${i < 3 || i === 9 ? 'l' : ''}">${h}</th>`).join('')}</tr></thead><tbody>
+  return `<div class="tw free"><table class="t ops ctr"><thead><tr>${T.head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>
   ${T.rows.map(r => `<tr class="${r.t === 'row' ? '' : r.t}">${r.vals.map((v, j) => {
-    if (j < 2 && r.t === 'row') return r.span ? `<td class="l mg" rowspan="${r.span}">${j === 1 ? `<span class="sw" style="background:${itemColor(r.item)};margin-right:6px"></span>` : ''}${esc(v)}</td>` : '';
-    if (j < 3) return `<td class="l">${esc(v)}</td>`;
-    if (j === 9) return r.t === 'row' && !readOnly() ? `<td class="wrap prog${r.manual ? ' manual' : ''}" contenteditable="plaintext-only" spellcheck="false" data-k="${esc(r.item + '|' + r.group)}" title="직접 고치면 그 내용이 우선해요. 비우면 자동 추출로 돌아가요.">${esc(v)}</td>` : `<td class="wrap">${esc(v)}</td>`;
+    if (j < 2 && r.t === 'row') return r.span ? `<td class="mg" rowspan="${r.span}">${j === 1 ? `<span class="sw" style="background:${itemColor(r.item)};margin-right:6px"></span>` : ''}${esc(v)}</td>` : '';
+    if (j < 3) return `<td>${esc(v)}</td>`;
+    if (j === 9) return r.t === 'row' && !readOnly() ? `<td class="wrap prog${r.manual ? ' manual' : ''}" contenteditable="plaintext-only" spellcheck="false" data-k="${esc(r.item + '|' + r.group)}" title="처음엔 이 품목·방송사의 본방 중CM 프로그램이 들어가요. 직접 고치면 그 글이 우선하고, 비우면 다시 본방 중CM 목록으로 돌아가요.">${esc(v)}</td>` : `<td class="wrap">${esc(v)}</td>`;
     const ck = ` data-ck="${esc(`ops|${r.item || ''}|${r.t === 'row' ? r.group : r.t}|${j}`)}"`;
     if (j === 3) return `<td${ck}>${v ? fmt.dec(v, 2) : '-'}</td>`;
     if (j === 4) return `<td${ck}>${fmt.int(v)}</td>`;
@@ -181,23 +184,6 @@ function opsSheet() {
       if (c === 0) return xsMerge(XS.cell, { alignment: { vertical: 'center' } });
       return c === 9 ? xsMerge(XS.cell, { alignment: { wrapText: true, vertical: 'center' } }) : null; } };
 }
-function creativeTable() {
-  const g = M.spots.filter(s => s.src === '지상파' && s.item);
-  return M.creatives.map(c => {
-    const pool = g.filter(s => s.item === c.item);
-    const hit = pool.filter(s => creMatch(c.cre, s.cre)).length;
-    return { ...c, actual: pool.length ? hit / pool.length : null, hit };
-  });
-}
-function creHtml() {
-  const cr = creativeTable();
-  if (!cr.length) return '<div class="empty">소재 탭에 품목별 소재를 입력하면 여기에 표시돼요</div>';
-  const span = cr.map((c, i) => (i === 0 || cr[i - 1].item !== c.item) ? cr.slice(i).findIndex(x => x.item !== c.item) : 0).map((n, i) => n === 0 && (i === 0 || cr[i - 1].item !== cr[i].item) ? cr.length - i : n < 0 ? cr.length - i : n);
-  return `<div class="tw free"><table class="t"><thead><tr><th class="l">품목</th><th class="l">운영기간</th><th>초수</th><th class="l">소재</th><th>금액 비중</th><th>횟수 비중(계획)</th><th>지상파 실제</th><th class="l">심의번호</th><th class="l">비고</th></tr></thead><tbody>
-  ${cr.map((c, i) => `<tr>${(i === 0 || cr[i - 1].item !== c.item) ? `<td class="l mg" rowspan="${span[i]}"><span class="sw" style="background:${itemColor(c.item)};margin-right:6px"></span>${esc(c.item || c.itemRaw)}</td>` : ''}<td class="l">${esc(c.period)}</td><td>${c.sec ? c.sec + '초' : ''}</td><td class="l">${esc(c.cre)}</td><td>${fmt.pct(c.share)}</td><td>${fmt.pct(c.cshare)}</td><td>${c.actual == null ? '<span class="muted">-</span>' : fmt.pct(c.actual) + ` <span class="muted">(${c.hit}회)</span>`}</td><td class="l">${esc(c.reg)}</td><td class="l">${esc(c.note)}</td></tr>`).join('')}
-  </tbody></table></div>`;
-}
-
 // ---------- 요약 (통합 요약 + 운영 요약) ----------
 const ANIM = { seen: false, kpi: null };
 function renderSummary(root) {
@@ -209,26 +195,30 @@ function renderSummary(root) {
   const items = itemsIn(cells);
   const g = aggCells(M.cells.filter(c => c.media === '지상파')), cb = aggCells(M.cells.filter(c => c.media === '케이블'));
   if (UI.donutItem !== 'all' && !items.includes(UI.donutItem)) UI.donutItem = 'all';
-  if (!items.includes(UI.t2item)) UI.t2item = 'all';
-  if (!items.includes(UI.t3item)) UI.t3item = 'all';
   const mediaSub = UI.media === 'all' ? `지상파 ${fmt.eok(g.budget)} · 케이블 ${fmt.eok(cb.budget)}` : `전체의 ${fmt.pct(all.budget ? A.budget / all.budget : 0)}`;
   const cntSub = UI.media === 'all' ? `지상파 ${fmt.int(g.cnt)} · 케이블 ${fmt.int(cb.cnt)}` : `전체의 ${fmt.pct(all.cnt ? A.cnt / all.cnt : 0)}`;
   const meta = WS.reachMeta || {};
+  if (UI.media !== 'all') UI.dnMedia = 'all';
+  const dCells = UI.dnMedia === 'all' ? cells : cells.filter(c => c.media === UI.dnMedia);
+  const dItems = itemsIn(dCells);
+  if (UI.donutItem !== 'all' && !dItems.includes(UI.donutItem)) UI.donutItem = 'all';
+  if (!items.includes(UI.tcItem)) UI.tcItem = 'all';
   root.innerHTML = `
   <div class="viewhead"><div><h2>${esc(advName())} ${M.ym.m}월 TV큐시트 요약</h2><div class="sub">${ymLabel()} · 예산·보너스, 송출, 운영 요약을 한 화면에 · 금액은 원(VAT 별도)</div></div><div class="spacer"></div>
     ${segHtml('media', [['all', '전체'], ['지상파', '지상파'], ['케이블', '케이블']], UI.media)} ${xlBtn('sumall', '요약 전체 엑셀')}</div>
-  <div class="kpis">
+  <div class="kpis k5">
     <div class="kpi"><div class="l">예산</div><div class="v tnum" data-ck="kpi|${UI.media}|budget"><span data-kv="budget">${fmt.eok(A.budget)}</span></div><div class="s">${mediaSub}</div></div>
-    <div class="kpi"><div class="l">보너스</div><div class="v tnum" data-ck="kpi|${UI.media}|bonus"><span data-kv="bonus">${fmt.eok(A.bonus)}</span></div><div class="s">보너스율 ${fmt.pct(A.rate)} · 예산+보너스 ${fmt.eok(A.value)}</div></div>
+    <div class="kpi"><div class="l">보너스</div><div class="v tnum" data-ck="kpi|${UI.media}|bonus"><span data-kv="bonus">${fmt.eok(A.bonus)}</span></div><div class="s">보너스율 ${fmt.pct(A.rate)}</div></div>
+    <div class="kpi hl"><div class="l">전체 밸류</div><div class="v tnum" data-ck="kpi|${UI.media}|value"><span data-kv="value">${fmt.eok(A.value)}</span></div><div class="s">예산 + 보너스${A.budget ? ` · 예산의 ${fmt.dec(A.value / A.budget, 2)}배` : ''}</div></div>
     <div class="kpi"><div class="l">송출</div><div class="v tnum" data-ck="kpi|${UI.media}|cnt"><span data-kv="cnt">${fmt.int(A.cnt)}회</span></div><div class="s">${cntSub}</div></div>
     <div class="kpi"><div class="l">eq.GRP (15초 환산)</div><div class="v tnum" data-ck="kpi|${UI.media}|eq"><span data-kv="eq">${fmt.int(A.eq)}</span></div><div class="s">GRP ${fmt.int(A.grp)} · 목표 CPRP 기준 추정</div></div>
   </div>
   <div class="grid2">
-    <section class="card"><div class="hd"><h3>품목별 예산과 보너스</h3><span class="sub">진한 막대 = 예산 · 옅은 막대 = 보너스 · 품목 아래 = 예산 비중</span></div><div class="bd">
-      <div class="lg"><span><span class="sw" style="background:#6f7680"></span>예산</span><span><span class="sw" style="background:#6f7680;opacity:.32"></span>보너스</span></div>
-      <div id="ibars" role="img" aria-label="품목별 예산과 보너스"></div></div></section>
-    <section class="card"><div class="hd"><h3>방송사별 예산과 보너스</h3><span class="sub">도넛 각도 = 예산 비중 · 위로 솟은 반투명 기둥 = 보너스</span><div class="spacer"></div>${segHtml('dmode', [['amount', '보너스 금액'], ['rate', '보너스율']], UI.donutMode)}</div><div class="bd">
-      ${chipsHtml('data-dn', [['all', '전체 품목']].concat(items.map(k => [k, k, itemColor(k)])), UI.donutItem)}
+    <section class="card"><div class="hd"><h3>품목별 예산·보너스</h3><span class="sub">진한 막대 = 예산 · 옅은 막대 = 보너스 · 품목 아래 = 예산 비중</span></div><div class="bd">
+      <div class="lg"><span><span class="sw" style="background:#6f7680"></span>예산</span><span><span class="sw" style="background:#6f7680;opacity:.32"></span>보너스</span><span class="muted">막대 끝 = 예산 · <span style="opacity:.75">+보너스</span></span></div>
+      <div id="ibars" role="img" aria-label="품목별 예산·보너스"></div></div></section>
+    <section class="card"><div class="hd"><h3>방송사별 예산·보너스</h3><span class="sub">도넛 각도 = 예산 비중 · 위로 솟은 반투명 기둥 = 보너스</span><div class="spacer"></div>${UI.media === 'all' ? segHtml('dnmedia', [['all', '전체'], ['지상파', '지상파'], ['케이블', '케이블']], UI.dnMedia) : ''} ${segHtml('dmode', [['amount', '보너스 금액'], ['rate', '보너스율']], UI.donutMode)}</div><div class="bd">
+      ${chipsHtml('data-dn', [['all', '전체 품목']].concat(dItems.map(k => [k, k, itemColor(k)])), UI.donutItem)}
       <div class="donutwrap"><div id="donut"></div><div id="donutlg"></div></div></div></section>
   </div>
   <section class="card" style="margin-bottom:16px"><div class="hd"><h3>일별 송출</h3><span class="sub" id="dailysub"></span><div class="spacer"></div><span class="dcount tnum" id="dcount"></span>
@@ -240,48 +230,44 @@ function renderSummary(root) {
       <div id="cmshare"></div></div></section>
     <section class="card mixcard"><div class="hd"><h3>송출 구성</h3><span class="sub">${fmt.int(A.cnt)}회 기준</span></div><div class="bd" id="mixbox"></div></section>
   </div>
-  <section class="card" style="margin-bottom:16px"><div class="hd"><h3>운영 요약</h3><span class="sub">주요 프로그램은 중CM → PIB → 단가 순 자동 추출${readOnly() ? '' : ' · 칸을 눌러 직접 고칠 수 있어요'}</span><div class="spacer"></div>${xlBtn('ops', '운영 요약 엑셀')}</div><div class="bd" style="padding:0">${opsHtml()}</div>
+  <section class="card" style="margin-bottom:16px"><div class="hd"><h3>운영 요약</h3><span class="sub">주요 프로그램 = 그 방송사의 본방 중CM 프로그램${readOnly() ? '' : ' · 칸을 눌러 직접 고칠 수 있어요'}</span><div class="spacer"></div>${xlBtn('ops', '운영 요약 엑셀')}</div><div class="bd" style="padding:0">${opsHtml()}</div>
     <div class="foot" style="padding:0 16px 14px">GRP = 예산 ÷ 목표 CPRP(15초 기준) × 초수 환산 · eq.GRP = 15초 환산 GRP · 리치 기준 ${esc(meta.target || '아리아나 누적리치')} ${meta.period ? '(' + esc(meta.period) + ')' : ''}${Object.keys(M.reach || {}).length ? '' : ' — <b>누적리치가 없어 R1·R3를 계산하지 못했어요</b>'}</div></section>
-  <section class="card" style="margin-bottom:16px"><div class="hd"><h3>품목별 소재 운영</h3><span class="sub">지상파 실제 = 지상파 송출 중 해당 소재 비율 (케이블은 소재 구분 없음)</span><div class="spacer"></div>${xlBtn('cre', '소재 엑셀')}</div><div class="bd">${creHtml()}</div></section>
-  <section class="card" style="margin-bottom:16px"><div class="hd"><h3>1) 예산 및 보너스</h3><span class="sub">원, VAT 별도</span><div class="spacer"></div>
+  <section class="card" style="margin-bottom:16px"><div class="hd"><h3>예산 및 보너스</h3><span class="sub">원, VAT 별도</span><div class="spacer"></div>
     ${segHtml('metric', [['budget', '예산'], ['bonus', '보너스'], ['value', '예산+보너스'], ['rate', '보너스율']], UI.metric)} ${xlBtn('t1')}</div><div class="bd" id="t1"></div></section>
-  <section class="card" style="margin-bottom:16px"><div class="hd"><h3>2) 주차별 송출수</h3><div class="spacer"></div>${xlBtn('t2')}</div><div class="bd">
-    ${chipsHtml('data-t2', [['all', '전체 품목']].concat(items.map(k => [k, k, itemColor(k)])), UI.t2item)}<div id="t2" style="margin-top:10px"></div></div></section>
-  <section class="card"><div class="hd"><h3>3) 소재 길이 및 위치</h3><div class="spacer"></div>${xlBtn('t3')}</div><div class="bd">
-    ${chipsHtml('data-t3', [['all', '전체 품목']].concat(items.map(k => [k, k, itemColor(k)])), UI.t3item)}<div id="t3" style="margin-top:10px"></div></div></section>`;
+  <section class="card"><div class="hd"><h3>송출 횟수</h3><span class="sub">주차별 송출수 · 소재 길이 · 주말 여부 · CM 위치별 비중</span><div class="spacer"></div>${xlBtn('tc')}</div><div class="bd">
+    ${chipsHtml('data-tc', [['all', '전체 품목']].concat(items.map(k => [k, k, itemColor(k)])), UI.tcItem)}<div id="tc" style="margin-top:10px"></div></div></section>`;
   const rerender = () => { const y = window.scrollY; renderSummary(root); window.scrollTo(0, y); };
   bindSeg(root, 'media', v => { UI.media = v; rerender(); });
   bindSeg(root, 'metric', v => { UI.metric = v; root.querySelector('#t1').innerHTML = tableHtml(table1(cells, UI.metric), v2 => UI.metric === 'rate' ? fmt.pct(v2) : moneyTxt(v2)); root.querySelectorAll('[data-seg="metric"] button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); });
+  bindSeg(root, 'dnmedia', v => { UI.dnMedia = v; rerender(); });
   bindSeg(root, 'dmode', v => { UI.donutMode = v; root.querySelectorAll('[data-seg="dmode"] button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); drawDonut(false); });
   bindChips(root, '[data-dn]', v => { UI.donutItem = v; root.querySelectorAll('[data-dn]').forEach(b => b.classList.toggle('on', b.dataset.v === v)); drawDonut(false); });
   bindChips(root, '[data-df]', v => { UI.dailyFocus = v || null; root.querySelectorAll('[data-df]').forEach(b => b.classList.toggle('on', b.dataset.v === v)); if (CHARTS._daily) CHARTS._daily.setFocus(UI.dailyFocus); });
-  bindChips(root, '[data-t2]', v => { UI.t2item = v; root.querySelectorAll('[data-t2]').forEach(b => b.classList.toggle('on', b.dataset.v === v)); root.querySelector('#t2').innerHTML = tableHtml(table2(cells, v), x => x ? fmt.int(x) : '-'); });
-  bindChips(root, '[data-t3]', v => { UI.t3item = v; root.querySelectorAll('[data-t3]').forEach(b => b.classList.toggle('on', b.dataset.v === v)); const T3 = table3(cells, v); root.querySelector('#t3').innerHTML = tableHtml(T3, (x, j) => T3.pctCols.includes(j) ? fmt.pct(x) : (x ? fmt.int(x) : '-')); });
+  const drawTc = v => { const T = tableCnt(cells, v); root.querySelector('#tc').innerHTML = tableHtml(T, (x, j) => T.pctCols.includes(j) ? fmt.pct(x) : (x ? fmt.int(x) : '-')); };
+  bindChips(root, '[data-tc]', v => { UI.tcItem = v; root.querySelectorAll('[data-tc]').forEach(b => b.classList.toggle('on', b.dataset.v === v)); drawTc(v); });
   root.querySelector('#t1').innerHTML = tableHtml(table1(cells, UI.metric), v => UI.metric === 'rate' ? fmt.pct(v) : moneyTxt(v));
-  root.querySelector('#t2').innerHTML = tableHtml(table2(cells, UI.t2item), v => v ? fmt.int(v) : '-');
-  const T3 = table3(cells, UI.t3item);
-  root.querySelector('#t3').innerHTML = tableHtml(T3, (v, j) => T3.pctCols.includes(j) ? fmt.pct(v) : (v ? fmt.int(v) : '-'));
+  drawTc(UI.tcItem);
   root.querySelectorAll('[data-xl]').forEach(b => b.onclick = () => exportSummary(b.dataset.xl, cells, items));
   bindOpsEdit(root);
   // 처음 열 때만 '등장' 애니메이션, 그 뒤로는 이전 값에서 새 값으로 바뀌는 애니메이션
   const intro = !ANIM.seen; ANIM.seen = true;
   // KPI 숫자 굴리기
-  const kv = { budget: A.budget, bonus: A.bonus, cnt: A.cnt, eq: A.eq }, kf = { budget: v => fmt.eok(v), bonus: v => fmt.eok(v), cnt: v => fmt.int(v) + '회', eq: v => fmt.int(v) };
-  const kFrom = intro || !ANIM.kpi ? { budget: 0, bonus: 0, cnt: 0, eq: 0 } : ANIM.kpi;
+  const kv = { budget: A.budget, bonus: A.bonus, value: A.value, cnt: A.cnt, eq: A.eq }, kf = { budget: v => fmt.eok(v), bonus: v => fmt.eok(v), value: v => fmt.eok(v), cnt: v => fmt.int(v) + '회', eq: v => fmt.int(v) };
+  const kFrom = intro || !ANIM.kpi ? { budget: 0, bonus: 0, value: 0, cnt: 0, eq: 0 } : ANIM.kpi;
   root.querySelectorAll('[data-kv]').forEach(el => { const k = el.dataset.kv; if (kFrom[k] !== kv[k]) rollText(el, kFrom[k], kv[k], kf[k], intro ? 750 : 500); });
   ANIM.kpi = kv;
   // 품목별 예산·보너스 막대 (예산 → 보너스 2단계)
   itemBars(root.querySelector('#ibars'), items.map(k => { const cc = cells.filter(c => c.item === k); return { k, color: itemColor(k), budget: sum(cc, c => c.budget), bonus: sum(cc, c => c.bonus) }; }), { intro });
   // 3D 도넛 (펼친 뒤 기둥 · 품목 바꾸면 부드럽게)
   function drawDonut(first) {
-    const cs = UI.donutItem === 'all' ? cells : cells.filter(c => c.item === UI.donutItem);
+    const cs = UI.donutItem === 'all' ? dCells : dCells.filter(c => c.item === UI.donutItem);
     const base = UI.donutItem === 'all' ? '#3f5b73' : itemColor(UI.donutItem);
     const steps = [0, 0.18, 0.34, 0.48, 0.6, 0.7, 0.78];
     const sl = SUM_GROUPS.map((gn, i) => { const x = cs.filter(c => c.group === gn); const b = sum(x, c => c.budget), bo = sum(x, c => c.bonus); return { label: gn, value: b, extra: bo, rate: b ? bo / b : 0, color: i === 0 ? base : tint(base, steps[i] || 0.8) }; });
     const shown = sl.filter(x => x.value > 0);
     const B = sum(sl, x => x.value), X = sum(sl, x => x.extra);
     donut3D(root.querySelector('#donut'), sl, { mode: UI.donutMode, height: 330, intro: first && intro });
-    const ck = (gn, j) => `data-ck="dn|${UI.media}|${UI.donutItem}|${gn}|${j}"`;
+    const ck = (gn, j) => `data-ck="dn|${UI.media}|${UI.dnMedia}|${UI.donutItem}|${gn}|${j}"`;
     root.querySelector('#donutlg').innerHTML = `<table class="t sm"><thead><tr><th class="l">방송사</th><th>예산</th><th>보너스</th><th>보너스율</th></tr></thead><tbody>${shown.map(x => `<tr><td class="l"><span class="sw" style="background:${x.color};margin-right:6px"></span>${esc(x.label)}</td><td ${ck(x.label, 0)}>${fmt.eok(x.value, 2)}</td><td ${ck(x.label, 1)}>${fmt.eok(x.extra, 2)}</td><td ${ck(x.label, 2)}>${fmt.pct(x.rate)}</td></tr>`).join('')}<tr class="sub"><td class="l">계</td><td ${ck('계', 0)}>${fmt.eok(B, 2)}</td><td ${ck('계', 1)}>${fmt.eok(X, 2)}</td><td ${ck('계', 2)}>${fmt.pct(B ? X / B : null)}</td></tr></tbody></table>`;
   }
   drawDonut(true);
@@ -296,11 +282,12 @@ function renderSummary(root) {
   drawCm();
   bindSeg(root, 'cmunit', v => { UI.cmUnit = v; root.querySelectorAll('[data-seg="cmunit"] button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); drawCm(); });
   bindSeg(root, 'cmsort', v => { UI.cmSort = v; root.querySelectorAll('[data-seg="cmsort"] button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); drawCm(); });
-  // 송출 구성
-  const n = A.cnt || 1;
-  const s15 = A.sec[15] || 0, s30 = A.sec[30] || 0, so = A.cnt - s15 - s30;
-  // 송출 구성: 중CM·PIB 막대와 헷갈리지 않게 도넛으로 (CM 위치는 왼쪽 카드에 있으므로 뺌)
-  root.querySelector('#mixbox').innerHTML = `<div class="mixdn">${mixDonut('초수', [['15초', s15, MIXC.s15], ['30초', s30, MIXC.s30]].concat(so ? [['기타', so, MIXC.etc]] : []))}${mixDonut('요일', [['주중', A.wd, MIXC.wd], ['주말', A.we, MIXC.we]])}</div>`;
+  // 송출 구성: 초수(데이터에 있는 초수마다) · 요일 — 왼쪽 카드와 같은 높이로
+  const secs = Object.keys(A.sec).map(Number).filter(x => x > 0 && A.sec[x] > 0).sort((a, b) => a - b);
+  const g2 = aggCells(cells.filter(c => c.media === '지상파')), c2 = aggCells(cells.filter(c => c.media === '케이블'));
+  root.querySelector('#mixbox').innerHTML = `<div class="mixtop"><div><b class="tnum">${fmt.int(A.cnt)}</b><span>총 송출</span></div><div><b class="tnum">${fmt.int(g2.cnt)}</b><span>지상파</span></div><div><b class="tnum">${fmt.int(c2.cnt)}</b><span>케이블</span></div></div>`
+    + mixSection('초수', '소재 길이별 송출', secs.map(x => [`${x}초`, A.sec[x], secColor(x)]))
+    + mixSection('요일', '주중 · 주말 송출', [['주중', A.wd, MIXC.wd], ['주말', A.we, MIXC.we]]);
   mixDonutBind(root.querySelector('#mixbox'));
 }
 function bindOpsEdit(root) {
@@ -335,57 +322,53 @@ function bindOpsEdit(root) {
     });
   });
 }
-// 송출 구성 도넛 (SVG) — 가운데 큰 비중, 아래 범례
+// 송출 구성 도넛 (SVG) — 가운데 큰 비중, 오른쪽에 막대 범례
 const MIXC = { s15: '#d99a3d', s30: '#13958a', etc: '#c3ccd4', wd: '#7563a8', we: '#d97f74' };   // 색약 구분 검사 통과 (기타는 회색)
-function mixDonut(title, parts) {
+const SECC = { 10: '#8a9a3a', 15: '#d99a3d', 20: '#4f7fbf', 30: '#13958a', 40: '#a0702a', 45: '#c25b8f', 60: '#5f6f86' };   // 초수 색은 초수마다 고정 (순서가 바뀌어도 같은 색)
+function secColor(x) { return SECC[x] || '#9aa5af'; }
+function mixDonut(title, parts, size = 132) {
   const tot = sum(parts, p => p[1]) || 1, R = 46, r = 30, C = 2 * Math.PI;
   let a0 = -Math.PI / 2; const arcs = [];
+  const live = parts.filter(p => p[1]);
   for (const [lab, v, col] of parts) {
     if (!v) continue;
-    const a1 = a0 + C * v / tot, gap = parts.filter(p => p[1]).length > 1 ? 0.012 : 0;
+    const a1 = a0 + C * v / tot, gap = live.length > 1 ? 0.012 : 0;
     const P = (a, rr) => [60 + rr * Math.cos(a), 60 + rr * Math.sin(a)];
     const s0 = a0 + gap, s1 = a1 - gap, big = s1 - s0 > Math.PI ? 1 : 0;
     const [x0, y0] = P(s0, R), [x1, y1] = P(s1, R), [x2, y2] = P(s1, r), [x3, y3] = P(s0, r);
-    const d = parts.filter(p => p[1]).length === 1 ? `M60 ${60 - R}A${R} ${R} 0 1 1 59.99 ${60 - R}ZM60 ${60 - r}A${r} ${r} 0 1 0 60.01 ${60 - r}Z` : `M${x0} ${y0}A${R} ${R} 0 ${big} 1 ${x1} ${y1}L${x2} ${y2}A${r} ${r} 0 ${big} 0 ${x3} ${y3}Z`;
+    const d = live.length === 1 ? `M60 ${60 - R}A${R} ${R} 0 1 1 59.99 ${60 - R}ZM60 ${60 - r}A${r} ${r} 0 1 0 60.01 ${60 - r}Z` : `M${x0} ${y0}A${R} ${R} 0 ${big} 1 ${x1} ${y1}L${x2} ${y2}A${r} ${r} 0 ${big} 0 ${x3} ${y3}Z`;
     arcs.push(`<path d="${d}" fill="${col}" data-tip="${esc(`${title} · ${lab} ${fmt.int(v)}회 (${fmt.pct(v / tot)})`)}"></path>`);
     a0 = a1;
   }
-  const top = parts.slice().sort((x, y) => y[1] - x[1])[0];
-  return `<div class="mdn"><div class="t">${title}</div><div class="mdnc"><svg viewBox="0 0 120 120" width="132" height="132" role="img" aria-label="${esc(title)}">${arcs.join('')}<text x="60" y="58" text-anchor="middle" class="v">${fmt.pct(top[1] / tot)}</text><text x="60" y="74" text-anchor="middle" class="l">${esc(top[0])}</text></svg></div>
-    <div class="mdnl">${parts.map(([lab, v, col]) => `<div><span class="sw" style="background:${col}"></span><span>${lab}</span><b class="tnum">${fmt.int(v)}</b><span class="muted tnum">${fmt.pct(v / tot)}</span></div>`).join('')}</div></div>`;
+  const top = parts.slice().sort((x, y) => y[1] - x[1])[0] || ['', 0];
+  return `<svg viewBox="0 0 120 120" width="${size}" height="${size}" role="img" aria-label="${esc(title)}">${arcs.join('') || '<circle cx="60" cy="60" r="38" fill="none" stroke="#e3e9ee" stroke-width="16"></circle>'}<text x="60" y="58" text-anchor="middle" class="v">${fmt.pct(top[1] / tot)}</text><text x="60" y="74" text-anchor="middle" class="l">${esc(top[0])}</text></svg>`;
+}
+function mixSection(title, sub, parts) {
+  const tot = sum(parts, p => p[1]) || 1;
+  return `<div class="mixsec"><div class="mixh"><b>${title}</b><span>${sub}</span></div><div class="mixb"><div class="mdnc">${mixDonut(title, parts, 136)}</div>
+    <div class="mixl">${parts.map(([lab, v, col]) => `<div class="mr"><span class="sw" style="background:${col}"></span><span class="ml">${lab}</span><span class="mbar"><i style="width:${(v / tot * 100).toFixed(1)}%;background:${col}"></i></span><b class="tnum">${fmt.int(v)}</b><span class="muted tnum">${fmt.pct(v / tot)}</span></div>`).join('') || '<div class="muted small">송출이 없어요</div>'}</div></div></div>`;
 }
 function mixDonutBind(root) { root.querySelectorAll('path[data-tip]').forEach(p => { p.addEventListener('mousemove', e => ftip(e, esc(p.dataset.tip))); p.addEventListener('mouseleave', ftipHide); }); }
-function mixHtml(title, parts, n, cols) {
-  const tot = sum(parts, p => p[1]) || 1;
-  const SL = cols || SLATE;
-  return `<div class="mix"><div class="t"><span>${title}</span><span class="tnum">${fmt.int(sum(parts, p => p[1]))}회</span></div>
-    <div class="bar">${parts.map((p, i) => p[1] ? `<span title="${p[0]} ${fmt.int(p[1])}회" style="width:${p[1] / tot * 100}%;background:${SL[i]}"></span>` : '').join('')}</div>
-    <div class="n">${parts.map((p, i) => `<span><span class="sw" style="background:${SL[i]}"></span>${p[0]} ${fmt.int(p[1])} (${fmt.pct(p[1] / tot)})</span>`).join('')}</div></div>`;
-}
 function exportSummary(which, cells, items) {
   const name = `${advName()}TV_${WS.ym.replace('-', '')}_`;
   const sheetsT1 = () => [['budget', '예산'], ['bonus', '보너스'], ['value', '예산+보너스'], ['rate', '보너스율']].map(([m, t]) => {
     const T = table1(cells, m);
-    return tableSheet('1) ' + t, T, { widths: [12, 14, 14].concat(T.items.map(() => 15), [16]), numFmt: () => m === 'rate' ? '0%' : '#,##0' });
+    return tableSheet('예산 및 보너스 ' + t, T, { widths: [12, 14, 14].concat(T.items.map(() => 15), [16]), numFmt: () => m === 'rate' ? '0%' : '#,##0' });
   });
-  const sheetsT2 = () => ['all'].concat(items).map(k => tableSheet('2) 주차 ' + (k === 'all' ? '전체' : k), table2(cells, k), { widths: [12, 14, 14].concat(M.weeks.map(() => 15), [8]) }));
-  const sheetsT3 = () => ['all'].concat(items).map(k => tableSheet('3) 소재 ' + (k === 'all' ? '전체' : k), table3(cells, k), { widths: [12, 14, 14].concat(Array(11).fill(13)), numFmt: (r, c) => (c === 8 || c === 12 || c === 13) ? '0%' : '#,##0' }));
+  const sheetsTc = () => ['all'].concat(items).map(k => { const T = tableCnt(cells, k); return tableSheet('송출 횟수 ' + (k === 'all' ? '전체' : k), T, { widths: [12, 14, 14].concat(T.head.slice(3).map(() => 13)), numFmt: (r, c) => T.pctCols.includes(c - 3) ? '0%' : '#,##0' }); });
   const cmSheet = () => { const rows = cmRows(cells, UI.cmUnit).sort((a, b) => (a.media === b.media ? 0 : a.media === '지상파' ? -1 : 1) || b.sm - a.sm);
     return { name: '중CM·PIB 비중', aoa: [['매체', UI.cmUnit === 'ch' ? '채널' : 'PP', '송출', '중CM', 'PIB', '전후CM 등', '중CM 비중', 'PIB 비중', '중CM+PIB 비중']].concat(rows.map(r => [r.media, r.name, r.n, r.mid, r.pib, r.fb, r.sm, r.sp, r.sm + r.sp])),
       widths: [8, 16, 8, 8, 8, 10, 10, 10, 13], numFmt: (r, c) => c >= 6 ? '0%' : '#,##0' }; };
-  const creSheet = () => { const cr = creativeTable(); return { name: '소재 운영', aoa: [['품목', '운영기간', '초수', '소재', '금액 비중', '횟수 비중', '지상파 실제 비중', '심의번호', '비고']].concat(cr.map(c => [c.item || c.itemRaw, c.period, c.sec || '', c.cre, c.share == null ? '' : c.share, c.cshare == null ? '' : c.cshare, c.actual == null ? '' : c.actual, c.reg, c.note])), widths: [14, 12, 6, 16, 10, 10, 14, 16, 30], numFmt: (r, c) => (c >= 4 && c <= 6) ? '0%' : '#,##0' }; };
   if (which === 't1') downloadBook(sheetsT1(), name + '예산및보너스.xlsx');
-  if (which === 't2') downloadBook(sheetsT2(), name + '주차별송출수.xlsx');
-  if (which === 't3') downloadBook(sheetsT3(), name + '소재길이및위치.xlsx');
+  if (which === 'tc') downloadBook(sheetsTc(), name + '송출횟수.xlsx');
   if (which === 'ops') downloadBook([opsSheet()], name + '운영요약.xlsx');
-  if (which === 'cre') downloadBook([creSheet()], name + '소재운영.xlsx');
-  if (which === 'sumall') downloadBook([opsSheet(), creSheet(), cmSheet()].concat(sheetsT1(), sheetsT2().slice(0, 1), sheetsT3().slice(0, 1)), name + '요약.xlsx');
+  if (which === 'sumall') downloadBook([opsSheet(), cmSheet()].concat(sheetsT1(), sheetsTc().slice(0, 1)), name + '요약.xlsx');
 }
 
 // ---------- 큐시트 공통 (Q-Mate 편성표 디자인: 진한 머리글 · 품목 색 상자 · 본방 강조) ----------
 // 상자 안 글자: 고를 수 있음 (품목 · 소재 · 초수 · CM위치 · 날짜)
 const CHIP_F = [['item', '품목'], ['cre', '소재'], ['sec', '초수'], ['cm', 'CM위치'], ['day', '날짜']];
-function chipOpts(mode) { const k = mode === 'g' ? 'chipG' : 'chipC'; if (!UI[k]) UI[k] = mode === 'g' ? { item: 1, cre: 1, sec: 1, cm: 0, day: 1 } : { item: 1, cre: 0, sec: 1, cm: 1, day: 1 }; return UI[k]; }
+function chipOpts(mode) { const k = mode === 'g' ? 'chipG' : 'chipC'; const V = WS.view = WS.view || {}; if (!V[k]) V[k] = mode === 'g' ? { item: 1, cre: 1, sec: 1, cm: 0, day: 1 } : { item: 1, cre: 0, sec: 1, cm: 1, day: 1 }; return V[k]; }
 function inkOn(hex) { const c = hexToRgb(hex) || [111, 118, 128]; const L = (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255; return L > 0.62; }
 function spotChip(s, mode) {
   const b = itemColor(s.item), o = chipOpts(mode);
@@ -402,10 +385,9 @@ const PTAG = { 본방: 'bon', 생방: 'live', 특집: 'sp' };
 function progHtml(name) { return esc(name).replace(/&lt;(본방|생방|특집)&gt;|[<＜\[【(（]\s*(본방|생방|특집)\s*[>＞\]】)）]/g, (m, a, b) => `<b class="ptag ${PTAG[a || b]}">&lt;${a || b}&gt;</b>`); }
 function chipBar(mode, items) {
   const o = chipOpts(mode);
-  return `<div class="qmbar"><span class="lb">값 항목</span><span class="qmchecks">${CHIP_F.map(([k, t]) => `<label class="${o[k] ? 'checked' : ''}"><input type="checkbox" data-chipf="${k}" ${o[k] ? 'checked' : ''}>${t}</label>`).join('')}</span>
-    <span class="lb" style="margin-left:14px">품목 색상</span><span class="qmlegend">${items.map(k => `<span><i style="background:${itemColor(k)}"></i>${esc(k)}</span>`).join('')}</span></div>`;
+  return `<div class="qmbar">${readOnly() ? '' : `<span class="lb">값 항목</span><span class="qmchecks" title="여기서 고른 항목이 뷰어 화면에도 그대로 보여요">${CHIP_F.map(([k, t]) => `<label class="${o[k] ? 'checked' : ''}"><input type="checkbox" data-chipf="${k}" ${o[k] ? 'checked' : ''}>${t}</label>`).join('')}</span><span class="lb" style="margin-left:14px">`}${readOnly() ? '<span class="lb">' : ''}품목 색상</span><span class="qmlegend">${items.map(k => `<span><i style="background:${itemColor(k)}"></i>${esc(k)}</span>`).join('')}</span></div>`;
 }
-function bindChipBar(root, mode, rerender) { root.querySelectorAll('[data-chipf]').forEach(i => i.onchange = () => { chipOpts(mode)[i.dataset.chipf] = i.checked ? 1 : 0; rerender(); }); }
+function bindChipBar(root, mode, rerender) { if (readOnly()) return; root.querySelectorAll('[data-chipf]').forEach(i => i.onchange = () => { chipOpts(mode)[i.dataset.chipf] = i.checked ? 1 : 0; App.changed('meta', true); rerender(); }); }
 function groupCue(list, keyFn) {
   const m = new Map();
   for (const s of list) { const k = keyFn(s); if (!m.has(k)) m.set(k, { k, first: s, spots: [] }); m.get(k).spots.push(s); }
@@ -420,7 +402,7 @@ function renderCueG(root) {
   if (UI.gCh !== 'all' && !chs.includes(UI.gCh)) UI.gCh = 'all';
   const W = M.weeks;
   const show = UI.gCh === 'all' ? chs : [UI.gCh];
-  let html = `<div class="viewhead"><div><h2>지상파 큐시트</h2><div class="sub">${ymLabel()} · 같은 프로그램·시간·단가는 한 줄로 묶고 주차 칸에 소재와 날짜를 표시 · 본방·생방 강조</div></div><div class="spacer"></div>${xlBtn('cueg', '지상파 큐시트 엑셀')}</div>
+  let html = `<div class="viewhead"><div><h2>지상파 큐시트</h2><div class="sub">${ymLabel()} · 같은 프로그램·시간·단가는 한 줄로 묶고 주차 칸에 소재와 날짜를 표시 · <b class="cmtag">중CM</b> 줄 강조 (케이블 큐시트의 본방과 같은 표시)</div></div><div class="spacer"></div>${xlBtn('cueg', '지상파 큐시트 엑셀')}</div>
   ${chipsHtml('data-gch', [['all', '전체']].concat(chs.map(c => [c, `${c} ${sp.filter(s => s.ch === c).length}`])), UI.gCh)}
   ${sp.length ? chipBar('g', M.MS.itemOrder.filter(k => sp.some(s => s.item === k))) : ''}`;
   const G = M.gSettle;
@@ -444,10 +426,10 @@ function renderCueG(root) {
       <span class="chips">${cc.map(c => `<span class="chipbtn" style="cursor:default"><span class="sw" style="background:${itemColor(c.item)}"></span>${esc(c.item)} ${c.cnt}회 · ${fmt.eok(c.budget, 2)}</span>`).join('')}</span></div>
     <div class="card"><div class="tw cgw" style="border:0"><table class="t cue qm cg"><thead><tr>
       <th>구분</th><th>프로그램</th><th>요일</th><th>시간</th><th>시급</th><th>초수</th><th>단가</th><th>금액</th><th>CM지정</th><th>지정율</th><th>지정금액</th>${W.map(w => `<th class="wkh">${w.label}차<span class="rg">${w.range}</span></th>`).join('')}<th>횟수</th><th>주말구분</th><th>CM 구분</th><th>A.R(%)</th><th>Eq GRP</th><th>CPRP (원)</th><th>비고</th></tr></thead><tbody>
-      ${rows.map((r, i) => { const s = r.first; const same = i && rows[i - 1].first.prog === s.prog; return `<tr class="${r.live ? 'bon' : ''}${same ? ' same' : ''}">${r.kspan ? `<td class="info kind" rowspan="${r.kspan}"><span class="kl">${esc(r.kind)}</span></td>` : ''}<td class="info pg"><span>${progHtml(s.prog)}</span></td><td class="info">${esc(s.dowRaw || s.dow)}</td><td class="info">${esc(s.start)}~${esc(s.end)}</td><td class="info">${esc(s.grade)}</td><td class="info">${s.sec || ''}</td><td class="info r">${fmt.won(s.price)}</td>
+      ${rows.map((r, i) => { const s = r.first; const same = i && rows[i - 1].first.prog === s.prog; return `<tr class="${r.live || r.cmg === '중CM' ? 'bon' : ''}${same ? ' same' : ''}">${r.kspan ? `<td class="info kind" rowspan="${r.kspan}"><span class="kl">${esc(r.kind)}</span></td>` : ''}<td class="info pg"><span>${progHtml(s.prog)}</span></td><td class="info">${esc(s.dowRaw || s.dow)}</td><td class="info">${esc(s.start)}~${esc(s.end)}</td><td class="info">${esc(s.grade)}</td><td class="info">${s.sec || ''}</td><td class="info r">${fmt.won(s.price)}</td>
         <td class="info ${s.bonus ? 'c' : 'r'}">${s.bonus ? '<span class="tagb bon">보너스</span>' : `<span class="tagb paid">${fmt.won(s.amount)}</span>`}</td><td class="info">${esc(s.cmRaw)}</td><td class="info r">${s.rate ? fmt.pct(s.rate) : ''}</td><td class="info r">${r.desig ? fmt.won(r.desig) : '<span class="muted">-</span>'}</td>
         ${W.map(w => `<td class="wk" data-ck="${esc(`cg|${ch}|${r.k}|${w.n}`)}">${r.spots.filter(x => x.week === w.n).map(x => spotChip(x, 'g')).join('')}</td>`).join('')}<td class="info" data-ck="${esc(`cg|${ch}|${r.k}|n`)}">${r.spots.length}</td>
-        <td class="info">${r.wkend}</td><td class="info">${r.cmg}</td><td class="info r">${r.ar == null ? '' : fmt.dec(r.ar, 1)}</td><td class="info r">${r.eq ? fmt.dec(r.eq, 1) : ''}</td><td class="info r">${r.cprp ? fmt.won(r.cprp) : '<span class="muted">-</span>'}</td><td class="info l nt">${esc(s.note)}</td></tr>`; }).join('')}
+        <td class="info">${r.wkend}</td><td class="info">${r.cmg === '중CM' ? '<b class="cmtag">중CM</b>' : r.cmg}</td><td class="info r">${r.ar == null ? '' : fmt.dec(r.ar, 1)}</td><td class="info r">${r.eq ? fmt.dec(r.eq, 1) : ''}</td><td class="info r">${r.cprp ? fmt.won(r.cprp) : '<span class="muted">-</span>'}</td><td class="info l nt">${esc(s.note)}</td></tr>`; }).join('')}
       <tr class="sub"><td class="l" colspan="7">${esc(ch)} 계</td><td class="r">${fmt.won(T.paid)}</td><td></td><td></td><td class="r">${fmt.won(T.desig)}</td>${W.map(w => `<td>${fmt.int(sum(rows, r => r.spots.filter(x => x.week === w.n).length))}</td>`).join('')}<td>${fmt.int(T.n)}</td><td></td><td></td><td></td><td class="r">${fmt.dec(T.eq, 1)}</td><td class="r">${T.cprp ? fmt.won(T.cprp) : '-'}</td><td></td></tr>
       </tbody></table></div></div>`;
   }
@@ -493,7 +475,7 @@ function exportCueG(chs) {
       const s = r.first; const wk = W.map(w => r.spots.filter(x => x.week === w.n));
       if (r.kspan > 1) merges.push({ s: { r: aoa.length, c: 1 }, e: { r: aoa.length + r.kspan - 1, c: 1 } });
       aoa.push([ch, r.kspan ? r.kind : '', s.prog, s.dowRaw || s.dow, s.start, s.end, s.grade, s.sec || '', s.price || '', s.bonus ? '보너스' : (s.amount || 0), s.cmRaw, s.rate || '', r.desig || ''].concat(wk.map(x => x.map(y => `[${y.item || y.itemRaw}] ${y.cre}${y.sec || ''} (${M.ym.m}/${y.day || ''})`).join('\n')), [r.spots.length, r.wkend, r.cmg, r.ar == null ? '' : r.ar, r.eq || '', r.cprp || '', s.note]));
-      fills.push(wk.map(x => x.length ? x[0].item : null)); rowType.push(r.live ? 'live' : 'row');
+      fills.push(wk.map(x => x.length ? x[0].item : null)); rowType.push(r.live || r.cmg === '중CM' ? 'live' : 'row');
     });
     if (aoa.length - start > 1) merges.push({ s: { r: start, c: 0 }, e: { r: aoa.length - 1, c: 0 } });
     const T = gCueTotal(rows);
@@ -605,17 +587,18 @@ function exportCueC(chs) {
 
 // ---------- 시작 안내 ----------
 function onboardingHtml() {
+  if (readOnly()) return `<div class="viewhead"><div><h2>${esc(advName())} ${M.ym.m}월 큐시트</h2><div class="sub">${ymLabel()}</div></div></div><section class="card"><div class="empty">아직 이 달 큐시트가 올라오지 않았어요</div></section>`;
   return `<div class="viewhead"><div><h2>${ymLabel()} 큐시트 시작하기</h2><div class="sub">마스터(품목·채널) → 예산·소재 → 지상파·케이블 순서로 채우면 이 화면이 자동으로 만들어져요.</div></div></div>
   <div class="onb">
-    <div class="card"><div class="bd"><div class="n">1</div><h3>기존 큐시트 불러오기</h3><p class="muted">지난달까지 쓰던 통합 큐시트 엑셀(예: 261002_코웨이 TV set 큐시트…xlsx)이나 이 도구의 작업 파일을 끌어다 놓으면 한 번에 들어와요.</p><button class="btn pri" data-act="open">파일 선택</button></div></div>
-    <div class="card"><div class="bd"><div class="n">2</div><h3>마스터 확인</h3><p class="muted">품목·채널 이름을 마스터에서 먼저 정해 두면, 예산·소재·큐시트 입력 때 목록에서 골라 쓰게 돼서 이름이 섞이지 않아요.</p><button class="btn" data-act="tab-master">마스터 열기</button></div></div>
-    <div class="card"><div class="bd"><div class="n">3</div><h3>큐시트 입력</h3><p class="muted">지상파·케이블 탭은 엑셀처럼 써요. 엑셀에서 복사해 붙여넣기, 범위 선택, 찾기/바꾸기(Ctrl+F), 필터, 행 숨기기가 돼요.</p><button class="btn" data-act="tab-지상파">지상파 탭 열기</button></div></div>
+    <div class="card"><div class="bd"><div class="n">1</div><h3>예산·소재</h3><p class="muted">운영사항의 예산(채널 × 품목)과 품목별 소재를 먼저 채워요. 엑셀 범위를 복사해 붙여넣어도 돼요.</p><button class="btn pri" data-act="tab-예산">예산 열기</button></div></div>
+    <div class="card"><div class="bd"><div class="n">2</div><h3>방송사 큐시트 온보딩</h3><p class="muted">방송사에서 받은 원본 큐시트 엑셀을 끌어다 놓으면 자동으로 매칭해서 지상파·케이블 시트에 넣어요.</p><button class="btn" data-act="onboard">온보딩 열기</button></div></div>
+    <div class="card"><div class="bd"><div class="n">3</div><h3>큐시트 입력</h3><p class="muted">지상파·케이블 입력 시트는 엑셀처럼 써요. 복사해 붙여넣기, 범위 선택, 찾기/바꾸기(Ctrl+F), 필터, 행 번호 우클릭으로 삽입·삭제.</p><button class="btn" data-act="tab-지상파">지상파 입력 열기</button></div></div>
   </div>`;
 }
 function bindOnboarding(root) {
   root.querySelectorAll('[data-act]').forEach(b => b.onclick = () => {
     const a = b.dataset.act;
-    if (a === 'open') document.getElementById('filein').click();
+    if (a === 'onboard') OBUI.open();
     else if (a.startsWith('tab-')) App.go(a.slice(4));
   });
 }

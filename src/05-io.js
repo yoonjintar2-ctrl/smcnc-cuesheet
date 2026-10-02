@@ -1,4 +1,4 @@
-// ===== 05-io.js : 엑셀 읽기(신규 작업파일·기존 큐시트·케이블raw·아리아나) / 쓰기 =====
+// ===== 05-io.js : 엑셀 읽기(작업·백업 파일·케이블raw·아리아나) / 쓰기 =====
 
 function sheetAoa(ws) {
   if (!ws || !ws['!ref']) return [];
@@ -52,14 +52,15 @@ function cleanCell(v) {
 // ---- 예전 가로형 지상파 표(주차 칸에 '[품목] 소재30') → 1행 1송출 ----
 const LEGACY_SPOT = /^\s*\[(.+?)\]\s*(.*?)\s*(\d+)\s*$/;
 function legacyGroundRows(a, from = 0) {
-  const out = []; let cur = '';
+  const out = []; let cur = '', kind = '';
   for (let i = from; i < a.length; i++) {
     const r = a[i] || [];
     const A = str(r[0]);
-    if (/total|cm지정비|예비비|연계/i.test(A)) { cur = ''; if (/3사|grand/i.test(A)) break; continue; }
+    if (/total|cm지정비|예비비|연계/i.test(A)) { cur = ''; kind = ''; if (/3사|grand/i.test(A)) break; continue; }
     // 엑셀에서 머리글째 복사했을 때의 제목·머리글 행(채널/프로그램, 1주·10/1~4 …)은 건너뜀
     if (A === '채널' || str(r[2]) === '프로그램' || /큐시트$/.test(A)) continue;
-    if (A) cur = A;
+    if (A && A !== cur) { cur = A; kind = ''; }
+    if (str(r[1])) kind = str(r[1]);   // 구분(정기물 등)은 병합 칸이라 첫 행에만 있음 → 아래 행에도 이어서 적음
     const prog = str(r[2]); if (!prog) continue;
     for (let w = 20; w <= 25; w++) {
       const v = r[w];
@@ -69,7 +70,7 @@ function legacyGroundRows(a, from = 0) {
       if (/^[\d,.\s()-]+$/.test(t) || /^(주차별|\d+주|\d{1,2}\/\d{1,2}(~\d{1,2}(\/\d{1,2})?)?)$/.test(t)) continue;
       const m = v.match(LEGACY_SPOT);
       const item = m ? m[1].trim() : '', cre = m ? m[2].trim() : v.trim(), sec = m ? +m[3] : (num(r[7]) || '');
-      out.push([cur, str(r[1]), prog, str(r[3]), normTime(r[4]), normTime(r[5]), str(r[6]), sec, num(r[8]) || '', num(r[10]) != null ? num(r[10]) : (/^\s*-+\s*$/.test(String(r[10] == null ? '' : r[10])) ? 0 : ''),
+      out.push([cur, kind, prog, str(r[3]), normTime(r[4]), normTime(r[5]), str(r[6]), sec, num(r[8]) || '', num(r[10]) != null ? num(r[10]) : (/^\s*-+\s*$/.test(String(r[10] == null ? '' : r[10])) ? 0 : ''),
         str(r[19]), item, cre, str(r[12]), num(r[13]) != null ? num(r[13]) : '', num(r[46]) != null ? num(r[46]) : '', str(r[11])]);
     }
   }
@@ -79,81 +80,6 @@ function isLegacyGroundBlock(B) {
   let hit = 0;
   for (const r of B) { if (!r || r.length < 21) continue; for (let w = 20; w <= 25; w++) if (typeof r[w] === 'string' && LEGACY_SPOT.test(r[w])) { hit++; break; } if (hit >= 2) return true; }
   return false;
-}
-
-// ---- 기존(레거시) 큐시트 통합본 ----
-function readLegacy(wb, names) {
-  const parts = {}; const notes = [];
-  const gName = names.find(n => /^지상파TV/.test(n));
-  // 당월 운영
-  const op = sheetAoa(wb.Sheets['당월 운영']);
-  if (op.length) {
-    const s = op[3] && op[3][33], e = op[3] && op[3][34];
-    const ds = parseDateVal(s), de = parseDateVal(e);
-    if (ds) { parts.ym = `${ds.y}-${pad2(ds.m)}`; parts.start = ds.d; parts.end = de && de.m === ds.m ? de.d : daysInMonth(ds.y, ds.m); }
-    const hdr = op[34] || [];
-    const items = []; for (let j = 33; j <= 43; j++) items.push(str(hdr[j]) && str(hdr[j]) !== '0' ? str(hdr[j]) : '');
-    const last = items.reduce((a, v, i) => v ? i : a, -1);
-    const B = [['채널'].concat(items.slice(0, last + 1))];
-    for (let i = 35; i <= 83; i++) {
-      const r = op[i]; if (!r) continue;
-      const ch = str(r[32]); if (!ch || ch === '0') continue;
-      const vals = []; for (let j = 33; j <= 33 + last; j++) { const v = num(r[j]); vals.push(v || ''); }
-      B.push([ch].concat(vals));
-    }
-    parts.예산 = B;
-    notes.push(`예산 ${B.length - 1}개 채널 × ${last + 1}개 품목`);
-  }
-  // 지상파
-  if (gName) {
-    const a = sheetAoa(wb.Sheets[gName]);
-    const out = legacyGroundRows(a, 5);
-    parts.지상파 = out;
-    notes.push(`지상파 ${out.length}회 (주차 칸 문자열 → 1행 1송출로 변환)`);
-  }
-  // 케이블raw
-  if (wb.Sheets['케이블raw']) {
-    const a = sheetAoa(wb.Sheets['케이블raw']);
-    const { rows } = rowsByHeader(a, '케이블');
-    parts.케이블 = rows;
-    notes.push(`케이블 ${rows.length}회`);
-  }
-  // 운영소재 (첫 번째 표)
-  const sName = names.find(n => /운영소재/.test(n));
-  if (sName) {
-    const a = sheetAoa(wb.Sheets[sName]);
-    const h = a.findIndex(r => str(r[0]) === '품목' && /소재/.test(str(r[3])));
-    if (h >= 0) {
-      const out = [];
-      for (let i = h + 1; i < a.length; i++) {
-        const r = a[i];
-        if (isBlankRow(r)) { if (out.length) break; else continue; }
-        if (/^\*/.test(str(r[0]))) break;
-        out.push([str(r[0]), str(r[1]), str(r[2]).replace(/["”]/g, ''), str(r[3]), num(r[4]) != null ? num(r[4]) : '', num(r[5]) != null ? num(r[5]) : '', str(r[6]), str(r[7])]);
-      }
-      parts.소재 = out;
-      notes.push(`소재 ${out.filter(r => r[3] && !/계$/.test(r[3])).length}개`);
-    }
-  }
-  // vlookup → 마스터(추가분만 병합)
-  if (wb.Sheets['vlookup']) {
-    const a = sheetAoa(wb.Sheets['vlookup']);
-    const it = [], ch = [], cm = [], cp = [];
-    for (let i = 2; i < a.length; i++) {
-      const r = a[i] || [];
-      if (str(r[0])) cm.push([str(r[0]), str(r[1])]);
-      if (str(r[3])) ch.push([str(r[3]), '', /지상파/.test(str(r[7])) ? '지상파' : '케이블', str(r[4]).replace(/^\d+\)\s*/, ''), str(r[6]) || '기타']);
-      if (str(r[10])) it.push([str(r[10]), str(r[11]), str(r[12]), '', '']);
-      if (str(r[14]) && num(r[16])) cp.push([/지상파/.test(str(r[14])) ? '지상파' : '케이블', str(r[15]), num(r[16])]);
-    }
-    parts.master = { 품목: it, 채널: ch, CM위치: cm, 목표CPRP: cp };
-  }
-  // 누적리치
-  if (wb.Sheets['누적리치']) {
-    const rr = parseReachAoa(sheetAoa(wb.Sheets['누적리치']));
-    if (rr) { parts.reach = rr.reach; parts.reachMeta = rr.meta; notes.push(`누적리치 ${Object.keys(rr.reach).length}개 그룹`); }
-  }
-  return { kind: 'legacy', parts, notes };
 }
 
 // ---- 아리아나 누적리치 (8블록 가로 배치) ----
@@ -226,15 +152,12 @@ function thinCurve(pts) {
 }
 
 // ---- 파일 판별 ----
+function isLegacyBook(names) { return names.some(n => /^지상파TV/.test(n)) || names.includes('케이블raw') || names.includes('당월 운영'); }
 function readFileParts(buf, fileName) {
   const head = XLSX.read(buf, { type: 'array', bookSheets: true });
   const names = head.SheetNames;
-  const isLegacy = names.some(n => /^지상파TV/.test(n)) || names.includes('케이블raw') || names.includes('당월 운영');
-  if (isLegacy) {
-    const want = names.filter(n => /^지상파TV/.test(n) || /운영소재/.test(n) || ['케이블raw', '당월 운영', 'vlookup', '누적리치'].includes(n));
-    const wb = XLSX.read(buf, { type: 'array', sheets: want, cellDates: false, cellFormula: false, cellHTML: false, cellText: false });
-    return readLegacy(wb, names);
-  }
+  // 예전 통합 큐시트 양식은 이 도구에서 바로 넣지 않음 (지난 큐시트는 담당자가 따로 변환해 넣음)
+  if (isLegacyBook(names)) return { kind: 'legacy', parts: {}, notes: [] };
   const wb = XLSX.read(buf, { type: 'array', cellDates: false, cellFormula: false, cellHTML: false, cellText: false, cellStyles: true });
   const parts = {}; const notes = [];
   // 작업 파일 (_meta)

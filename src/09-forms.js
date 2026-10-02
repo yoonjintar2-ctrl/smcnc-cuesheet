@@ -69,7 +69,7 @@ function usageMaps() {
 // 뷰어(보기 전용)일 때 입력 화면을 읽기 전용 표로
 function lockForm(el) {
   el.classList.add('ro');
-  el.querySelectorAll('input,textarea').forEach(i => { i.readOnly = true; i.tabIndex = -1; });
+  el.querySelectorAll('input,textarea').forEach(i => { i.readOnly = true; i.tabIndex = -1; if (/^(color|checkbox|radio|file)$/.test(i.type)) i.disabled = true; });
   el.querySelectorAll('select').forEach(x => { x.disabled = true; });
   el.querySelectorAll('[data-add],[data-addch],[data-rx],[data-cx],[data-cl],[data-cr],[data-it],[data-b="paste"],[data-b="fill"],[data-b="wipe"],button.x,[data-addcre],[data-delitem],[data-addit],#creadd,.mapsel,.iha,tr.add,section.itchips,.note.warn').forEach(b => b.remove());
 }
@@ -402,7 +402,7 @@ function renderBudgetForm(el) {
     if (sec !== '미확인') body += `<tr class="sub" data-st="${sec}"><td class="l" colspan="2">${sec} 계</td>${cols.map((_, j) => `<td>${(sec === '지상파' ? T.g : T.c)[j] ? fmt.won((sec === '지상파' ? T.g : T.c)[j]) : '-'}</td>`).join('')}<td>${fmt.won(sec === '지상파' ? T.gAll : T.cAll)}</td></tr>`;
   }
   body += `<tr class="tot" data-st="all"><td class="l" colspan="2">합계</td>${cols.map((_, j) => `<td>${fmt.won(T.col[j])}</td>`).join('')}<td>${fmt.won(T.all)}</td></tr>`;
-  el.innerHTML = `<div class="viewhead"><div><h2>예산</h2><div class="sub">${ymLabel()} · 채널 × 품목 예산 (원, VAT 별도)${readOnly() ? '' : `. '1.5억', '3000만'처럼 써도 되고, 엑셀 범위를 복사해 칸에 붙여넣으면 그 칸부터 채워져요.`}</div></div><div class="spacer"></div>
+  el.innerHTML = `<div class="viewhead"><div><h2>예산</h2><div class="sub">${ymLabel()} · 채널 × 품목 예산 (원, VAT 별도)${roTab('예산') ? '' : `. '1.5억', '3000만'처럼 써도 되고, 엑셀 범위를 복사해 칸에 붙여넣으면 그 칸부터 채워져요.`}</div></div><div class="spacer"></div>
       <button class="btn sm" data-b="paste">엑셀 표 통째로 붙여넣기</button><button class="btn sm" data-b="fill">기본 채널 넣기</button><button class="btn sm" data-b="xlsx">⤓ 예산 엑셀</button><button class="btn sm ghost" data-b="wipe">금액 비우기</button></div>
     <div class="formwrap"><div class="stack">
       <section class="card itchips"><div class="hd"><h3>품목</h3><span class="sub">누르면 예산표 열로 넣고 빼요. 열 순서가 요약 표·그래프의 품목 순서예요.</span></div><div class="bd"><div class="chips">${items.map(it => `<button class="chipbtn ${have.has(it.key) ? 'on' : ''}" data-it="${esc(it.key)}"><span class="sw" style="background:${it.color}"></span>${esc(it.key)}</button>`).join('')}</div></div></section>
@@ -436,7 +436,7 @@ function renderBudgetForm(el) {
     if (all[k]) all[k].focus(); else inp.blur();
   });
   tb.addEventListener('paste', e => {
-    const inp = e.target.closest('input[data-r]'); if (!inp || readOnly()) return;
+    const inp = e.target.closest('input[data-r]'); if (!inp || roTab('예산')) return;
     const text = (e.clipboardData || window.clipboardData).getData('text');
     if (!/[\t\n]/.test(text.trim())) return;
     e.preventDefault();
@@ -482,7 +482,7 @@ function renderBudgetForm(el) {
   el.querySelector('[data-b="wipe"]').onclick = () => App.confirm('예산 금액 비우기', '<p>품목 열과 채널 행은 두고 금액만 지워요. 지금 상태는 버전으로 남겨 둘게요.</p>', '비우기', async () => { await App.saveVersion('예산 비우기 전 자동 백업', true); WS.sheets.예산 = [WS.sheets.예산[0]].concat(WS.sheets.예산.slice(1).map(r => [r[0]].concat(cols.map(() => '')))); App.changed('예산'); });
   el.querySelector('[data-b="paste"]').onclick = () => budPasteDialog();
   renderBudgetSide(el);
-  if (readOnly()) lockForm(el);
+  if (roTab('예산')) lockForm(el);
   el._refresh = () => { el.querySelectorAll('td.bi').forEach(td => { const inp = td.querySelector('input'); const r = WS.sheets.예산[+inp.dataset.r + 1]; const k = WS.sheets.예산[0][+inp.dataset.c + 1]; const old = td.querySelector('.cc'); if (old) old.remove(); const h = cellCnt(r && r[0], k); if (h) td.insertAdjacentHTML('beforeend', h); }); renderBudgetSide(el); };
 }
 function renderBudgetSide(el) {
@@ -614,7 +614,7 @@ function renderCreForm(el) {
   // 운영기간: 달력에서 시작일 → 종료일
   el.querySelectorAll('input.datepick').forEach(inp => {
     const open = () => {
-      if (readOnly()) return;
+      if (roTab('소재')) return;
       const i = +inp.closest('tr').dataset.i; const r = rows[i];
       const P = parsePeriod(inp.value, M.ym);
       openRangeCal(inp, { ym: M.ym, a: P ? P.a : null, b: P ? P.b : null, onPick: (a, b) => {
@@ -636,7 +636,7 @@ function renderCreForm(el) {
   el.querySelectorAll('[data-delitem]').forEach(b => b.onclick = () => { const k = b.dataset.delitem; const n = rows.filter(r => r[0] === k && str(r[3])).length; const go = () => { WS.sheets.소재 = rows.filter(r => r[0] !== k); App.changed('소재'); }; if (!n) return go(); App.confirm(`'${k}' 소재 빼기`, `<p>소재 ${n}개를 지워요.</p>`, '빼기', go); });
   el.querySelectorAll('[data-imap]').forEach(s => s.onchange = () => { if (!s.value) return; rows.forEach(r => { if (r[0] === s.dataset.imap) r[0] = s.value; }); App.changed('소재'); });
   el.querySelector('[data-c="xlsx"]').onclick = () => saveWorkspaceXlsx(WS, M, ['소재'], '소재');
-  if (readOnly()) lockForm(el);
+  if (roTab('소재')) lockForm(el);
 }
 
 // ---- 매칭 규칙 (방송사 원본 가져오기) ----

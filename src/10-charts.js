@@ -167,18 +167,17 @@ function itemBars(host, rows, opts = {}) {
   host.innerHTML = `<div class="ibars">
     <div class="ib-grid">${ticks.map(v => `<i style="left:${v / mx * 100}%"></i>`).join('')}</div>
     ${rows.map((x, i) => `<div class="ibr" data-i="${i}"><div class="nm"><b>${esc(x.k)}</b><small>예산 비중 ${fmt.pct(x.budget / B)}</small></div>
-      <div class="trk"><div class="bx" style="background:${rgba(x.color, .28)}"></div><div class="bb" style="background:${x.color}"></div><span class="lb"></span><span class="lx"></span></div></div>`).join('')}
+      <div class="trk"><div class="bx" style="background:${rgba(x.color, .28)}"></div><div class="bb" style="background:${x.color}"></div><span class="lb"><b></b><span></span></span></div></div>`).join('')}
     <div class="ib-scale">${ticks.map(v => `<span style="left:${v / mx * 100}%">${Math.round(v / 1e8)}억</span>`).join('')}</div></div>`;
-  const els = [...host.querySelectorAll('.ibr')].map(r => ({ bb: r.querySelector('.bb'), bx: r.querySelector('.bx'), lb: r.querySelector('.lb'), lx: r.querySelector('.lx'), trk: r.querySelector('.trk') }));
+  // 데이터 레이블은 예산·보너스 모두 막대 바깥(끝) 한 자리에: '예산 +보너스'
+  const els = [...host.querySelectorAll('.ibr')].map(r => ({ bb: r.querySelector('.bb'), bx: r.querySelector('.bx'), lb: r.querySelector('.lb'), lbb: r.querySelector('.lb b'), lbx: r.querySelector('.lb span') }));
   const set = (vals) => {
     rows.forEach((x, i) => {
       const e = els[i], v = vals[i]; const wb = v.b / mx * 100, wx = Math.max(0, v.x) / mx * 100;
       e.bb.style.width = wb + '%'; e.bx.style.left = wb + '%'; e.bx.style.width = wx + '%';
-      const tb = v.b > 0 ? fmt.eok(v.b, 1) : '';
-      const pxW = e.trk.clientWidth * wb / 100; const inside = pxW >= tb.length * 7.2 + 14;
-      e.lb.textContent = tb; e.lb.className = 'lb' + (inside ? '' : ' out'); e.lb.style.left = wb + '%'; e.lb.style.color = inside ? '' : shade(x.color, -0.4);
-      const tx = v.x > 0.5e6 ? '+' + fmt.eok(v.x, 1) : '';
-      e.lx.textContent = tx; e.lx.style.left = inside ? `calc(${wb + wx}% + 6px)` : `max(calc(${wb + wx}% + 6px), calc(${wb}% + ${Math.round(tb.length * 7.2 + 18)}px))`;
+      e.lbb.textContent = v.b > 0 ? fmt.eok(v.b, 1) : ''; e.lbb.style.color = shade(x.color, -0.42);
+      e.lbx.textContent = v.x > 0.5e6 ? ' +' + fmt.eok(v.x, 1) : '';
+      e.lb.style.left = `calc(${wb + wx}% + 7px)`;
     });
   };
   const target = rows.map(x => ({ b: x.budget, x: Math.max(0, x.bonus) }));
@@ -334,21 +333,25 @@ function cmStackHtml(cells, unit, sort) {
   if (!rows.length) return { html: '<div class="empty">송출 데이터가 없어요</div>', rows };
   const key = { mid: r => r.sm, prem: r => r.sm + r.sp, n: r => r.n }[sort] || (r => r.sm);
   const ordered = [];
-  let h = `<div class="cmsb${unit === 'ch' ? ' ch' : ''}">`;
-  for (const media of ['지상파', '케이블']) {
-    const l = rows.filter(r => r.media === media).sort((a, b) => key(b) - key(a) || b.n - a.n); if (!l.length) continue;
+  const bar = (r, min) => `<div class="trk"><i class="mid" data-w="${(r.sm * 100).toFixed(2)}">${r.sm >= min ? Math.round(r.sm * 100) + '%' : ''}</i><i class="pib" data-w="${(r.sp * 100).toFixed(2)}">${r.sp >= min ? Math.round(r.sp * 100) + '%' : ''}</i><i class="fb">${r.sf >= min + 0.03 ? Math.round(r.sf * 100) + '%' : ''}</i></div>`;
+  const media = ['지상파', '케이블'].filter(m => rows.some(r => r.media === m));
+  // ① 매체 합계: 따로 상자에 크게 (세부 막대와 한눈에 구분)
+  let tot = '';
+  for (const m of media) {
+    const l = rows.filter(r => r.media === m);
     const n = sum(l, r => r.n), x = sum(l, r => r.mid), y = sum(l, r => r.pib), z = sum(l, r => r.fb);
-    // 매체 합계를 굵은 막대로 먼저
-    const T = { media, name: `${media} 전체`, pp: `${media} 전체`, n, mid: x, pib: y, fb: z, budget: sum(l, r => r.budget), chs: new Set(l.flatMap(r => [...r.chs])), sm: n ? x / n : 0, sp: n ? y / n : 0, sf: n ? z / n : 0, tot: 1 };
+    const T = { media: m, name: `${m} 전체`, pp: `${m} 전체`, n, mid: x, pib: y, fb: z, budget: sum(l, r => r.budget), chs: new Set(l.flatMap(r => [...r.chs])), sm: n ? x / n : 0, sp: n ? y / n : 0, sf: n ? z / n : 0, tot: 1 };
     const ti = ordered.push(T) - 1;
-    h += `<div class="cmsb-g">${media}</div><div class="cmsr tot" data-i="${ti}"><div class="nm">${media} 전체</div>
-      <div class="trk"><i class="mid" data-w="${(T.sm * 100).toFixed(2)}">${T.sm >= 0.06 ? Math.round(T.sm * 100) + '%' : ''}</i><i class="pib" data-w="${(T.sp * 100).toFixed(2)}">${T.sp >= 0.06 ? Math.round(T.sp * 100) + '%' : ''}</i><i class="fb">${T.sf >= 0.08 ? Math.round(T.sf * 100) + '%' : ''}</i></div>
-      <div class="n tnum">${fmt.int(n)}회</div></div>`;
+    tot += `<div class="cmsr tot" data-i="${ti}"><div class="nm"><span class="mtag ${m === '지상파' ? 'g' : 'c'}">${m}</span>전체</div>${bar(T, 0.05)}<div class="n tnum"><b>${fmt.pct(T.sm + T.sp)}</b><small>중CM+PIB · ${fmt.int(n)}회</small></div></div>`;
+  }
+  let h = `<div class="cmsb${unit === 'ch' ? ' ch' : ''}"><div class="cmtot"><div class="cmtot-h">매체 합계</div>${tot}</div>`;
+  // ② 세부 (PP별 / 채널별)
+  for (const m of media) {
+    const l = rows.filter(r => r.media === m).sort((a, b) => key(b) - key(a) || b.n - a.n);
+    h += `<div class="cmsb-g">${m}<span>${unit === 'ch' ? '채널별' : 'PP별'} ${l.length}</span></div>`;
     for (const r of l) {
       const i = ordered.push(r) - 1;
-      h += `<div class="cmsr" data-i="${i}"><div class="nm">${esc(r.name)}${unit === 'ch' && r.pp !== r.name ? `<small>${esc(r.pp)}</small>` : ''}</div>
-        <div class="trk"><i class="mid" data-w="${(r.sm * 100).toFixed(2)}">${r.sm >= 0.07 ? Math.round(r.sm * 100) + '%' : ''}</i><i class="pib" data-w="${(r.sp * 100).toFixed(2)}">${r.sp >= 0.07 ? Math.round(r.sp * 100) + '%' : ''}</i><i class="fb">${r.sf >= 0.1 ? Math.round(r.sf * 100) + '%' : ''}</i></div>
-        <div class="n tnum">${fmt.int(r.n)}회</div></div>`;
+      h += `<div class="cmsr" data-i="${i}"><div class="nm">${esc(r.name)}${unit === 'ch' && r.pp !== r.name ? `<small>${esc(r.pp)}</small>` : ''}</div>${bar(r, 0.07)}<div class="n tnum">${fmt.int(r.n)}회</div></div>`;
     }
   }
   return { html: h + '</div>', rows: ordered };

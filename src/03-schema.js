@@ -3,11 +3,11 @@
 const SHEETS = {
   지상파: {
     label: '지상파', group: 'input', media: '지상파',
-    hint: '1행 = 1송출 · 금액 0이면 보너스. 넣는 방법은 편한 대로: ① 엑셀에서 복사해 바로 붙여넣기(머리글째 OK, 예전 가로형 표도 자동 변환) ② 방송사 원본은 상단 ‘방송사 큐시트 온보딩’',
+    hint: '1행 = 1송출 · 금액 0이면 보너스 · 구분(정기물 등)은 행마다 적어요. 엑셀에서 복사해 바로 붙여넣기(머리글째 OK) · 방송사 원본은 상단 ‘방송사 큐시트 온보딩’ · 행 삭제는 행 번호를 고르고 우클릭',
     cols: [
       { k: 'ch', t: '채널', w: 62 },
       { k: 'kind', t: '구분', w: 56 },
-      { k: 'prog', t: '프로그램', w: 250, left: 1 },
+      { k: 'prog', t: '프로그램', w: 200, left: 1 },
       { k: 'dow', t: '요일', w: 50 },
       { k: 'start', t: '시작', w: 56 },
       { k: 'end', t: '종료', w: 56 },
@@ -17,20 +17,20 @@ const SHEETS = {
       { k: 'amount', t: '금액', w: 96, num: 1, money: 1, sum: 1 },
       { k: 'date', t: '날짜', w: 56 },
       { k: 'item', t: '품목', w: 96 },
-      { k: 'cre', t: '소재', w: 100, left: 1 },
+      { k: 'cre', t: '소재', w: 92 },
       { k: 'cm', t: 'CM지정', w: 78 },
       { k: 'rate', t: '지정율', w: 52, num: 1 },
       { k: 'ar', t: 'A.R(%)', w: 56, num: 1 },
-      { k: 'note', t: '비고', w: 150, left: 1 },
+      { k: 'note', t: '비고', w: 90 },
     ],
   },
   케이블: {
     label: '케이블', group: 'input', media: '케이블',
-    hint: '케이블raw A~S열(채널~날짜) 순서. 넣는 방법은 편한 대로: ① 엑셀에서 복사해 바로 붙여넣기(머리글째면 열 순서 달라도 OK) ② 방송사 원본은 상단 ‘방송사 큐시트 온보딩’',
+    hint: '케이블raw A~S열(채널~날짜) 순서. 엑셀에서 복사해 바로 붙여넣기(머리글째면 열 순서 달라도 OK) · 방송사 원본은 상단 ‘방송사 큐시트 온보딩’ · 행 삭제는 행 번호를 고르고 우클릭',
     cols: [
       { k: 'ch', t: '채널', w: 92 },
       { k: 'item', t: '품목', w: 96 },
-      { k: 'prog', t: '프로그램명', w: 250, left: 1 },
+      { k: 'prog', t: '프로그램명', w: 200, left: 1 },
       { k: 'dow', t: '요일', w: 50 },
       { k: 'start', t: '시작', w: 56 },
       { k: 'end', t: '종료', w: 56 },
@@ -42,8 +42,8 @@ const SHEETS = {
       { k: 'd1', t: '월', w: 28, sum: 1 }, { k: 'd2', t: '화', w: 28, sum: 1 }, { k: 'd3', t: '수', w: 28, sum: 1 }, { k: 'd4', t: '목', w: 28, sum: 1 },
       { k: 'd5', t: '금', w: 28, sum: 1 }, { k: 'd6', t: '토', w: 28, sum: 1 }, { k: 'd7', t: '일', w: 28, sum: 1 },
       { k: 'date', t: '날짜', w: 56 },
-      { k: 'cre', t: '소재', w: 96, left: 1 },
-      { k: 'note', t: '비고', w: 140, left: 1 },
+      { k: 'cre', t: '소재', w: 96 },
+      { k: 'note', t: '비고', w: 90 },
     ],
   },
   예산: {
@@ -138,6 +138,6 @@ function emptyWorkspace(ym) {
       매칭규칙: [],
     },
     reach: {}, reachMeta: {}, hidden: {}, cueOrder: {}, opsNotes: {},
-    savedAt: Date.now(), palV: 2, itemV: 2, itemLegacy: {}, opsReach: {},
+    savedAt: Date.now(), palV: 2, itemV: 2, kindV: 1, itemLegacy: {}, opsReach: {}, view: {},
   };
 }

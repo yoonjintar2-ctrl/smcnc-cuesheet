@@ -1,4 +1,4 @@
-# SM C&C 큐시트 툴 — 단일 HTML 빌드
+# SM C&C TV 큐시트 — 단일 HTML 빌드
 # 사용: python build.py  →  dist/코웨이TV큐시트.html (이 컴퓨터에 저장하는 오프라인판)
 #                          dist/web/index.html     (온라인판: 같은 폴더의 config.js 로 Supabase 연결 — GitHub Pages에 올림)
 import pathlib, re, sys
@@ -28,7 +28,7 @@ app_js = safe(app_js, 'app')
 parts = [
     '<!doctype html><html lang="ko"><head><meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width,initial-scale=1">',
-    '<title>SM C&C 큐시트 툴</title>',
+    '<title>SM C&C TV 큐시트</title>',
     '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
     '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">',
     f'<style id="css-app">{css_app}</style>',

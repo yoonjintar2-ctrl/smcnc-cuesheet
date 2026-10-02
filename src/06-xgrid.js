@@ -1,6 +1,6 @@
 // ===== 06-xgrid.js : 엑셀형 입력 표 (직접 구현, 보이는 행만 그림) =====
 // 기능: 범위 드래그 선택 · 행/열/전체 선택 · 행 숨기기/표시 · 행 삽입/삭제 · 복사/잘라내기/붙여넣기(엑셀 호환)
-//       내용 지우기 · 되돌리기/다시 실행 · 찾기/바꾸기 · 머리글 필터(정렬+값 선택) · 채우기 핸들 · 우클릭 메뉴
+//       내용 지우기(Delete·Backspace) · 행 머리글 Ctrl+클릭 여러 행 선택 · 되돌리기/다시 실행 · 찾기/바꾸기 · 머리글 필터(정렬+값 선택) · 채우기 핸들 · 우클릭 메뉴
 //       열 너비 조절 · 한글 직접 입력 · 마스터 목록 자동완성
 const XG = { RH: 26, HEAD: 52, SUMH: 20, RN: 50, SPARE: 30, MINROWS: 10000 };   // HEAD = 합계 줄(20) + 머리글(32) · 빈 행 포함 최소 1만 행(엑셀처럼 넉넉히)
 let XG_SEQ = 1;
@@ -90,6 +90,9 @@ class XGrid {
     this.undoS = []; this.redoS = [];
     this.act = { r: 0, c: 0 }; this.anchor = { r: 0, c: 0 }; this.sel = { r1: 0, c1: 0, r2: 0, c2: 0 };
     this.editing = null; this.copyR = null; this.findQ = null; this.hits = new Set();
+    this.mrows = null;   // Ctrl로 골라 담은 행들(행 머리글) — 비어 있지 않으면 여러 행 선택
+    this.userSel = false; // 사용자가 직접 칸을 고른 뒤에만 Delete·Backspace로 지움
+    this.ro = false;      // 보기 전용 (다른 사람이 이 시트를 작업 중일 때)
     this.build();
     this.setRows(o.rows || [], o.hidden || []);
   }
@@ -154,15 +157,15 @@ class XGrid {
     this.scroll.addEventListener('scroll', () => { if (!this.raf) this.raf = requestAnimationFrame(() => { this.raf = null; this.renderRows(); }); this.closeList(); });
     this.scroll.addEventListener('mousedown', e => this.onDown(e));
     this.scroll.addEventListener('dblclick', e => { const c = e.target.closest('.xg-c'); if (c) { this.startEdit('edit'); } });
-    this.scroll.addEventListener('contextmenu', e => { e.preventDefault(); this.menu(e.clientX, e.clientY); });
+    this.scroll.addEventListener('contextmenu', e => { e.preventDefault(); this.menu(e.clientX, e.clientY, e.target.closest('.xg-rn') ? 'row' : e.target.closest('.xg-hc,.xg-corner') ? 'col' : 'cell'); });
     this.ed.addEventListener('keydown', e => this.onKey(e));
     this.ed.addEventListener('compositionstart', () => { this.composing = true; if (!this.editing) this.startEdit('enter', ''); });
     this.ed.addEventListener('compositionend', () => { this.composing = false; this.updateList(); });
     this.ed.addEventListener('input', () => { if (!this.editing && this.ed.value) this.startEdit('enter', null); if (this.editing) this.updateList(); });
     this.ed.addEventListener('copy', e => { if (this.editing) return; e.preventDefault(); e.clipboardData.setData('text/plain', this.copyText()); this.markCopy(); });
-    this.ed.addEventListener('cut', e => { if (this.editing) return; e.preventDefault(); e.clipboardData.setData('text/plain', this.copyText()); this.clearSel('잘라내기'); });
+    this.ed.addEventListener('cut', e => { if (this.editing) return; e.preventDefault(); e.clipboardData.setData('text/plain', this.copyText()); if (this.ro) { this.markCopy(); return this.roNote(); } this.clearSel('잘라내기'); });
     this.ed.addEventListener('paste', e => { if (this.editing) return; e.preventDefault(); const c = xgClip(e); this.paste(c.text, c.html); });
-    this.ed.addEventListener('blur', () => setTimeout(() => { if (this.editing && document.activeElement !== this.ed && !this.composing) this.commit(); }, 0));
+    this.ed.addEventListener('blur', () => setTimeout(() => { if (this.editing && document.activeElement !== this.ed && !this.composing) this.commit(); if (document.hasFocus() && !this.el.contains(document.activeElement)) this.userSel = false; }, 0));
     this.ddEl.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); this.startEdit('edit'); this.updateList(true); });
     this.listEl.addEventListener('mousedown', e => { e.preventDefault(); const it = e.target.closest('[data-i]'); if (it) { this.listPick(+it.dataset.i); } });
     // 찾기
@@ -177,13 +180,26 @@ class XGrid {
     this.findEl.addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (!b) return; const f = b.dataset.f; if (f === 'next') this.findStep(1); if (f === 'prev') this.findStep(-1); if (f === 'x') this.closeFind(); if (f === 'one') this.replaceOne(); if (f === 'all') this.replaceAll(); });
     this.onDocMove = e => this.onMove(e); this.onDocUp = e => this.onUp(e);
   }
-  setHeight(px) { this.scroll.style.height = Math.max(240, px) + 'px'; this.renderRows(); }
+  setHeight(px) { this.scroll.style.height = Math.max(240, px) + 'px'; this.fit(); this.renderRows(); }
   focus() { try { this.ed.focus({ preventScroll: true }); } catch (e) { } }
   loadWidths() {
     let saved = null; try { saved = JSON.parse(localStorage.getItem('xgw:' + this.o.name) || 'null'); } catch (e) { }
-    return this.cols.map((c, i) => (saved && saved[i]) || c.w);
+    this.baseW = this.cols.map((c, i) => (saved && saved[i]) || c.w);
+    return this.baseW.slice();
   }
-  saveWidths() { try { localStorage.setItem('xgw:' + this.o.name, JSON.stringify(this.widths)); } catch (e) { } }
+  saveWidths() { this.baseW = this.widths.slice(); try { localStorage.setItem('xgw:' + this.o.name, JSON.stringify(this.baseW)); } catch (e) { } }
+  // 화면 너비에 꽉 차게: 남는 폭은 열 너비 비율대로 나눠 넓힘. 기본 너비보다 좁아져야 할 때만 가로 스크롤
+  fit() {
+    if (!this.scroll) return;
+    const avail = this.scroll.clientWidth - XG.RN - 1; if (avail <= 0) return;
+    const base = this.baseW, sb = base.reduce((a, b) => a + b, 0);
+    let w = base.slice();
+    if (avail > sb + 2) {
+      const k = avail / sb; w = base.map(x => Math.floor(x * k));
+      const rest = avail - w.reduce((a, b) => a + b, 0); const big = w.indexOf(Math.max(...w)); w[big] += rest;
+    }
+    if (w.some((x, i) => x !== this.widths[i])) { this.widths = w; this.render(); }
+  }
   colLeft(c) { let x = 0; for (let i = 0; i < c; i++) x += this.widths[i]; return x; }
   totalW() { return XG.RN + this.widths.reduce((a, b) => a + b, 0); }
   colAt(x) { let acc = 0; for (let i = 0; i < this.nc; i++) { acc += this.widths[i]; if (x < acc) return i; } return this.nc - 1; }
@@ -225,13 +241,14 @@ class XGrid {
     for (let vr = first; vr < last; vr++) {
       const di = this.view[vr], row = this.rows[di];
       const gap = this.gapBefore.has(di);
-      const rsel = vr >= s.r1 && vr <= s.r2;
-      html += `<div class="xg-row" style="height:${XG.RH}px"><div class="xg-rn${rsel ? ' sel' : ''}${gap ? ' gap' : ''}" data-vr="${vr}">${di + 1}</div>`;
+      const inM = this.mrows && this.mrows.has(row.id);
+      const rsel = this.mrows ? inM : (vr >= s.r1 && vr <= s.r2);
+      html += `<div class="xg-row${inM ? ' xg-ms' : ''}" style="height:${XG.RH}px"><div class="xg-rn${rsel ? ' sel' : ''}${gap ? ' gap' : ''}" data-vr="${vr}">${di + 1}</div>`;
       for (let c = 0; c < this.nc; c++) {
         const v = row.v[c];
         const x = info ? info(di, c, v, row.v) : null;
         const txt = x && x.t != null ? x.t : (v == null ? '' : v);
-        const cls = (this.cols[c].left ? ' l' : '') + (this.cols[c].num ? ' n' : '') + (x && x.cls ? ' ' + x.cls : '') + (this.hits.has(row.id + ':' + c) ? ' hit' : '') + (this.flashK && this.flashK.has(row.id + ':' + c) ? ' fl' : '');
+        const cls = (this.cols[c].left ? ' l' : '') + (x && x.cls ? ' ' + x.cls : '') + (this.hits.has(row.id + ':' + c) ? ' hit' : '') + (this.flashK && this.flashK.has(row.id + ':' + c) ? ' fl' : '');
         const st2 = x && x.bg ? ` style="width:${this.widths[c]}px;background:${x.bg}"` : ` style="width:${this.widths[c]}px"`;
         html += `<div class="xg-c${cls}"${st2}${x && x.tip ? ` title="${esc(x.tip)}"` : ''}>${esc(txt)}</div>`;
       }
@@ -248,16 +265,18 @@ class XGrid {
   renderSel() {
     const s = this.sel, a = this.act;
     this.boxStyle(this.selEl, s.r1, s.c1, s.r2, s.c2);
-    this.selEl.style.display = (s.r1 === s.r2 && s.c1 === s.c2) ? 'none' : 'block';
+    this.selEl.style.display = (this.mrows || (s.r1 === s.r2 && s.c1 === s.c2)) ? 'none' : 'block';
     this.boxStyle(this.actEl, a.r, a.c, a.r, a.c);
     this.fillEl.style.top = (XG.HEAD + (s.r2 + 1) * XG.RH - 4) + 'px'; this.fillEl.style.left = (XG.RN + this.colLeft(s.c2 + 1) - 4) + 'px';
+    this.fillEl.style.display = this.ro || this.mrows ? 'none' : '';
     if (this.copyR) { const c = this.copyR; this.copyEl.style.display = 'block'; this.boxStyle(this.copyEl, c.r1, c.c1, c.r2, c.c2); } else this.copyEl.style.display = 'none';
     const list = this.cols[a.c].list;
     if (list && !this.editing) { this.ddEl.style.display = 'block'; this.ddEl.style.top = (XG.HEAD + a.r * XG.RH + 3) + 'px'; this.ddEl.style.left = (XG.RN + this.colLeft(a.c + 1) - 20) + 'px'; }
     else this.ddEl.style.display = 'none';
     // 머리글·행번호 강조
     this.headEl.querySelectorAll('.xg-hc').forEach(e => e.classList.toggle('sel', +e.dataset.c >= s.c1 && +e.dataset.c <= s.c2));
-    this.rowsEl.querySelectorAll('.xg-rn').forEach(e => e.classList.toggle('sel', +e.dataset.vr >= s.r1 && +e.dataset.vr <= s.r2));
+    const ms = this.mrows;
+    this.rowsEl.querySelectorAll('.xg-rn').forEach(e => { const vr = +e.dataset.vr; const on = ms ? ms.has((this.rowAt(vr) || {}).id) : (vr >= s.r1 && vr <= s.r2); e.classList.toggle('sel', on); e.parentElement.classList.toggle('xg-ms', !!ms && on); });
     if (!this.editing) this.placeEd();
   }
   placeEd() {
@@ -282,13 +301,14 @@ class XGrid {
     if (this.o.onSelect) { const row = this.rowAt(this.act.r); this.o.onSelect(row ? this.view[this.act.r] : -1, this.act.c); }
   }
   moveTo(r, c, extend) {
+    if (this.mrows) { this.mrows = null; this.renderRows(); }
     const mr = this.view.length - 1;
     r = Math.max(0, Math.min(mr, r)); c = Math.max(0, Math.min(this.nc - 1, c));
     if (extend) { this.act = this.act; this.select(this.anchor.r, this.anchor.c, r, c); this.extEnd = { r, c }; }
     else { this.anchor = { r, c }; this.extEnd = null; this.select(r, c, r, c, { r, c }); }
     this.ensureVisible(r, c); this.renderRows();
   }
-  selectAll() { this.anchor = { r: 0, c: 0 }; this.select(0, 0, Math.max(0, this.dataRowsLimit() - 1), this.nc - 1, { r: this.act.r, c: this.act.c }); }
+  selectAll() { this.mrows = null; this.anchor = { r: 0, c: 0 }; this.select(0, 0, Math.max(0, this.dataRowsLimit() - 1), this.nc - 1, { r: this.act.r, c: this.act.c }); this.renderRows(); }
   dataRowsLimit() { let n = this.view.length; while (n > 1 && this.isBlank(this.rowAt(n - 1))) n--; return n; }
   edgeJump(r, c, dr, dc) {
     // Ctrl+방향키: 데이터 끝으로
@@ -315,20 +335,27 @@ class XGrid {
     if (e.target.closest('.xg-rz')) { e.preventDefault(); const c = +e.target.closest('.xg-rz').dataset.rc; this.drag = { t: 'rz', c, x0: e.clientX, w0: this.widths[c] }; this.listen(); return; }
     if (this.editing && (e.target !== this.ed || e.button === 2)) this.commit();
     if (e.target === this.ed && e.button !== 2) return;
+    this.userSel = true;
     if (e.button === 2) {
       const p = this.pos(e); const s = this.sel;
-      const inSel = p.r >= s.r1 && p.r <= s.r2 && p.c >= s.c1 && p.c <= s.c2;
+      const inSel = !this.mrows && p.r >= s.r1 && p.r <= s.r2 && p.c >= s.c1 && p.c <= s.c2;
       const rn = e.target.closest('.xg-rn'), hc = e.target.closest('.xg-hc');
-      if (rn && !(+rn.dataset.vr >= s.r1 && +rn.dataset.vr <= s.r2 && s.c1 === 0 && s.c2 === this.nc - 1)) { const r = +rn.dataset.vr; this.anchor = { r, c: 0 }; this.select(r, 0, r, this.nc - 1, { r, c: 0 }); }
-      else if (hc && !(s.c1 <= +hc.dataset.c && +hc.dataset.c <= s.c2)) { const c = +hc.dataset.c; this.select(0, c, this.view.length - 1, c, { r: 0, c }); }
+      if (rn) {
+        // 행 머리글 우클릭: 이미 고른 행(범위·Ctrl로 담은 행) 위면 그대로, 아니면 그 행만
+        const r = +rn.dataset.vr, row = this.rowAt(r);
+        const on = this.mrows ? this.mrows.has(row && row.id) : (r >= s.r1 && r <= s.r2 && s.c1 === 0 && s.c2 === this.nc - 1);
+        if (!on) { this.mrows = null; this.anchor = { r, c: 0 }; this.select(r, 0, r, this.nc - 1, { r, c: 0 }); this.renderRows(); }
+      }
+      else if (hc && !(s.c1 <= +hc.dataset.c && +hc.dataset.c <= s.c2)) { const c = +hc.dataset.c; this.mrows = null; this.select(0, c, this.view.length - 1, c, { r: 0, c }); this.renderRows(); }
       else if (!inSel && !rn && !hc) this.moveTo(p.r, p.c);
       e.preventDefault(); this.focus(); return;
     }
     e.preventDefault(); this.focus();
     if (e.target.closest('.xg-corner')) { this.selectAll(); return; }
-    if (e.target.closest('.xg-fill')) { this.drag = { t: 'fill', src: { ...this.sel } }; this.listen(); return; }
+    if (e.target.closest('.xg-fill')) { if (this.ro) return; this.drag = { t: 'fill', src: { ...this.sel } }; this.listen(); return; }
     const hc = e.target.closest('.xg-hc');
     if (hc) {
+      if (this.mrows) { this.mrows = null; this.renderRows(); }
       const c = +hc.dataset.c;
       if (e.shiftKey) this.select(0, this.anchor.c, this.view.length - 1, c, { r: 0, c: this.anchor.c });
       else { this.anchor = { r: 0, c }; this.select(0, c, this.view.length - 1, c, { r: 0, c }); }
@@ -337,6 +364,16 @@ class XGrid {
     const rn = e.target.closest('.xg-rn');
     if (rn) {
       const r = +rn.dataset.vr;
+      if (e.ctrlKey || e.metaKey) {
+        // 엑셀처럼 Ctrl+클릭(·끌기)으로 떨어진 행을 여러 개 담기
+        if (!this.mrows) { this.mrows = new Set(); const s = this.sel; if (s.c1 === 0 && s.c2 === this.nc - 1) for (let k = s.r1; k <= s.r2; k++) { const x = this.rowAt(k); if (x) this.mrows.add(x.id); } }
+        const row = this.rowAt(r); if (!row) return;
+        const add = !this.mrows.has(row.id);
+        if (add) this.mrows.add(row.id); else this.mrows.delete(row.id);
+        this.anchor = { r, c: 0 }; this.select(r, 0, r, this.nc - 1, { r, c: 0 }); this.renderRows();
+        this.drag = { t: 'rowadd', r0: r, base: new Set(this.mrows), add }; this.listen(); return;
+      }
+      if (this.mrows) { this.mrows = null; this.renderRows(); }
       if (e.shiftKey) this.select(this.anchor.r, 0, r, this.nc - 1, { r: this.anchor.r, c: 0 });
       else { this.anchor = { r, c: 0 }; this.select(r, 0, r, this.nc - 1, { r, c: 0 }); }
       this.drag = { t: 'row', r0: this.anchor.r }; this.listen(); return;
@@ -356,6 +393,11 @@ class XGrid {
     const p = this.pos(e);
     if (d.t === 'cell') this.select(this.anchor.r, this.anchor.c, p.r, p.c);
     if (d.t === 'row') this.select(d.r0, 0, p.r, this.nc - 1, { r: d.r0, c: 0 });
+    if (d.t === 'rowadd') {
+      const m = new Set(d.base); const a = Math.min(d.r0, p.r), b = Math.max(d.r0, p.r);
+      for (let k = a; k <= b; k++) { const x = this.rowAt(k); if (!x) continue; if (d.add) m.add(x.id); else m.delete(x.id); }
+      this.mrows = m; this.select(d.r0, 0, d.r0, this.nc - 1, { r: d.r0, c: 0 }); this.renderRows();
+    }
     if (d.t === 'col') this.select(0, d.c0, this.view.length - 1, p.c, { r: 0, c: d.c0 });
     if (d.t === 'fill') {
       const s = d.src; const down = p.r - s.r2, right = p.c - s.c2;
@@ -377,7 +419,7 @@ class XGrid {
     document.removeEventListener('mousemove', this.onDocMove); document.removeEventListener('mouseup', this.onDocUp);
     const d = this.drag; this.drag = null;
     if (!d) return;
-    if (d.t === 'rz') { this.saveWidths(); return; }
+    if (d.t === 'rz') { this.saveWidths(); this.fit(); return; }
     if (d.t === 'fill') { this.selEl.classList.remove('filling'); if (d.to) this.fill(d.src, d.to); else this.renderSel(); }
     this.focus();
   }
@@ -400,6 +442,7 @@ class XGrid {
       return;
     }
     if (e.isComposing || e.keyCode === 229) { this.startEdit('enter', ''); return; }
+    if (/^(Arrow|Page|Home|End|Tab|Enter)/.test(k)) this.userSel = true;
     const a = this.act, ext = e.shiftKey;
     const cur = ext && this.extEnd ? this.extEnd : a;
     if (ctrl) {
@@ -427,7 +470,7 @@ class XGrid {
       case 'End': e.preventDefault(); this.moveTo(cur.r, this.nc - 1, ext); return;
       case 'Enter': e.preventDefault(); this.moveTo(a.r + (e.shiftKey ? -1 : 1), a.c); return;
       case 'Tab': e.preventDefault(); this.moveTo(a.r, a.c + (e.shiftKey ? -1 : 1)); return;
-      case 'Delete': case 'Backspace': e.preventDefault(); this.clearSel('지우기'); return;
+      case 'Delete': case 'Backspace': e.preventDefault(); if (this.userSel) this.clearSel('지우기'); return;   // 칸을 직접 고른 상태에서만
       case 'F2': e.preventDefault(); this.startEdit('edit'); return;
       case 'Escape': this.copyR = null; this.renderSel(); return;
     }
@@ -436,6 +479,7 @@ class XGrid {
 
   // ---------- 편집 ----------
   startEdit(mode, init) {
+    if (this.ro) { this.ed.value = ''; this.roNote(); return; }
     const a = this.act; const row = this.rowAt(a.r); if (!row) return;
     this.editing = { mode, id: row.id, c: a.c };
     this.placeEd();
@@ -515,11 +559,18 @@ class XGrid {
     if (op.t === 'hide') for (const id of op.ids) { if ((dir > 0) === op.v) this.hiddenIds.add(id); else this.hiddenIds.delete(id); }
     if (op.t === 'order') { const ids = dir > 0 ? op.after : op.before; const m = new Map(this.rows.map(r => [r.id, r])); this.rows = ids.map(id => m.get(id)).filter(Boolean); }
   }
-  undo() { const op = this.undoS.pop(); if (!op) return false; this.doOp(op, -1); this.redoS.push(op); this.copyR = null; this.changed(op); return true; }
-  redo() { const op = this.redoS.pop(); if (!op) return false; this.doOp(op, 1); this.undoS.push(op); this.changed(op); return true; }
+  roNote() { if (this.o.onRo) this.o.onRo(); }
+  setRO(v) { this.ro = !!v; if (this.ro && this.editing) this.cancelEdit(); this.el.classList.toggle('ro', this.ro); this.renderSel(); }
+  undo() { if (this.ro) { this.roNote(); return true; } const op = this.undoS.pop(); if (!op) return false; this.doOp(op, -1); this.redoS.push(op); this.copyR = null; this.changed(op); return true; }
+  redo() { if (this.ro) { this.roNote(); return true; } const op = this.redoS.pop(); if (!op) return false; this.doOp(op, 1); this.undoS.push(op); this.changed(op); return true; }
 
   // ---------- 범위 작업 ----------
-  selRows() { const s = this.sel; const out = []; for (let r = s.r1; r <= s.r2; r++) { const row = this.rowAt(r); if (row) out.push(row); } return out; }
+  selRows() {
+    if (this.mrows) return this.view.map(di => this.rows[di]).filter(r => this.mrows.has(r.id));
+    const s = this.sel; const out = []; for (let r = s.r1; r <= s.r2; r++) { const row = this.rowAt(r); if (row) out.push(row); } return out;
+  }
+  selCount() { return this.mrows ? this.mrows.size : this.sel.r2 - this.sel.r1 + 1; }
+  rowsSelected() { const s = this.sel; return !!this.mrows || (s.c1 === 0 && s.c2 === this.nc - 1); }
   copyText() {
     const s = this.sel; const rows = this.selRows();
     let n = rows.length; while (n > 1 && this.isBlank(rows[n - 1])) n--;
@@ -527,11 +578,13 @@ class XGrid {
   }
   markCopy() { this.copyR = { ...this.sel }; this.renderSel(); }
   clearSel(label) {
+    if (this.ro) return this.roNote();
     const s = this.sel; const ch = [];
     for (const row of this.selRows()) for (let c = s.c1; c <= s.c2; c++) if (row.v[c] !== '') ch.push({ id: row.id, c, n: '' });
     this.copyR = null; this.applyCells(ch, label || '지우기');
   }
   paste(text, html) {
+    if (this.ro) return this.roNote();
     let B = xgParseTsv(text); if (!B.length) return;
     if (html) B = xgPrecise(B, html);
     const s = this.sel; const ops = []; const ch = [];
@@ -581,6 +634,7 @@ class XGrid {
     return v;
   }
   fill(src, to) {
+    if (this.ro) return this.roNote();
     const ch = [];
     const h = src.r2 - src.r1 + 1, w = src.c2 - src.c1 + 1;
     for (let r = to.r1; r <= to.r2; r++) for (let c = to.c1; c <= to.c2; c++) {
@@ -593,15 +647,18 @@ class XGrid {
     this.flash(ch);
   }
   insertRows(where) {
-    const s = this.sel; const cnt = s.r2 - s.r1 + 1;
-    const ref = where === 'above' ? this.view[s.r1] : (this.view[s.r2] != null ? this.view[s.r2] + 1 : this.rows.length);
+    if (this.ro) return this.roNote();
+    const s = this.sel; let cnt = s.r2 - s.r1 + 1;
+    let ref = where === 'above' ? this.view[s.r1] : (this.view[s.r2] != null ? this.view[s.r2] + 1 : this.rows.length);
+    if (this.mrows && where !== 'end') { const sel = this.selRows(); cnt = sel.length; ref = sel.length ? this.idxOf(sel[0].id) : ref; this.mrows = null; }
     const rows = Array.from({ length: where === 'end' ? 10 : cnt }, () => this.blankRow());
     const at = where === 'end' ? (() => { let n = this.rows.length; while (n > 0 && this.isBlank(this.rows[n - 1])) n--; return n; })() : ref;
     this.rows.splice(at, 0, ...rows);
     this.pushOp({ t: 'ins', at, rows }, '행 삽입');
   }
   deleteRows() {
-    const ids = new Set(this.selRows().map(r => r.id));
+    if (this.ro) { this.roNote(); return 0; }
+    const ids = new Set(this.selRows().map(r => r.id)); this.mrows = null;
     const items = []; this.rows.forEach((row, at) => { if (ids.has(row.id)) items.push({ at, row }); });
     if (!items.length) return 0;
     for (let k = items.length - 1; k >= 0; k--) this.rows.splice(items[k].at, 1);
@@ -610,13 +667,15 @@ class XGrid {
     return items.length;
   }
   hideRows() {
-    const ids = this.selRows().filter(r => !this.isBlank(r)).map(r => r.id); if (!ids.length) return 0;
+    if (this.ro) { this.roNote(); return 0; }
+    const ids = this.selRows().filter(r => !this.isBlank(r)).map(r => r.id); this.mrows = null; if (!ids.length) return 0;
     ids.forEach(id => this.hiddenIds.add(id));
     this.pushOp({ t: 'hide', ids, v: true }, '행 숨기기');
     this.moveTo(Math.min(this.sel.r1, this.view.length - 1), this.act.c);
     return ids.length;
   }
   unhideRows(all) {
+    if (this.ro) { this.roNote(); return 0; }
     let ids;
     if (all) ids = [...this.hiddenIds];
     else {
@@ -629,6 +688,7 @@ class XGrid {
     return ids.length;
   }
   sortBy(c, desc) {
+    if (this.ro) return this.roNote();
     const before = this.rows.map(r => r.id);
     const filled = this.rows.filter(r => !this.isBlank(r)), blank = this.rows.filter(r => this.isBlank(r));
     const idx = new Map(filled.map((r, i) => [r.id, i]));
@@ -698,26 +758,34 @@ class XGrid {
     setTimeout(() => document.addEventListener('mousedown', this.popOff, true), 0);
     return p;
   }
-  menu(x, y) {
+  // 우클릭 메뉴 (엑셀과 같게): 행 머리글 → 삽입·삭제·숨기기 / 칸·열 머리글 → 복사·정렬·필터. 내용 지우기는 Delete·Backspace 키로
+  menu(x, y, kind) {
     if (this.editing) this.commit();
-    const s = this.sel; const rowsSel = s.c1 === 0 && s.c2 === this.nc - 1;
-    const nRows = s.r2 - s.r1 + 1; const c = this.act.c; const row = this.rowAt(this.act.r);
-    const items = [
-      ['cut', '잘라내기', 'Ctrl+X'], ['copy', '복사', 'Ctrl+C'], ['paste', '붙여넣기', 'Ctrl+V'], '-',
-      ['insA', `위에 행 ${nRows}개 삽입`], ['insB', `아래에 행 ${nRows}개 삽입`], ['del', `행 ${nRows}개 삭제`], ['hide', '행 숨기기'], ['unhide', '숨긴 행 표시 (선택 범위)'], '-',
-      ['clear', '내용 지우기', 'Delete'], '-',
-      ['asc', `'${this.cols[c].t}' 오름차순 정렬`], ['desc', `'${this.cols[c].t}' 내림차순 정렬`],
-      ['fval', row && row.v[c] !== '' ? `'${String(row.v[c]).slice(0, 14)}'만 보기` : null], ['fclr', this.filters.size ? '필터 모두 해제' : null],
+    const s = this.sel; const nRows = this.selCount(); const c = this.act.c; const row = this.rowAt(this.act.r);
+    const ro = this.ro;
+    let items;
+    if (kind === 'row') items = [
+      ro ? null : ['cut', '잘라내기', 'Ctrl+X'], ['copy', '복사', 'Ctrl+C'], ro ? null : ['paste', '붙여넣기', 'Ctrl+V'], '-',
+      ro ? null : ['insA', `삽입 (위에 행 ${nRows}개)`], ro ? null : ['del', `삭제 (행 ${nRows}개)`], ro ? null : '-',
+      ro ? null : ['hide', `숨기기 (행 ${nRows}개)`], ro ? null : ['unhide', '숨기기 취소'],
     ];
-    const html = items.filter(i => i === '-' || i[1]).map(i => i === '-' ? '<hr>' : `<button data-m="${i[0]}">${esc(i[1])}${i[2] ? `<small>${i[2]}</small>` : ''}</button>`).join('');
+    else items = [
+      ro ? null : ['cut', '잘라내기', 'Ctrl+X'], ['copy', '복사', 'Ctrl+C'], ro ? null : ['paste', '붙여넣기', 'Ctrl+V'], '-',
+      ro ? null : ['asc', `'${this.cols[c].t}' 오름차순 정렬`], ro ? null : ['desc', `'${this.cols[c].t}' 내림차순 정렬`],
+      ['fval', kind === 'cell' && row && row.v[c] !== '' ? `'${String(row.v[c]).slice(0, 14)}'만 보기` : null], ['fclr', this.filters.size ? '필터 모두 해제' : null],
+    ];
+    items = items.filter(i => i && (i === '-' || i[1]));
+    while (items.length && items[items.length - 1] === '-') items.pop();
+    items = items.filter((i, k) => !(i === '-' && (k === 0 || items[k - 1] === '-')));
+    const html = items.map(i => i === '-' ? '<hr>' : `<button data-m="${i[0]}">${esc(i[1])}${i[2] ? `<small>${i[2]}</small>` : ''}</button>`).join('');
     const p = this.openPop(html, x, y); p.classList.add('menu');
     p.addEventListener('click', ev => {
       const b = ev.target.closest('[data-m]'); if (!b) return; const m = b.dataset.m; this.closeMenu(); this.focus();
       if (m === 'copy' || m === 'cut') { const t = this.copyText(); if (navigator.clipboard) navigator.clipboard.writeText(t).catch(() => { }); if (m === 'cut') this.clearSel('잘라내기'); else this.markCopy(); }
       if (m === 'paste') { if (navigator.clipboard && navigator.clipboard.readText) navigator.clipboard.readText().then(t => this.paste(t)).catch(() => this.o.toast && this.o.toast('브라우저가 클립보드 읽기를 막았어요. Ctrl+V를 눌러 주세요.')); }
-      if (m === 'insA') this.insertRows('above'); if (m === 'insB') this.insertRows('below');
-      if (m === 'del') this.deleteRows(); if (m === 'hide') this.hideRows(); if (m === 'unhide') this.unhideRows(false);
-      if (m === 'clear') this.clearSel();
+      if (m === 'insA') this.insertRows('above');
+      if (m === 'del') { const n = this.deleteRows(); if (n && this.o.toast) this.o.toast(`${n}행을 삭제했어요 · Ctrl+Z로 되돌릴 수 있어요`); }
+      if (m === 'hide') this.hideRows(); if (m === 'unhide') this.unhideRows(false);
       if (m === 'asc') this.sortBy(c, false); if (m === 'desc') this.sortBy(c, true);
       if (m === 'fval') this.setFilter(c, new Set([this.fkey(row.v[c])]));
       if (m === 'fclr') this.clearFilters();

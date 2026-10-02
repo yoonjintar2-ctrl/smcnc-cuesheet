@@ -12,7 +12,19 @@ function fixWS(w) {
   // 품목 별칭 폐지 (v2): 별칭 칸은 '비고'로 바뀜 — 예전 별칭은 잘못 적힌 이름을 알아보는 데만 쓰도록 따로 보관
   w.itemLegacy = w.itemLegacy || {};
   if (!(w.itemV >= 2)) { for (const r of w.sheets.품목 || []) { const k = str(r[0]); if (k && str(r[4])) w.itemLegacy[k] = [w.itemLegacy[k], str(r[4])].filter(Boolean).join(', '); if (r.length > 4) r[4] = ''; } w.itemV = 2; }
+  // 지상파 구분(정기물 등)은 행마다: 예전엔 병합 칸처럼 첫 행에만 있었음 → 같은 채널 안에서 아래 행으로 이어 적음 (한 번만)
+  if (!(w.kindV >= 1)) { fillGroundKind(w.sheets.지상파 || []); w.kindV = 1; }
+  w.view = w.view || {};
   return w;
+}
+function fillGroundKind(rows) {
+  let ch = null, kind = '', n = 0;
+  for (const r of rows) {
+    if (!r || isBlankRow(r)) continue;
+    const c = str(r[0]); if (c !== ch) { ch = c; kind = ''; }
+    if (str(r[1])) kind = str(r[1]); else if (kind) { r[1] = kind; n++; }
+  }
+  return n;
 }
 function setM(m) { M = m; M.ver = ++MVER; return M; }
 
@@ -66,7 +78,7 @@ const App = {
   TABS: [
     { id: 'input', g: '입력', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M3.2 14.2 12.6 4.8l2.6 2.6-9.4 9.4H3.2z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M11 6.4l2.6 2.6"/>', items: [['master', '마스터'], ['지상파', '지상파'], ['케이블', '케이블'], ['reach', '누적리치']] },
     { id: 'plan', g: '운영사항', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 3.4h11.2v13.4H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 7.4h5.6M7.2 10.4h5.6M7.2 13.4h3.4"/>', items: [['예산', '예산'], ['소재', '소재']] },
-    { id: 'cue', g: '큐시트', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.8 3.6h14.4v12.8H2.8z"/><path fill="none" stroke="currentColor" stroke-width="1.7" d="M2.8 7.6h14.4M7.6 7.6v8.8"/>', items: [['summary', '요약'], ['cueall', '전체 큐시트'], ['cueg', '지상파 큐시트'], ['cuec', '케이블 큐시트']] },
+    { id: 'cue', g: '큐시트', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.8 3.6h14.4v12.8H2.8z"/><path fill="none" stroke="currentColor" stroke-width="1.7" d="M2.8 7.6h14.4M7.6 7.6v8.8"/>', items: [['summary', '요약'], ['cueall', '전체 큐시트'], ['cueg', '지상파 큐시트'], ['cuec', '케이블 큐시트'], ['cal', '큐시트 캘린더']] },
     { id: 'chk', g: '점검', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 10.4l3.6 3.6L16 5.6"/>', items: [['issues', '검증'], ['history', '변경 이력']] },
   ],
   // 지금 보여 줄 분류 (뷰어: 운영사항 · 큐시트만)
@@ -86,7 +98,7 @@ const App = {
     setH(); try { new ResizeObserver(setH).observe(shell); } catch (e) { }
     if (REPORT) {
       WS = fixWS(REPORT.ws); setM(compute(WS));
-      this.TABS = [{ id: 'cue', g: '', items: [['summary', '요약'], ['cueall', '전체 큐시트'], ['cueg', '지상파 큐시트'], ['cuec', '케이블 큐시트']] }];
+      this.TABS = [{ id: 'cue', g: '', items: [['summary', '요약'], ['cueall', '전체 큐시트'], ['cueg', '지상파 큐시트'], ['cuec', '케이블 큐시트'], ['cal', '큐시트 캘린더']] }];
       this.go('summary'); return;
     }
     if (cloud) return this.initCloud();
@@ -111,13 +123,14 @@ const App = {
     this.gate('<div class="spin"></div><div>불러오는 중…</div>');
     try {
       if (CLOUD.admin) await CLOUD.loadCamps();
-      let cid = CLOUD.qs('c');
-      if (!cid && CLOUD.admin) { let last = null; try { last = localStorage.getItem('cue.lastCamp'); } catch (e) { } cid = (CLOUD.camps.find(c => c.id === last) || CLOUD.camps[0] || {}).id; }
-      if (!cid) return CLOUD.admin ? this.gateNewCamp() : this.gate(`<h2>캠페인 링크로 들어와 주세요</h2><p class="muted">담당자에게 받은 큐시트 링크(주소 끝이 <code>?c=…</code>)로 열면 그 캠페인 큐시트가 보여요.</p>`);
+      // 코웨이 전용: 캠페인은 config.js 의 camp 로 고정 (예전 링크의 ?c= 도 그대로 열림)
+      let cid = CLOUD.qs('c') || CLOUD.cfg.camp;
+      if (!cid && CLOUD.admin) cid = (CLOUD.camps[0] || {}).id;
+      if (!cid) return CLOUD.admin ? this.gateNewCamp() : this.gate(`<h2>큐시트를 찾을 수 없어요</h2><p class="muted">담당자에게 큐시트 링크를 받아 주세요.</p>`);
       const camp = await CLOUD.campInfo(cid);
-      if (!camp) return this.gate(`<h2>캠페인을 찾을 수 없어요</h2><p class="muted">링크가 바뀌었을 수 있어요. 담당자에게 새 링크를 받아 주세요.</p>`);
-      CLOUD.camp = camp; CLOUD.setQs({ c: cid }); try { if (CLOUD.admin) localStorage.setItem('cue.lastCamp', cid); } catch (e) { }
-      this.renderCampBox();
+      if (!camp) return this.gate(`<h2>큐시트를 찾을 수 없어요</h2><p class="muted">링크가 바뀌었을 수 있어요. 담당자에게 새 링크를 받아 주세요.</p>`);
+      CLOUD.camp = camp; CLOUD.setQs({ c: cid === CLOUD.cfg.camp ? null : cid });
+      const adv = document.getElementById('advchip'); if (adv) adv.textContent = camp.name;
       this.months = await CLOUD.months(cid);
       let ym = CLOUD.qs('m'); if (!this.months.includes(ym)) ym = this.months[0];
       if (!ym) {
@@ -127,6 +140,7 @@ const App = {
       } else WS = await CLOUD.load(cid, ym);
       CLOUD.setQs({ m: WS.ym }); CLOUD.loadedAt = Date.now();
       fixWS(WS); setM(compute(WS));
+      if (CLOUD.admin) LOCK.start();
       const vs = CLOUD.admin ? await CLOUD.versions(WS.ym) : []; this.lastVersionAt = vs.length ? vs[vs.length - 1].time : 0;
       this.main.innerHTML = ''; this.panes = {};
       this.renderMonth();
@@ -138,6 +152,7 @@ const App = {
       this.checkRemote();
     });
     window.addEventListener('beforeunload', e => { if (CLOUD.admin && (CLOUD.saving || this.cloudDirty)) { e.preventDefault(); e.returnValue = ''; } });
+    window.addEventListener('pagehide', () => LOCK.releaseAll(true));
   },
   gate(html) { this.main.innerHTML = `<div class="gatebox"><div class="card"><div class="bd">${html}</div></div></div>`; this.panes = {}; const n = document.getElementById('nav'); if (n) n.innerHTML = ''; },
   gateNewCamp() {
@@ -182,31 +197,32 @@ const App = {
   },
 
   shellHtml() {
-    const brand = `<div class="brand"><div class="mark">SM</div><div><div class="k">SM C&amp;C · TV cue sheet tool</div><h1>SM C&amp;C 큐시트 툴</h1></div></div>`;
-    if (CLOUD.on && !CLOUD.admin) return `<div class="shell" id="shell"><header class="top">${brand}<div class="campbox" id="campbox"></div><div class="monthbox"><select id="monthsel" title="월"></select></div>
+    // 코웨이 전용 큐시트: 좌상단은 제목과 광고주만, 그 옆에 연·월 선택
+    const brand = `<div class="brand"><h1>SM C&amp;C TV 큐시트</h1><span class="advchip" id="advchip">${esc(advName())}</span></div>`;
+    const ym = '<div class="monthbox"><select id="yearsel" title="연도"></select><select id="monthsel" title="월"></select></div>';
+    if (CLOUD.on && !CLOUD.admin) return `<div class="shell" id="shell"><header class="top">${brand}${ym}
       <div class="spacer"></div><span class="rolechip">뷰어</span><button class="btn" id="b-admin">관리자 모드 접속</button></header><nav class="nav" id="nav"></nav></div><main id="view"></main><div class="toast" id="toast"></div>`;
-    if (REPORT) return `<div class="shell" id="shell"><header class="top"><div class="brand"><div class="mark">SM</div><div><div class="k">SM C&amp;C · TV on-air</div><h1>${esc(REPORT.title || '큐시트 보고')}</h1></div></div><div class="spacer"></div><div class="status">업데이트 ${fmt.time(REPORT.at)}</div><button class="btn sm" onclick="window.print()">인쇄</button></header><nav class="nav" id="nav"></nav></div><main id="view"></main><div class="toast" id="toast"></div>`;
+    if (REPORT) return `<div class="shell" id="shell"><header class="top"><div class="brand"><h1>${esc(REPORT.title || '큐시트 보고')}</h1></div><div class="spacer"></div><div class="status">업데이트 ${fmt.time(REPORT.at)}</div><button class="btn sm" onclick="window.print()">인쇄</button></header><nav class="nav" id="nav"></nav></div><main id="view"></main><div class="toast" id="toast"></div>`;
     return `<div class="shell" id="shell"><header class="top">
-      ${brand}${CLOUD.on ? '<div class="campbox" id="campbox"></div>' : ''}
-      <div class="monthbox"><select id="monthsel" title="작업 월"></select></div>
+      ${brand}${ym}
       <div class="spacer"></div><div class="status" id="status"></div>
+      <button class="btn pri" id="b-save" title="지금 상태를 저장하고 변경 이력에 남겨요 (Ctrl+S)">저장</button>
+      <div class="dd" id="dd-bak"><button class="btn" id="b-bak">엑셀 백업 ▾</button><div class="dd-menu">
+        <button data-bak="all">전체 백업 받기<small>입력·마스터·누적리치 전부 (로우데이터 엑셀)</small></button>
+        <button data-bak="지상파">지상파 시트만</button>
+        <button data-bak="케이블">케이블 시트만</button>
+        <button data-bak="plan">예산·소재만</button>
+        <button data-bak="master">마스터만</button>
+        <hr><button data-bak="restore">백업 파일 다시 넣기…<small>이 도구에서 받은 백업 엑셀을 골라 그대로 넣어요</small></button></div></div>
       <button class="btn" id="b-onboard" title="방송사에서 받은 원본 큐시트 엑셀을 자동 매칭해서 지상파·케이블 시트에 넣기">방송사 큐시트 온보딩</button>
-      <button class="btn" id="b-open">불러오기</button>
-      <div class="dd" id="dd-save"><button class="btn" id="b-save">엑셀로 저장 ▾</button><div class="dd-menu">
-        <button data-save="all">전체 작업 파일<small>모든 입력·마스터·누적리치. 보관·공유용</small></button>
-        <button data-save="지상파">지상파 시트만<small>지상파 담당자가 보낼 때</small></button>
-        <button data-save="케이블">케이블 시트만<small>케이블 담당자가 보낼 때</small></button>
-        <button data-save="plan">예산·소재만</button>
-        <button data-save="master">마스터만<small>품목·채널·CM위치·목표 CPRP·매칭 규칙</small></button></div></div>
-      <button class="btn" id="b-ver">버전 저장</button>
-      ${CLOUD.on ? `<div class="dd" id="dd-admin"><button class="btn pri" id="b-adm">관리자 ▾</button><div class="dd-menu">
-        <button data-adm="link">뷰어 링크 복사<small>이 캠페인 큐시트를 보기만 하는 링크</small></button>
+      ${CLOUD.on ? `<div class="dd" id="dd-admin"><button class="btn" id="b-adm">관리자 ▾</button><div class="dd-menu">
+        <button data-adm="link">뷰어 링크 복사<small>보기만 하는 링크 (광고주·내부 공유용)</small></button>
         <button data-adm="view">뷰어 화면으로 보기<small>새 탭에서 뷰어가 보는 화면</small></button>
-        <button data-adm="rename">광고주 이름 바꾸기</button>
+        <button data-adm="who">내 이름 바꾸기<small>다른 관리자에게 '작업 중'으로 보이는 이름</small></button>
         <button data-adm="report">보고서 HTML 내보내기<small>오프라인으로 보낼 때</small></button>
-        <button data-adm="out">관리자 모드 종료</button></div></div>` : '<button class="btn pri" id="b-report">보고서 내보내기</button>'}
+        <button data-adm="out">관리자 모드 종료</button></div></div>` : '<button class="btn" id="b-report">보고서 내보내기</button>'}
       <input type="file" id="filein" accept=".xlsx,.xlsm,.xls" multiple hidden>
-    </header><nav class="nav" id="nav"></nav><div class="namebar" id="namebar" hidden></div></div><main id="view"></main>
+    </header><nav class="nav" id="nav"></nav><div class="namebar" id="namebar" hidden></div><div class="lockbar" id="lockbar" hidden></div></div><main id="view"></main>
     <div class="drop" id="drop"><div>엑셀 파일을 놓으세요</div></div><div class="toast" id="toast"></div>`;
   },
   renderNav() {
@@ -216,6 +232,7 @@ const App = {
     const unk = this.unknownNames(); const unkN = unk.items.size + unk.chs.size;
     const badge = id => {
       if (readOnly()) return '';
+      const lk = LOCK.other(id); if (lk) return `<span class="badge lk" title="${esc(lk)}님이 작업 중">🔒 ${esc(lk)}</span>`;
       if (cnt[id]) return `<span class="badge">${fmt.int(cnt[id])}</span>`;
       if (id === 'master' && unkN) return `<span class="badge err" title="마스터에 없는 이름">${unkN}</span>`;
       if (id === 'issues' && (err || warn)) return `<span class="badge ${err ? 'err' : 'warn'}">${err || warn}</span>`;
@@ -292,6 +309,7 @@ const App = {
     if (prev && prev !== tab) this.scrollMem[prev] = window.scrollY;
     this.tab = tab; UI.tab = tab;
     if (prev !== tab) TSel.clear();
+    LOCK.enter(tab);
     this.renderNav();
     const el = this.paneEl(tab);
     for (const k in this.panes) this.panes[k].hidden = k !== tab;
@@ -313,7 +331,9 @@ const App = {
       else if (tab === 'issues') this.renderIssues(el);
       else if (tab === 'history') this.renderHistory(el);
       else if (tab === 'reach') this.renderReach(el);
+      else if (tab === 'cal') renderCal(el);
       else if (FORM_TABS[tab]) FORM_TABS[tab](el);
+      if (!readOnly() && LOCK.blocked(tab)) lockForm(el);
     } catch (e) { console.error(e); el.innerHTML = `<div class="card"><div class="empty">화면을 그리다 오류가 났어요: ${esc(e.message)}</div></div>`; }
     el.dataset.ver = M.ver;
     if (prev && prev.size) { let n = 0; const now = ckSnapshot(el); for (const [k, v] of now) if (prev.has(k) && prev.get(k) !== v) n++; if (n && n <= 300) ckFlash(el, prev); }
@@ -370,22 +390,31 @@ const App = {
 
   // ---------- 상단 ----------
   async refreshMonths() { this.months = await Store.months(); if (!this.months.includes(WS.ym)) this.months.push(WS.ym); this.months.sort().reverse(); },
+  // 연도 · 월 선택 (한 달에 큐시트 하나). 뷰어는 큐시트가 있는 달만, 관리자는 없는 달을 고르면 새로 만들기
   renderMonth() {
-    const sel = document.getElementById('monthsel'); if (!sel) return;
+    const ys = document.getElementById('yearsel'), ms = document.getElementById('monthsel'); if (!ys || !ms) return;
     if (!this.months.includes(WS.ym)) { this.months.push(WS.ym); this.months.sort().reverse(); }
-    sel.innerHTML = this.months.map(m => { const p = parseYM(m); return `<option value="${m}" ${m === WS.ym ? 'selected' : ''}>${p.y}년 ${p.m}월</option>`; }).join('') + (readOnly() ? '' : '<option value="__new">＋ 새 달 만들기…</option>');
-    sel.onchange = () => { if (sel.value === '__new') { sel.value = WS.ym; this.newMonth(); } else this.switchMonth(sel.value); };
-  },
-  // 온라인 모드 머리말: 캠페인 표시/선택 · 관리자 접속/메뉴
-  renderCampBox() {
-    const box = document.getElementById('campbox'); if (!box || !CLOUD.camp) return;
-    if (!CLOUD.admin) { box.innerHTML = `<span class="campchip" title="광고주">${esc(CLOUD.camp.name)}</span>`; return; }
-    box.innerHTML = `<select id="campsel" title="캠페인(광고주)">${CLOUD.camps.map(c => `<option value="${esc(c.id)}" ${c.id === CLOUD.camp.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}<option value="__new">＋ 새 캠페인…</option></select>`;
-    const sel = box.querySelector('#campsel');
-    sel.onchange = async () => {
-      const v = sel.value; sel.value = CLOUD.camp.id;
-      if (v === '__new') return this.promptText('새 캠페인', '광고주 이름', '', async n => { const id = await CLOUD.newCamp(n); await this.flushSave(); CLOUD.setQs({ c: id, m: null, t: null }); location.reload(); });
-      await this.flushSave(); CLOUD.setQs({ c: v, m: null }); location.reload();
+    const cur = parseYM(WS.ym); if (this.selYear == null) this.selYear = cur.y;
+    const now = new Date().getFullYear();
+    const years = [...new Set(this.months.map(m => parseYM(m).y).concat(readOnly() ? [] : [now, now + 1]).concat([this.selYear]))].sort((a, b) => b - a);
+    ys.innerHTML = years.map(y => `<option value="${y}" ${y === this.selYear ? 'selected' : ''}>${y}년</option>`).join('');
+    const has = m => this.months.includes(`${this.selYear}-${pad2(m)}`);
+    const inYear = cur.y === this.selYear;
+    ms.innerHTML = (inYear ? '' : '<option value="" selected>월 선택</option>') + Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
+      const ok = has(m); if (readOnly() && !ok) return '';
+      return `<option value="${m}" ${inYear && m === cur.m ? 'selected' : ''}>${m}월${ok ? '' : ' (새로 만들기)'}</option>`;
+    }).join('');
+    ys.onchange = () => {
+      this.selYear = +ys.value;
+      const list = this.months.filter(m => parseYM(m).y === this.selYear).sort();
+      if (list.length) return this.switchMonth(list[list.length - 1]);
+      this.renderMonth();
+    };
+    ms.onchange = () => {
+      const m = +ms.value; if (!m) return;
+      const ym = `${this.selYear}-${pad2(m)}`;
+      if (this.months.includes(ym)) return this.switchMonth(ym);
+      this.renderMonth(); this.newMonth(ym);
     };
   },
   bindCloudTop() {
@@ -393,12 +422,13 @@ const App = {
     const dd = document.getElementById('dd-admin'); if (!dd) return;
     document.getElementById('b-adm').onclick = e => { e.stopPropagation(); dd.classList.toggle('open'); };
     document.addEventListener('click', () => dd.classList.remove('open'));
-    const link = () => `${location.origin}${location.pathname}?c=${encodeURIComponent(CLOUD.camp.id)}`;
+    const link = () => `${location.origin}${location.pathname}${CLOUD.camp.id === CLOUD.cfg.camp ? '' : '?c=' + encodeURIComponent(CLOUD.camp.id)}`;
+    const sep = () => link().includes('?') ? '&' : '?';
     dd.querySelectorAll('[data-adm]').forEach(x => x.onclick = async () => {
       dd.classList.remove('open'); const a = x.dataset.adm;
       if (a === 'link') { try { await navigator.clipboard.writeText(link()); this.toast(`뷰어 링크를 복사했어요<br><small>${esc(link())}</small>`, 6000); } catch (e) { this.promptText('뷰어 링크', '이 주소를 복사해서 보내세요', link(), () => { }); } }
-      else if (a === 'view') { await this.flushSave(); window.open(link() + '&m=' + encodeURIComponent(WS.ym) + '&viewer=1', '_blank'); }
-      else if (a === 'rename') this.promptText('광고주 이름 바꾸기', '요약 제목 · 파일 이름에 쓰여요', CLOUD.camp.name, async n => { await CLOUD.renameCamp(CLOUD.camp.id, n); const c = CLOUD.camps.find(x => x.id === CLOUD.camp.id); if (c) c.name = n; WS.adv = n; this.renderCampBox(); this.changed('meta'); this.toast(`광고주 이름을 '${esc(n)}'(으)로 바꿨어요`); });
+      else if (a === 'view') { await this.flushSave(); window.open(link() + sep() + 'm=' + encodeURIComponent(WS.ym) + '&viewer=1', '_blank'); }
+      else if (a === 'who') this.promptText('내 이름', '다른 관리자에게 “○○님이 작업 중”으로 보여요', CLOUD.who() || '', n => { try { localStorage.setItem('cue.who', n); } catch (e) { } LOCK.renew(); this.toast(`이름을 '${esc(n)}'(으)로 바꿨어요`); });
       else if (a === 'report') this.exportReport();
       else if (a === 'out') { await this.flushSave(); CLOUD.logout(); }
     });
@@ -406,11 +436,13 @@ const App = {
   loginDialog() {
     this.modal(`<div class="hd"><h3>관리자 모드 접속</h3></div><div class="bd"><p class="small muted" style="margin-top:0">비밀번호를 넣으면 편집 화면이 열려요. 고친 내용은 바로 온라인에 저장돼요.</p>
       <input type="password" id="admpw" autocomplete="current-password" placeholder="비밀번호" style="width:100%;height:36px;border:1px solid var(--rule);border-radius:8px;padding:0 10px">
+      <input id="admwho" placeholder="내 이름 (작업 중 표시용 · 이 브라우저에 기억)" value="${esc(CLOUD.who() || '')}" style="width:100%;height:34px;border:1px solid var(--rule);border-radius:8px;padding:0 10px;margin-top:8px">
       <div id="admerr" class="small" style="color:#8f3d35;margin-top:6px;min-height:18px"></div></div>
       <div class="ft"><button class="btn" data-x>취소</button><button class="btn pri" id="adm-ok">접속</button></div>`, (box, close) => {
       const inp = box.querySelector('#admpw'), er = box.querySelector('#admerr'), ok = box.querySelector('#adm-ok');
       const go = async () => {
         if (!inp.value) return; ok.disabled = true; er.textContent = '확인 중…';
+        const nm = box.querySelector('#admwho').value.trim(); if (nm) { try { localStorage.setItem('cue.who', nm); } catch (e) { } }
         try { await CLOUD.login(inp.value); close(true); CLOUD.setQs({ viewer: null, t: this.tab }); location.reload(); }
         catch (e) { ok.disabled = false; er.textContent = e.net ? e.message : '비밀번호가 맞지 않아요'; inp.select(); }
       };
@@ -427,22 +459,34 @@ const App = {
     });
   },
   bindTop() {
-    document.getElementById('b-open').onclick = () => document.getElementById('filein').click();
     document.getElementById('b-onboard').onclick = () => OBUI.open();
-    document.getElementById('filein').onchange = e => { this.handleFiles([...e.target.files]); e.target.value = ''; };
-    const dd = document.getElementById('dd-save');
-    document.getElementById('b-save').onclick = e => { e.stopPropagation(); dd.classList.toggle('open'); };
+    document.getElementById('filein').onchange = e => { this.handleFiles([...e.target.files], true); e.target.value = ''; };
+    document.getElementById('b-save').onclick = () => this.manualSave();
+    const dd = document.getElementById('dd-bak');
+    document.getElementById('b-bak').onclick = e => { e.stopPropagation(); dd.classList.toggle('open'); };
     document.addEventListener('click', () => dd.classList.remove('open'));
-    dd.querySelectorAll('[data-save]').forEach(b => b.onclick = () => {
-      const w = b.dataset.save;
-      if (w === 'all') saveWorkspaceXlsx(WS, M, ALL_SHEETS, '작업');
+    dd.querySelectorAll('[data-bak]').forEach(b => b.onclick = () => {
+      const w = b.dataset.bak; dd.classList.remove('open');
+      if (w === 'restore') return document.getElementById('filein').click();
+      if (w === 'all') saveWorkspaceXlsx(WS, M, ALL_SHEETS, '백업');
       else if (w === 'plan') saveWorkspaceXlsx(WS, M, ['예산', '소재'], '예산소재');
       else if (w === 'master') saveWorkspaceXlsx(WS, M, MASTER_SHEETS, '마스터');
       else saveWorkspaceXlsx(WS, M, [w], w);
-      dd.classList.remove('open');
     });
-    document.getElementById('b-ver').onclick = () => this.promptVersion();
     const br = document.getElementById('b-report'); if (br) br.onclick = () => this.exportReport();
+  },
+  // '저장' 버튼: 지금 상태를 저장하고 변경 이력에 남김 (자동 저장은 그대로 켜져 있음)
+  async manualSave() {
+    const b = document.getElementById('b-save'); if (b) b.disabled = true;
+    try {
+      if (this.autosave.flush) this.autosave.flush();
+      await this.flushSave();
+      if (CLOUD.on && CLOUD.err) throw CLOUD.err;
+      await this.saveVersion('저장');
+      if (this.panes.history) this.panes.history.dataset.ver = '';
+      this.toast(`저장했어요 · ${fmt.time(Date.now()).split(' ')[1]} · 변경 이력에 남겼어요`, 2600);
+    } catch (e) { this.toast('저장하지 못했어요: ' + esc(e.message || e), 5000); }
+    finally { if (b) b.disabled = false; }
   },
   bindDrop() {
     const drop = document.getElementById('drop'); let n = 0;
@@ -460,7 +504,7 @@ const App = {
     });
     document.addEventListener('keydown', e => {
       const ctrl = e.ctrlKey || e.metaKey;
-      if (ctrl && !e.shiftKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); this.autosave.flush(); this.toast('저장했어요 (자동 저장은 계속 켜져 있어요)', 2200); return; }
+      if (ctrl && !e.shiftKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); if (!readOnly()) this.manualSave(); return; }
       const g = this.grids[this.tab]; if (!g || document.querySelector('.modal-bg')) return;
       const t = e.target; if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
       if (ctrl && /^[fhzya]$/i.test(e.key)) { g.focus(); g.onKey(e); }
@@ -479,6 +523,7 @@ const App = {
     await this.flushSave();
     const w = await Store.load(ym);
     if (!w) return;
+    LOCK.releaseAll(); this.selYear = parseYM(ym).y;
     WS = fixWS(w);
     const vs = await Store.versions(WS.ym);
     this.lastVersionAt = vs && vs.length ? vs[vs.length - 1].time : 0;
@@ -487,12 +532,11 @@ const App = {
     this.noFlash(); this.dataReplaced(); this.dirtyV = false;
     this.toast(`${parseYM(ym).m}월 작업을 열었어요`);
   },
-  newMonth() {
-    const p = parseYM(WS.ym); const nx = p.m === 12 ? `${p.y + 1}-01` : `${p.y}-${pad2(p.m + 1)}`;
-    this.modal(`<div class="hd"><h3>새 달 만들기</h3></div><div class="bd">
-      <p>마스터(품목·채널·CM위치·CPRP), 예산표의 품목·채널 틀, 케이블 큐시트 순서를 이어받고, 송출·예산 금액·소재는 비워서 시작해요.</p>
-      <label class="small muted">작업 월</label><br><input type="month" id="nm" value="${nx}" style="height:32px;border:1px solid var(--rule);border-radius:8px;padding:0 8px">
-      <div class="note">이미 있는 달을 고르면 그 달 작업을 열기만 해요.</div></div>
+  newMonth(ym0) {
+    const p = parseYM(ym0 || WS.ym); const nx = ym0 || (p.m === 12 ? `${p.y + 1}-01` : `${p.y}-${pad2(p.m + 1)}`); const q = parseYM(nx);
+    this.modal(`<div class="hd"><h3>${q.y}년 ${q.m}월 큐시트 만들기</h3></div><div class="bd">
+      <p>지금 열린 ${parseYM(WS.ym).m}월에서 마스터(품목·채널·CM위치·CPRP), 예산표의 품목·채널 틀, 케이블 큐시트 순서를 이어받고, 송출·예산 금액·소재는 비워서 시작해요.</p>
+      <input type="hidden" id="nm" value="${nx}"></div>
       <div class="ft"><button class="btn" data-x>취소</button><button class="btn pri" id="nm-ok">만들기</button></div>`, (box, close) => {
       box.querySelector('#nm-ok').onclick = async () => {
         const ym = box.querySelector('#nm').value; if (!parseYM(ym)) return;
@@ -503,11 +547,11 @@ const App = {
         for (const k of MASTER_SHEETS) n.sheets[k] = deepClone(WS.sheets[k]);
         const B = WS.sheets.예산 || [];
         n.sheets.예산 = B.length ? [B[0].slice()].concat(B.slice(1).map(r => [r[0]])) : [['채널']];
-        n.cueOrder = deepClone(WS.cueOrder || {}); n.itemLegacy = deepClone(WS.itemLegacy || {});
+        n.cueOrder = deepClone(WS.cueOrder || {}); n.itemLegacy = deepClone(WS.itemLegacy || {}); n.view = deepClone(WS.view || {});
         WS = n; this.lastVersionAt = 0;
         if (CLOUD.on) { WS.adv = advName(); CLOUD.at = {}; CLOUD.sent = {}; await this.cloudSave(true); CLOUD.setQs({ m: ym }); }
         else if (DB.ok) { await DB.put('ws', WS, WS.ym); await DB.put('kv', WS.ym, 'lastYm'); }
-        await this.refreshMonths(); this.noFlash(); this.dataReplaced(); this.dirtyV = false; this.go('예산');
+        LOCK.releaseAll(); this.selYear = parseYM(ym).y; await this.refreshMonths(); this.noFlash(); this.dataReplaced(); this.dirtyV = false; this.go('예산');
         this.toast(`${parseYM(ym).m}월 작업을 만들었어요. 예산부터 채워 보세요.`);
       };
     });
@@ -518,7 +562,7 @@ const App = {
   showGrid(name) {
     const el = this.paneEl(name);
     if (!this.grids[name]) this.mountGrid(name, el);
-    else { this.renderSide(name); this.gridStat(name); }
+    else { this.renderSide(name); this.gridStat(name); this.grids[name].setRO(!readOnly() && LOCK.blocked(name)); }
     this.sizeGrid(name);
     this.grids[name].focus();
   },
@@ -534,7 +578,7 @@ const App = {
       <div class="gridbar">
         <div class="grp">${B('undo', '↶ 되돌리기', 'Ctrl+Z')}${B('redo', '↷ 다시', 'Ctrl+Y')}</div>
         <div class="grp">${B('find', '찾기', 'Ctrl+F')}${B('replace', '바꾸기', 'Ctrl+H')}${B('fclr', '필터 해제', '모든 열의 필터를 해제')}</div>
-        <div class="grp">${B('all', '전체 선택', 'Ctrl+A')}${B('hide', '행 숨기기', '선택한 행을 숨겨요 (집계에는 포함)')}${B('unhide', '숨긴 행 표시', '숨긴 행을 모두 다시 보여줘요')}${B('del', '행 삭제', '선택한 행을 삭제')}${B('clear', '내용 지우기', 'Delete')}${B('add', '＋ 10행', '끝에 빈 행 10개')}</div>
+        <div class="grp">${B('all', '전체 선택', 'Ctrl+A')}${B('hide', '행 숨기기', '선택한 행을 숨겨요 (집계에는 포함)')}${B('unhide', '숨긴 행 표시', '숨긴 행을 모두 다시 보여줘요')}${B('add', '＋ 10행', '끝에 빈 행 10개')}</div>
         <div class="grp">${B('xlsx', '⤓ 이 시트 엑셀', '이 시트만 엑셀로 (숨긴 행 유지)')}<button class="btn sm ghost" data-a="wipe">시트 비우기</button></div>
         <span class="gridstat" data-gs></span>
       </div></div>
@@ -549,8 +593,10 @@ const App = {
       toast: (m, ms) => this.toast(m, ms),
       prepPaste: B => this.prepPaste(name, B),
       normalize: (col, v) => (col.k === 'start' || col.k === 'end') ? normTime(v) : v,
+      onRo: () => this.toast(LOCK.blockedMsg(name), 3000),
     });
     this.grids[name] = g;
+    g.setRO(!readOnly() && LOCK.blocked(name));
     el.querySelectorAll('.gridbar [data-a]').forEach(b => { b.addEventListener('mousedown', e => e.preventDefault()); b.onclick = () => this.gridAction(name, b.dataset.a); });
     this.renderSide(name); this.gridStat(name);
   },
@@ -566,6 +612,7 @@ const App = {
       if (n >= 3) {
         const cols = SHEETS[name].cols;
         const rows = B.slice(h + 1).filter(r => !isBlankRow(r)).map(r => cols.map(c => map[c.k] != null ? (r[map[c.k]] == null ? '' : r[map[c.k]]) : ''));
+        if (name === '지상파') fillGroundKind(rows);   // 구분(정기물 등)이 병합 칸이라 첫 행에만 있어도 행마다 채움
         const miss = cols.filter(c => map[c.k] == null && !/^(d\d|note|ar|cre)$/.test(c.k)).map(c => c.t);
         return { rows, note: `머리글 행을 보고 열을 맞춰 ${fmt.int(rows.length)}행을 넣었어요 (머리글은 뺐어요)${miss.length ? ` · 파일에 없는 열: ${miss.join(', ')}` : ''}` };
       }
@@ -583,11 +630,10 @@ const App = {
     else if (a === 'all') g.selectAll();
     else if (a === 'hide') { const n = g.hideRows(); this.toast(n ? `${n}행을 숨겼어요. 숨긴 행도 집계에는 그대로 들어가요.` : '숨길 행(내용 있는 행)을 먼저 선택하세요'); }
     else if (a === 'unhide') { const n = g.unhideRows(true); this.toast(n ? `숨긴 ${n}행을 모두 다시 보여줘요` : '숨긴 행이 없어요'); }
-    else if (a === 'del') { const s = g.sel; const n = g.deleteRows(); this.toast(n ? `${n}행을 삭제했어요 · Ctrl+Z로 되돌릴 수 있어요` : '삭제할 행을 먼저 선택하세요'); }
-    else if (a === 'clear') g.clearSel('내용 지우기');
-    else if (a === 'add') { g.insertRows('end'); this.toast('끝에 빈 행 10개를 넣었어요'); }
+    else if (a === 'add') { if (g.ro) return g.roNote(); g.insertRows('end'); this.toast('끝에 빈 행 10개를 넣었어요'); }
     else if (a === 'xlsx') saveWorkspaceXlsx(WS, M, [name], name);
     else if (a === 'wipe') {
+      if (g.ro) return g.roNote();
       const n = g.getRows().filter(r => !isBlankRow(r)).length; if (!n) return this.toast('비어 있어요');
       return this.confirm(`${name} 시트 비우기`, `<p>${fmt.int(n)}행을 모두 지워요. 지우기 전 상태는 변경 이력에 버전으로 남기고, Ctrl+Z로도 되돌릴 수 있어요.</p>`, '비우기', async () => {
         await this.saveVersion(`${name} 비우기 전 자동 백업`, true);
@@ -617,14 +663,15 @@ const App = {
     const btn = a => el.querySelector(`[data-a="${a}"]`);
     btn('unhide').textContent = hid ? `숨긴 행 표시 (${hid})` : '숨긴 행 표시'; btn('unhide').disabled = !hid;
     btn('fclr').textContent = f ? `필터 해제 (${f})` : '필터 해제'; btn('fclr').disabled = !f; btn('fclr').classList.toggle('on', !!f);
-    btn('undo').disabled = !g.undoS.length; btn('redo').disabled = !g.redoS.length;
+    btn('undo').disabled = !g.undoS.length || g.ro; btn('redo').disabled = !g.redoS.length || g.ro;
+    ['hide', 'add', 'wipe'].forEach(k => { const b = btn(k); if (b) b.disabled = g.ro; });
     // 엑셀 상태 표시줄처럼: 선택 범위 크기·합계
-    const s = g.sel; const rs = s.r2 - s.r1 + 1, cs = s.c2 - s.c1 + 1;
+    const s = g.sel; const rs = g.selCount(), cs = s.c2 - s.c1 + 1;
     let txt = '';
     if (rs * cs > 1) {
       let cnt = 0, nsum = 0, nn = 0;
       if (rs * cs <= 60000) for (const row of g.selRows()) for (let c = s.c1; c <= s.c2; c++) { const v = row.v[c]; if (v === '' || v == null) continue; cnt++; if (typeof v === 'number') { nsum += v; nn++; } }
-      txt = `선택 ${fmt.int(rs)}행 × ${cs}열 · 값 ${fmt.int(cnt)}개${nn ? ` · 합계 ${fmt.won(nsum)}` : ''}`;
+      txt = `선택 ${fmt.int(rs)}행${g.rowsSelected() ? '' : ` × ${cs}열`} · 값 ${fmt.int(cnt)}개${nn ? ` · 합계 ${fmt.won(nsum)}` : ''}${g.rowsSelected() ? ' · 우클릭으로 삽입·삭제' : ''}`;
     }
     el.querySelector('[data-gs]').textContent = txt;
   },
@@ -667,6 +714,7 @@ const App = {
       if (col.money && typeof v === 'number') t = fmt.won(v);
       else if (k === 'date' && typeof v === 'number') { const d = parseDateVal(v, M.ym); if (d) t = `${d.m}/${d.d}`; }
       else if ((k === 'start' || k === 'end') && typeof v === 'number') t = normTime(v);
+      else if (k === 'ar' && typeof v === 'number') t = String(Math.round(v * 100) / 100);   // 화면에서만 소수 둘째 자리 (값은 그대로)
       if (k === 'item') { const key = resolveItem(M.MS, v); if (key) { bg = itemLight(key); if (key !== str(v)) tip = `→ ${key}`; } else { cls = 'unk'; const h = itemHintOf(M.MS, v); tip = h ? `약칭이 아니에요 → '${h}'(으)로 고쳐 주세요 (위 노란 알림에서 한 번에 고칠 수 있어요)` : '마스터에 없는 품목 — 검증 탭에서 약칭으로 바꾸거나 새 품목으로 추가하세요'; } }
       else if (k === 'ch') { const ch = resolveCh(M.MS, v); if (!ch) { cls = 'unk'; tip = '마스터에 없는 채널'; } else if (ch.name !== str(v)) tip = `→ ${ch.name}`; }
     }
@@ -807,11 +855,11 @@ const App = {
         const k = groups.indexOf(b.dataset.rg);
         if (e.key === 'ArrowRight' || (e.key === 'Tab' && !e.shiftKey)) { if (groups[k + 1]) { e.preventDefault(); show(groups[k + 1], true); } }
         else if (e.key === 'ArrowLeft' || (e.key === 'Tab' && e.shiftKey)) { if (k > 0) { e.preventDefault(); show(groups[k - 1], true); } }
-        else if (e.key === 'Delete' || e.key === 'Backspace') { if ((WS.reach || {})[b.dataset.rg]) { e.preventDefault(); b.querySelector('[data-rclr]').click(); } }
+        else if (e.key === 'Delete' || e.key === 'Backspace') { if ((WS.reach || {})[b.dataset.rg] && !roTab('reach')) { e.preventDefault(); const c = b.querySelector('[data-rclr]'); if (c) c.click(); } }
         else if (!(e.ctrlKey || e.metaKey) && e.key.length === 1) e.preventDefault();
       });
       ta.addEventListener('paste', e => {
-        e.preventDefault(); const g = b.dataset.rg;
+        e.preventDefault(); if (roTab('reach')) return this.toast(LOCK.blockedMsg('reach')); const g = b.dataset.rg;
         const cd = e.clipboardData || window.clipboardData; const B = xgParseTsv(cd ? cd.getData('text') : '');
         const blocks = B.reduce((n, r) => n + r.filter(v => /spot\s*\\?\s*variables/i.test(String(v))).length, 0);
         if (blocks > 1) { const rr = parseReachAoa(B); if (rr) return put(rr, `블록 ${Object.keys(rr.reach).length}개를 넣었어요 (1행의 그룹 이름 기준)`); }
@@ -826,7 +874,8 @@ const App = {
     el.querySelectorAll('[data-rclr]').forEach(b => b.onclick = e => { e.stopPropagation(); const g = b.dataset.rclr; const r = Object.assign({}, WS.reach); delete r[g]; WS.reach = r; this.reachSel = g; this.changed('reach'); this.toast(`${esc(g)} 값을 비웠어요`); });
     const rc = el.querySelector('#reachclear');
     if (rc) rc.onclick = () => this.confirm('누적리치 비우기', '<p>모든 그룹 값을 지워요. 운영 요약의 R1+·R3+가 비게 돼요 (직접 입력한 값은 그대로).</p>', '비우기', () => { WS.reach = {}; WS.reachMeta = {}; this.changed('reach'); });
-    el.querySelector('#reachbulk').onclick = () => this.modal(`<div class="hd"><h3>8개 그룹 한 번에 붙여넣기</h3><div class="small muted">기존 '누적리치' 시트의 A1부터 끝까지(1행 그룹 이름 + 블록들)를 복사해 아래에 붙여넣으세요. 아리아나 결과 엑셀 파일을 화면에 끌어다 놓아도 돼요.</div></div>
+    if (roTab('reach')) { el.querySelectorAll('#reachbulk,#reachclear,[data-rclr]').forEach(x => x.remove()); }
+    else el.querySelector('#reachbulk').onclick = () => this.modal(`<div class="hd"><h3>8개 그룹 한 번에 붙여넣기</h3><div class="small muted">기존 '누적리치' 시트의 A1부터 끝까지(1행 그룹 이름 + 블록들)를 복사해 아래에 붙여넣으세요. 아리아나 결과 엑셀 파일을 화면에 끌어다 놓아도 돼요.</div></div>
       <div class="bd"><textarea class="paste" id="rbp" placeholder="여기에 Ctrl+V"></textarea></div><div class="ft"><button class="btn" data-x>닫기</button></div>`, (box, close) => {
       const ta = box.querySelector('#rbp'); setTimeout(() => ta.focus(), 40);
       ta.addEventListener('paste', e => { e.preventDefault(); const cd = e.clipboardData || window.clipboardData; const rr = parseReachAoa(xgParseTsv(cd ? cd.getData('text') : '')); if (!rr) return this.toast('누적리치 형식을 찾지 못했어요. "Spot\\Variables" 머리글이 포함되게 복사해 주세요.'); close(true); put(rr, `누적리치 ${Object.keys(rr.reach).length}개 그룹을 넣었어요`); });
@@ -861,7 +910,7 @@ const App = {
   },
 
   // ---------- 가져오기 ----------
-  async handleFiles(files) {
+  async handleFiles(files, restore) {
     if (OBUI.bg) return OBUI.add(files);
     this.toast('파일을 읽는 중…', 2000);
     const raw = [];
@@ -870,6 +919,8 @@ const App = {
         const buf = new Uint8Array(await f.arrayBuffer());
         await new Promise(r => setTimeout(r, 30));
         const res = readFileParts(buf, f.name);
+        if (res.kind === 'legacy') { this.toast(`<b>${esc(f.name)}</b>은(는) 예전 통합 큐시트 양식이라 여기서 넣지 않아요. 이 도구에서 받은 <b>엑셀 백업</b> 파일이나 방송사 원본 큐시트만 넣을 수 있어요.`, 7000); continue; }
+        if (restore && res.kind !== 'workspace') { this.toast(`<b>${esc(f.name)}</b>은(는) 이 도구의 백업 파일이 아니에요. 방송사 원본이면 ‘방송사 큐시트 온보딩’으로 넣어 주세요.`, 6000); continue; }
         if (!Object.keys(res.parts).some(k => ['지상파', '케이블', '예산', '소재', 'master', 'reach'].includes(k))) { raw.push(f); continue; }   // 방송사 원본 큐시트로 보고 '방송사 큐시트 온보딩' 창으로
         await this.importDialog(f.name, res);
       } catch (e) { console.error(e); this.toast(`${esc(f.name)}을(를) 읽지 못했어요: ${esc(e.message)}`, 6000); }
@@ -890,7 +941,7 @@ const App = {
     const diffYm = P.ym && P.ym !== WS.ym;
     const pym = P.ym ? parseYM(P.ym) : null;
     return new Promise(resolve => {
-      this.modal(`<div class="hd"><h3>불러오기 · ${esc(fileName)}</h3><div class="small muted">${res.kind === 'legacy' ? '기존 통합 큐시트 형식이에요. 1행 1송출 형식으로 바꿔서 넣어요.' : res.kind === 'workspace' ? '이 도구에서 저장한 작업 파일이에요.' : '시트 머리글로 내용을 판별했어요.'}</div></div>
+      this.modal(`<div class="hd"><h3>백업 넣기 · ${esc(fileName)}</h3><div class="small muted">${res.kind === 'workspace' ? '이 도구에서 받은 엑셀 백업 파일이에요.' : '시트 머리글로 내용을 판별했어요.'}</div></div>
         <div class="bd">${opts.map(([k, t, s]) => `<label class="opt"><input type="checkbox" data-k="${k}" checked><span><b>${t}</b><small>${s}</small></span></label>`).join('')}
         ${diffYm ? `<div class="note warn">파일은 <b>${pym.y}년 ${pym.m}월</b>, 지금 화면은 ${parseYM(WS.ym).m}월이에요.</div>
           <label class="opt"><input type="radio" name="ymsel" value="file" checked><span><b>${pym.m}월 작업으로 넣기</b><small>${this.months.includes(P.ym) ? '저장된 그 달 작업에 넣어요' : '새 달을 만들어 넣어요'}</small></span></label>
@@ -920,11 +971,12 @@ const App = {
     }
     const before = deepClone(WS);
     const hadData = ['지상파', '케이블', '예산'].some(k => (WS.sheets[k] || []).length > 1);
-    if (hadData) await this.saveVersion('불러오기 전 자동 백업', true);
+    if (hadData) await this.saveVersion('백업 넣기 전 자동 백업', true);
     for (const k of ['지상파', '케이블', '예산', '소재']) if (pick.includes(k) && P[k]) {
       WS.sheets[k] = P[k];
       if (GRID_SHEETS.includes(k)) WS.hidden[k] = (P.hidden && P.hidden[k]) || [];
     }
+    if (pick.includes('지상파') && P.지상파) fillGroundKind(WS.sheets.지상파);
     if (pick.includes('케이블') && P.cueOrder) WS.cueOrder = P.cueOrder;
     if (pick.includes('reach') && P.reach) { WS.reach = P.reach; WS.reachMeta = P.reachMeta || {}; }
     if (pick.includes('master') && P.master) this.mergeMaster(P.master);
@@ -934,7 +986,7 @@ const App = {
     const Mb = compute(fixWS(before));
     this.dataReplaced();
     const d = diffModels(Mb, M);
-    await this.saveVersion(`불러오기: ${fileName}`, true, d);
+    await this.saveVersion(`백업 넣기: ${fileName}`, true, d);
     await this.flushSave(); if (DB.ok) await DB.put('kv', WS.ym, 'lastYm');
     this.toast(`<b>${esc(fileName)}</b> 반영 · ${diffSummary(d)}`, 6000);
   },
@@ -958,15 +1010,6 @@ const App = {
   },
 
   // ---------- 버전 ----------
-  promptVersion() {
-    this.modal(`<div class="hd"><h3>버전 저장</h3></div><div class="bd"><p class="small muted" style="margin-top:0">지금 상태를 이력에 남겨요. 나중에 비교하거나 되돌릴 수 있어요.</p>
-      <input id="vmemo" placeholder="메모 (예: 코웨이 1차 전달, MBC 편성 변경 반영)" style="width:100%;height:34px;border:1px solid var(--rule);border-radius:8px;padding:0 10px"></div>
-      <div class="ft"><button class="btn" data-x>취소</button><button class="btn pri" id="v-ok">저장</button></div>`, (box, close) => {
-      const go = async () => { const m = box.querySelector('#vmemo').value.trim(); close(true); await this.saveVersion(m || '수동 저장'); this.toast('버전을 저장했어요'); if (this.tab === 'history') this.renderPane('history'); else if (this.panes.history) this.panes.history.dataset.ver = ''; };
-      box.querySelector('#v-ok').onclick = go; box.querySelector('#vmemo').onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) go(); };
-      setTimeout(() => box.querySelector('#vmemo').focus(), 50);
-    });
-  },
   async saveVersion(label, auto, diff) {
     if (!Store.ok()) return;
     let summary = '';
@@ -988,14 +1031,13 @@ const App = {
   },
   async renderHistory(el) {
     const vs = ((await Store.versions(WS.ym)) || []).slice().reverse();
-    el.innerHTML = `<div class="viewhead"><div><h2>변경 이력 · ${ymLabel()}</h2><div class="sub">불러오기 때마다, 그리고 20분 이상 편집하면 자동으로 남아요. '버전 저장'으로 직접 남길 수도 있어요. ${CLOUD.on ? '기록은 온라인에 저장돼서 다른 관리자도 같이 봐요.' : '기록은 이 컴퓨터의 브라우저에 저장돼요.'}</div></div><div class="spacer"></div><button class="btn" id="hv-save">지금 버전 저장</button></div>
+    el.innerHTML = `<div class="viewhead"><div><h2>변경 이력 · ${ymLabel()}</h2><div class="sub">위의 ‘저장’을 누를 때마다 남고, 백업을 넣거나 20분 이상 편집하면 자동으로도 남아요. ${CLOUD.on ? '기록은 온라인에 저장돼서 다른 관리자도 같이 봐요.' : '기록은 이 컴퓨터의 브라우저에 저장돼요.'}</div></div></div>
       <div class="sheetwrap" style="grid-template-columns:minmax(0,1fr) minmax(0,1.2fr)"><section class="card"><div class="hd"><h3>버전 ${vs.length}개</h3></div><div>
       ${vs.length ? vs.map((v, i) => `<div class="ver"><div class="tm">${fmt.time(v.time)}</div><div><div class="lb">${esc(v.label)}</div><div class="st tnum">지상파 ${fmt.int(v.stats.g)} · 케이블 ${fmt.int(v.stats.c)} · 예산 ${fmt.eok(v.stats.budget, 2)} · <b>${esc(v.summary || '')}</b></div></div>
         <div style="display:flex;gap:6px"><button class="btn sm" data-cmp="${v.id}">지금과 비교</button>${vs[i + 1] ? `<button class="btn sm" data-prev="${v.id}" data-p2="${vs[i + 1].id}">직전과 비교</button>` : ''}<button class="btn sm" data-dl="${v.id}" title="이 버전을 엑셀로">⤓</button><button class="btn sm" data-rs="${v.id}">되돌리기</button></div></div>`).join('') : '<div class="empty">아직 버전이 없어요</div>'}
       </div></section><section class="card"><div class="hd"><h3>비교 결과</h3></div><div class="bd" id="diffbox"><span class="muted small">왼쪽에서 비교를 누르세요</span></div></section></div>`;
     const find = id => vs.find(v => v.id === +id);
     const wsOf = async v => { if (!v._ws) v._ws = await Store.verWS(v); return fixWS(deepClone(v._ws)); };
-    el.querySelector('#hv-save').onclick = () => this.promptVersion();
     el.querySelectorAll('[data-cmp]').forEach(b => b.onclick = async () => { const v = find(b.dataset.cmp); this.showDiff(el, compute(await wsOf(v)), M, `${fmt.time(v.time)} → 지금`); });
     el.querySelectorAll('[data-prev]').forEach(b => b.onclick = async () => { const a = find(b.dataset.p2), v = find(b.dataset.prev); this.showDiff(el, compute(await wsOf(a)), compute(await wsOf(v)), `${fmt.time(a.time)} → ${fmt.time(v.time)}`); });
     el.querySelectorAll('[data-dl]').forEach(b => b.onclick = async () => { const v = find(b.dataset.dl); const w = await wsOf(v); saveWorkspaceXlsx(w, compute(w), ALL_SHEETS, '버전'); });
