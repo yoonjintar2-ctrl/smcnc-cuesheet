@@ -987,3 +987,4 @@ td.sat .cald b{color:#2f6fc4}td.sun .cald b{color:#d6453d}
 .cale .x{color:#fff;background:#8794a0;border-radius:3px;padding:0 3px;font-size:10px}
 .cale.mid{background:#fceef4}
 .cale.mid .m{color:#e0005a;font-weight:700}
+#yearsel:empty,#monthsel:empty{display:none}
