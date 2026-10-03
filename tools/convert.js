@@ -33,13 +33,28 @@ const URL = 'file://' + path.resolve(__dirname, '../dist/코웨이TV큐시트.ht
       const wrong = App.wrongItemNames(); const fixed = [];
       for (const x of wrong) { const n = renameEverywhere('item', x.raw, x.key); fixed.push(`${x.raw}→${x.key} ${n.total}`); }
       setM(compute(WS));
+      // 엑셀 기준 맞춤: ① GRP 초수 비중 — 엑셀 계획 표가 소재 탭과 초수 구성은 같은데 비중만 다르면 엑셀 값을 직접 입력값으로
+      const planNotes = [];
+      for (const [nm, o] of Object.entries(P.secPlanXL || {})) {
+        const key = resolveItemLoose(M.MS, nm); if (!key) continue;
+        const der = M.secPlanOf(key); const xs = Object.keys(o).filter(k => o[k] > 0).sort().join(','), ds = der ? Object.keys(der.shares).sort().join(',') : '';
+        if (!der || xs !== ds) { planNotes.push(`${key}: 엑셀 계획 ${xs}초 / 소재 탭 ${ds || '없음'}초 → 소재 탭 따름`); continue; }
+        const tot = Object.values(o).reduce((x, v) => x + v, 0); if (Object.keys(o).some(k => o[k] > 0 && Math.abs(o[k] / tot - der.shares[k]) > 0.001)) { WS.secPlan[key] = Object.fromEntries(Object.entries(o).filter(([, v]) => v > 0)); planNotes.push(`${key}: GRP 초수 비중 ${JSON.stringify(WS.secPlan[key])}`); }
+      }
+      setM(compute(WS));
+      // ② 품목 요약 리치 곡선 — 엑셀에서 손으로 고른 곡선이 자동과 다르면 그대로
+      for (const [nm, v] of Object.entries(P.curveXL || {})) {
+        const key = resolveItemLoose(M.MS, nm); const o = key && M.ops.find(x => x.item === key); if (!o) continue;
+        if (o.total.autoCurve !== v) { WS.opsCurve[key] = v; planNotes.push(`${key}: 요약 리치 곡선 ${v}`); }
+      }
+      setM(compute(WS));
       const unk = App.unknownNames();
       const sum = (a, f) => a.reduce((s, x) => s + f(x), 0);
       const A = aggCells(M.cells);
       const g = M.spots.filter(s => s.src === '지상파'), c = M.spots.filter(s => s.src === '케이블');
       const kindEmpty = WS.sheets.지상파.filter(r => !isBlankRow(r) && !str(r[1])).length;
       return {
-        ym: WS.ym, notes: R.notes, fixed,
+        ym: WS.ym, notes: R.notes.concat(planNotes), fixed,
         unkItems: [...unk.items], unkChs: [...unk.chs],
         stats: { g: g.length, c: sum(c, s => s.cnt), budget: A.budget, value: A.value, bonus: A.bonus, err: M.issues.filter(i => i.sev === 'err').length, warn: M.issues.filter(i => i.sev === 'warn').length, kindEmpty, items: M.activeItems },
         errSample: M.issues.filter(i => i.sev === 'err').slice(0, 8).map(i => `${i.sheet} ${i.row + 1} ${i.msg}`),

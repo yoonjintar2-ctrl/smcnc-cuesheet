@@ -59,18 +59,40 @@ function readLegacy(wb, names) {
       notes.push(`소재 ${out.filter(r => r[3] && !/계$/.test(r[3])).length}개`);
     }
   }
-  // vlookup → 마스터(추가분만 병합)
+  // vlookup → 마스터(추가분만 병합) — 달마다 표 위치가 달라서(7월은 품목 표가 I열부터) 머리글로 열을 찾음
   if (wb.Sheets['vlookup']) {
     const a = sheetAoa(wb.Sheets['vlookup']);
+    const find = re => { for (let i = 0; i < 3; i++) { const r = a[i] || []; const j = r.findIndex(v => re.test(str(v))); if (j >= 0) return { i, j, row: r }; } return null; };
     const it = [], ch = [], cm = [], cp = [];
-    for (let i = 2; i < a.length; i++) {
+    const hI = find(/^짧은\s*이름$/), hC = find(/^채널$/), hCm = find(/^CM위치$/), hP = find(/목표\s*CPRP/);
+    const gCol = hC ? hC.row.findIndex((v, j) => j > hC.j && /PP\s*대구분/.test(str(v))) : -1;
+    const mCol = hC ? hC.row.findIndex((v, j) => j > hC.j && j <= hC.j + 5 && /지상파\/케이블/.test(str(v))) : -1;
+    const start = Math.max(hI ? hI.i : 1, hC ? hC.i : 1, hCm ? hCm.i : 1) + 1;
+    let itDone = false;
+    for (let i = start; i < a.length; i++) {
       const r = a[i] || [];
-      if (str(r[0])) cm.push([str(r[0]), str(r[1])]);
-      if (str(r[3])) ch.push([str(r[3]), '', /지상파/.test(str(r[7])) ? '지상파' : '케이블', str(r[4]).replace(/^\d+\)\s*/, ''), str(r[6]) || '기타']);
-      if (str(r[10])) it.push([str(r[10]), str(r[11]), str(r[12]), '', '']);
-      if (str(r[14]) && num(r[16])) cp.push([/지상파/.test(str(r[14])) ? '지상파' : '케이블', str(r[15]), num(r[16])]);
+      if (hCm && str(r[hCm.j - 1]) && str(r[hCm.j])) cm.push([str(r[hCm.j - 1]), str(r[hCm.j])]);
+      if (hC && str(r[hC.j])) { const name = str(r[hC.j]); const md = mCol >= 0 ? str(r[mCol]) : ''; ch.push([name, '', /지상파/.test(md) || /^(KBS|MBC|SBS)$/.test(name) ? '지상파' : '케이블', str(r[hC.j + 1]).replace(/^\d+\)\s*/, ''), (gCol >= 0 ? str(r[gCol]) : '') || '기타']); }
+      if (hI && !itDone) { if (!str(r[hI.j])) itDone = true; else it.push([str(r[hI.j]), str(r[hI.j + 1]), str(r[hI.j + 2]), '', '']); }
+      if (hP && str(r[hP.j - 1]) && num(r[hP.j])) cp.push([/지상파/.test(str(r[hP.j - 2])) ? '지상파' : '케이블', str(r[hP.j - 1]), num(r[hP.j])]);
     }
     parts.master = { 품목: it, 채널: ch, CM위치: cm, 목표CPRP: cp };
+  }
+  // 당월 운영 '품목별 집행 기간 및 소재' 표의 초수별 예산 비중 (엑셀 GRP 계산에 쓰는 값)
+  if (op.length) {
+    for (let i = 60; i < Math.min(op.length, 120); i++) {
+      const r = op[i] || []; const j = r.findIndex(v => str(v) === '15초'); if (j < 0 || str(r[j + 1]) !== '30초') continue;
+      const plan = {};
+      for (let k = i + 1; k < i + 16; k++) { const q = op[k] || []; const nm = str(q[32]); if (!nm || nm === '0') continue; const a15 = num(q[j]) || 0, a30 = num(q[j + 1]) || 0; if (a15 || a30) plan[nm] = { 15: a15, 30: a30 }; }
+      parts.secPlanXL = plan; break;
+    }
+  }
+  // 운영 요약 '품목 요약' 줄의 리치 곡선(수동 입력: 지상파케이블 or 케이블)
+  const oName = names.find(n => /운영 요약$/.test(n));
+  if (oName && wb.Sheets[oName]) {
+    const a = sheetAoa(wb.Sheets[oName]); const cv = {};
+    for (const r of a) { const b = str(r[1]); if (/요약$/.test(b) && /^(지상파케이블|케이블)$/.test(str(r[9]))) cv[b.replace(/\s*요약$/, '')] = str(r[9]); }
+    parts.curveXL = cv;
   }
   // 누적리치
   if (wb.Sheets['누적리치']) {
@@ -84,7 +106,7 @@ function readLegacy(wb, names) {
 function legacyToWS(buf) {
   const head = XLSX.read(buf, { type: 'array', bookSheets: true });
   const names = head.SheetNames;
-  const want = names.filter(n => /^지상파TV/.test(n) || /운영소재/.test(n) || ['케이블raw', '당월 운영', 'vlookup', '누적리치'].includes(n));
+  const want = names.filter(n => /^지상파TV/.test(n) || /운영소재/.test(n) || /운영 요약$/.test(n) || ['케이블raw', '당월 운영', 'vlookup', '누적리치'].includes(n));
   const wb = XLSX.read(buf, { type: 'array', sheets: want, cellDates: false, cellFormula: false, cellHTML: false, cellText: false });
   return readLegacy(wb, names);
 }

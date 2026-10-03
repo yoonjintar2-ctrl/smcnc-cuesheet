@@ -560,6 +560,22 @@ function creNormalize() {
   if (JSON.stringify(out) !== JSON.stringify(WS.sheets.소재 || [])) { WS.sheets.소재 = out; return true; }
   return false;
 }
+// GRP 계산용 초수별 예산 비중 (엑셀 '품목별 집행 기간 및 소재' 표의 15초·30초 예산 비중) — 비우면 소재 금액 비중을 초수별로 합산
+function creSecShares(rr) {
+  const sh = {}; const anyShare = rr.some(r => num(r[4]) != null);
+  for (const r of rr) { const sec = num(r[2]); if (!sec || !str(r[3])) continue; sh[sec] = (sh[sec] || 0) + (anyShare ? (num(r[4]) || 0) : num(r[5]) != null ? num(r[5]) : 1); }
+  const tot = sum(Object.values(sh), v => v); if (!tot) return {};
+  for (const k in sh) sh[k] /= tot; return sh;
+}
+function secPlanHtml(k, rr) {
+  const plan = (WS.secPlan || {})[k] || null, der = creSecShares(rr);
+  const secs = [...new Set(Object.keys(der).concat(Object.keys(plan || {})).map(Number))].filter(x => x > 0).sort((a, b) => a - b);
+  if (secs.length < 2 && !plan) return '';
+  const pl = M.secPlanOf(k), fac = pl ? fmt.dec(pl.factor, 3) : '-';
+  return `<div class="secplan" data-sp="${esc(k)}"><b>GRP 계산 초수 비중</b> <span class="muted">(예산)</span>
+    ${secs.map(sec => `<label>${sec}초 <span class="in pc"><input data-sps="${sec}" class="r" inputmode="decimal" value="${plan && plan[sec] != null ? esc(pctTxt(plan[sec])) : ''}" placeholder="${der[sec] != null ? esc(pctTxt(der[sec])) : '0'}"><span>%</span></span></label>`).join('')}
+    <span class="muted">→ 15초 환산 ×${fac} · ${plan ? '직접 넣은 값' : '비워 두면 소재 금액 비중으로'} · 엑셀 ‘품목별 집행 기간 및 소재’ 표의 예산 비중과 같은 값</span></div>`;
+}
 function renderCreForm(el) {
   if (creNormalize()) App.changed('소재', true);
   const rows = WS.sheets.소재;
@@ -587,7 +603,7 @@ function renderCreForm(el) {
         <td class="in"><input data-f="6" value="${esc(str(r[6]))}"></td>
         <td class="in wide"><input data-f="7" value="${esc(str(r[7]))}"></td>
         <td><button class="x" data-del="${i}" title="삭제">✕</button></td></tr>`; }).join('')}
-      </tbody><tfoot><tr class="sub"><td class="l" colspan="3">합계</td><td data-s4></td><td data-s5></td><td></td><td colspan="3"></td></tr></tfoot></table></section>`;
+      </tbody><tfoot><tr class="sub"><td class="l" colspan="3">합계</td><td data-s4></td><td data-s5></td><td></td><td colspan="3"></td></tr></tfoot></table>${secPlanHtml(k, idx.map(i => rows[i]))}</section>`;
   };
   el.innerHTML = `<div class="viewhead"><div><h2>소재</h2><div class="sub">${ymLabel()} · 품목별 운영 소재와 비중. 비중은 % 숫자로 (50 = 50%). 지상파 실제는 지상파 송출 중 그 소재로 나간 비율이에요.</div></div><div class="spacer"></div>
       <select class="btn sm" id="creadd"><option value="">＋ 품목 추가…</option>${avail.map(k => `<option value="${esc(k)}">${esc(k)}${M.budgetItems.includes(k) ? ' (예산 있음)' : ''}</option>`).join('')}</select><button class="btn sm" data-c="xlsx">⤓ 소재 엑셀</button></div>
@@ -631,6 +647,13 @@ function renderCreForm(el) {
     inp.addEventListener('click', e => { e.stopPropagation(); if (!document.querySelector('.calpop')) open(); });
     inp.addEventListener('keydown', e => { if ((e.altKey && e.key === 'ArrowDown') || e.key === 'F4') { e.preventDefault(); open(); } });
   });
+  el.querySelectorAll('.secplan[data-sp]').forEach(box => box.querySelectorAll('input[data-sps]').forEach(inp => inp.addEventListener('change', () => {
+    const k = box.dataset.sp; const o = {}; let bad = false;
+    box.querySelectorAll('input[data-sps]').forEach(x => { const t = x.value.trim(); if (!t) return; const n = parsePct(t); if (n === null) { bad = true; x.classList.add('bad'); return; } o[x.dataset.sps] = n; });
+    if (bad) return App.toast('비중은 숫자로 써 주세요 (27 = 27%)');
+    WS.secPlan = WS.secPlan || {}; if (Object.keys(o).length) WS.secPlan[k] = o; else delete WS.secPlan[k];
+    App.changed('소재');
+  })));
   el.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { rows.splice(+b.dataset.del, 1); App.changed('소재'); });
   const addRow = k => { const last = rows.map((r, i) => i).filter(i => rows[i][0] === k).pop(); const lr = last != null ? rows[last] : null; const nr = [k, lr ? lr[1] : '', lr ? lr[2] : '', '', '', '', '', '']; if (last != null) rows.splice(last + 1, 0, nr); else rows.push(nr);
     App.changed('소재', false, () => { const sec = [...App.paneEl('소재').querySelectorAll('.crecard')].find(s => s.dataset.item === k); const ins = sec ? sec.querySelectorAll('input[data-f="3"]') : []; const x = ins[ins.length - 1]; if (x) { x.focus(); x.scrollIntoView({ block: 'center' }); } }); };

@@ -1032,6 +1032,16 @@ table.t.cue.qm.cg td.kind.fx{position:sticky;z-index:3}
 .cale .l1 .m{margin-left:auto}
 .cale .p{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#3d4650;font-size:11px;-webkit-line-clamp:unset}
 .cale .c{max-width:none;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+/* ===== 11차: 엑셀 기준 맞춤 ===== */
+.crecard .secplan{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:10px 14px;border-top:1px solid var(--rule);font-size:12.5px}
+.crecard .secplan label{display:inline-flex;align-items:center;gap:6px}
+.crecard .secplan .in.pc{display:inline-flex;align-items:center;gap:2px}
+.crecard .secplan input{width:56px;padding:3px 6px;border:1px solid var(--rule);border-radius:6px;background:var(--surface);color:var(--ink);text-align:right;font:inherit}
+.crecard .secplan input.bad{border-color:var(--stop)}
+table.ops td.curve select{font:inherit;font-size:12px;border:1px solid transparent;background:transparent;color:inherit;padding:1px 2px;border-radius:5px;cursor:pointer;text-align:center}
+table.ops td.curve select:hover{border-color:var(--rule)}
+table.ops td.curve.manual select{border-color:var(--acc);font-weight:600}
 </style>
 <script id="lib-chart">/*!
  * Chart.js v4.4.1
@@ -1430,24 +1440,33 @@ function buildMaster(WS) {
   }
   return { items, itemAlias, itemHint, itemOrder, channels, chList, chByName, cm, cprp };
 }
+// CM 위치 분류 — 기존 엑셀과 같게 (2026-10 '엑셀 기준')
+//  · 마스터 'CM위치'의 분류 값은 엑셀처럼 그대로 비교: '중CM'·'PIB'만 그 분류, 중CM(하프)·중CM(HB)·중CM(PRE) 같은 건 '그외'(전후CM 등)
+//  · 지상파는 엑셀 지상파 시트의 'CM 구분' 수식과 똑같이: '중'으로 시작 → 중CM, 끝 글자가 1·2·3·D·P → PIB(후TOP·전END와 ±1~3), 나머지 → 그외
 function normCmClass(s) {
-  const t = String(s || '').trim();
-  if (/^중/.test(t)) return '중CM';
-  if (/PIB/i.test(t)) return 'PIB';
+  const t = String(s || '').replace(/\s+/g, '');
+  if (/^중CM$/i.test(t)) return '중CM';
+  if (/^PIB$/i.test(t)) return 'PIB';
   if (/전후/.test(t)) return '전후CM';
-  if (/일반|그외/.test(t)) return '일반';
-  return t || '일반';
+  return '일반';
+}
+function groundCmClass(s) {
+  const t = String(s || '').trim();
+  if (!t) return '일반';
+  if (t.charAt(0) === '중') return '중CM';
+  return /[123DP]$/i.test(t) ? 'PIB' : '일반';
 }
 function cmClassOf(MS, raw, media) {
   const s = str(raw);
-  if (!s) return { cls: media === '지상파' ? '일반' : '전후CM', known: true };
+  if (media === '지상파') return { cls: groundCmClass(s), known: true };
+  if (!s) return { cls: '전후CM', known: true };
   const k = norm(s);
   if (MS.cm.has(k)) return { cls: MS.cm.get(k), known: true };
   let cls;
-  if (/중/.test(s)) cls = '중CM';
+  if (/^중\s*CM$|^중$|중간광고/i.test(s)) cls = '중CM';
   else if (/PIB|TOP|END|PCM/i.test(s)) cls = 'PIB';
   else if (/전|후/.test(s)) cls = '전후CM';
-  else cls = media === '지상파' ? '일반' : '전후CM';
+  else cls = '전후CM';
   return { cls, known: false };
 }
 function resolveItem(MS, raw) {
@@ -1496,6 +1515,22 @@ function compute(WS) {
   const issue = (sheet, row, col, sev, msg) => issues.push({ sheet, row, col, sev, msg });
   const creatives = parseCreatives(WS, MS);
   const creByItem = groupBy(creatives.filter(c => c.item), c => c.item);
+  // 품목별 'GRP 초수 비중'(예산 비중): WS.secPlan[품목] = {15: 0.27, 30: 0.73} 직접 입력 → 없으면 소재 탭 금액 비중을 초수별로 합산
+  const planCache = new Map();
+  const secPlanOf = item => {
+    if (planCache.has(item)) return planCache.get(item);
+    let res = null;
+    const o = (WS.secPlan || {})[item];
+    const fromShares = (sh, src) => { const ks = Object.keys(sh).filter(k => +k > 0 && sh[k] > 0); const tot = sum(ks, k => sh[k]); return tot > 0 ? { src, shares: Object.fromEntries(ks.map(k => [k, sh[k] / tot])), factor: sum(ks, k => sh[k] * 15 / +k) / tot } : null; };
+    if (o) res = fromShares(o, 'plan');
+    if (!res) {
+      const list = (creByItem.get(item) || []).filter(x => x.sec);
+      const sh = {}; const anyShare = list.some(x => x.share != null);
+      for (const x of list) sh[x.sec] = (sh[x.sec] || 0) + (anyShare ? (x.share || 0) : x.cshare != null ? x.cshare : 1);
+      res = fromShares(sh, 'cre');
+    }
+    planCache.set(item, res); return res;
+  };
 
   // ---- 스팟 ----
   const spots = [];
@@ -1622,6 +1657,7 @@ function compute(WS) {
     if (sp.weekend) c.we += sp.cnt; else c.wd += sp.cnt;
     c.cmc[sp.cmCls] = (c.cmc[sp.cmCls] || 0) + sp.cnt;
   }
+  const warnedPlan = new Set();
   for (const c of cells.values()) {
     if (c.media === '지상파') { c.bonus = c.bonusSpots; c.value = c.budget + c.bonusSpots; }
     else { c.value = c.priceSum; c.bonus = c.value - c.budget; }
@@ -1629,17 +1665,15 @@ function compute(WS) {
     // GRP: 예산 ÷ 목표CPRP(15초) × 초수 환산
     let cp = MS.cprp.get(c.media + '|' + norm(c.media === '지상파' ? c.ch : c.mpp)) || MS.cprp.get(c.media + '|' + norm(c.mpp));
     c.cprp = cp || null;
-    let factor = null;
-    if (c.priceSum > 0) { factor = 0; for (const s in c.secPrice) factor += (c.secPrice[s] / c.priceSum) * (15 / (+s)); }
-    else {
-      const list = creByItem.get(c.item) || [];
-      const w = list.filter(x => x.sec);
-      if (w.length) { const tot = sum(w, x => x.share || 1); factor = sum(w, x => (x.share || 1) * 15 / x.sec) / tot; }
-      else factor = 0.5;
-    }
+    // 초수 환산(엑셀 기준): 품목마다 계획한 초수별 예산 비중 하나를 모든 채널에 똑같이 씀 — 실제 송출 초수가 아님
+    const pl = secPlanOf(c.item);
+    let factor = pl ? pl.factor : null;
+    if (factor == null && c.priceSum > 0) { factor = 0; for (const s in c.secPrice) factor += (c.secPrice[s] / c.priceSum) * (15 / (+s)); }
+    if (factor == null) factor = 0.5;
     c.factor = factor;
     c.eq = cp && c.budget ? c.budget / cp : 0;
     c.grp = c.eq * factor;
+    if (c.budget > 0 && !pl && !warnedPlan.has(c.item)) { warnedPlan.add(c.item); issue('소재', -1, null, 'info', `${c.item}: 소재 탭에 초수·금액 비중이 없어 실제 송출 초수로 GRP를 계산했어요`); }
     if (c.budget > 0 && !cp) issue('목표CPRP', -1, 'cprp', 'warn', `${c.media} ${c.media === '지상파' ? c.ch : c.mpp}의 목표 CPRP가 없어 GRP를 계산하지 못했어요`);
     if (c.budget > 0 && c.cnt === 0) issue('예산', -1, null, 'warn', `${c.ch} · ${c.item}: 예산 ${fmt.eok(c.budget, 2)}이 있는데 송출이 0회예요`);
     if (c.budget === 0 && c.cnt > 0 && c.media === '케이블') issue('케이블', -1, null, 'warn', `${c.ch} · ${c.item}: 송출 ${c.cnt}회가 있는데 예산이 0이에요 (보너스율 계산 불가)`);
@@ -1669,7 +1703,8 @@ function compute(WS) {
       rows.push(r);
     }
     const hasG = its.some(c => c.media === '지상파' && c.cnt > 0);
-    const t = { group: hasG ? '지상파케이블' : '케이블', budget: sum(rows, r => r.budget), cnt: sum(rows, r => r.cnt), grp: sum(rows, r => r.grp), eq: sum(rows, r => r.eq), value: sum(rows, r => r.value) };
+    const autoCurve = hasG ? '지상파케이블' : '케이블', ovCurve = (WS.opsCurve || {})[item];
+    const t = { group: ovCurve === '지상파케이블' || ovCurve === '케이블' ? ovCurve : autoCurve, autoCurve, curveManual: !!ovCurve && ovCurve !== autoCurve, budget: sum(rows, r => r.budget), cnt: sum(rows, r => r.cnt), grp: sum(rows, r => r.grp), eq: sum(rows, r => r.eq), value: sum(rows, r => r.value) };
     const pt = reachAt(reach[t.group], t.grp); t.r1a = pt ? pt[1] : null; t.r3a = pt ? pt[2] : null; reachOv(t, item + '|합계');
     const it = MS.items.get(item);
     ops.push({ item, full: it ? it.full : item, cat: it ? it.cat : '', rows, total: t });
@@ -1693,7 +1728,7 @@ function compute(WS) {
   })();
   const sevRank = { err: 0, warn: 1, info: 2 };
   issues.sort((a, b) => sevRank[a.sev] - sevRank[b.sev]);
-  return { WS, MS, ym, weeks, spots, cells: cellList, cellMap: cells, budgetItems, activeItems, creatives, ops, issues, reach, gSettle };
+  return { WS, MS, ym, weeks, spots, secPlanOf, cells: cellList, cellMap: cells, budgetItems, activeItems, creatives, ops, issues, reach, gSettle };
 }
 
 function creMatch(a, b) { const x = norm(a).replace(/편$/, ''), y = norm(b).replace(/편$/, ''); return !!x && !!y && (x === y || x.includes(y) || y.includes(x)); }
@@ -1839,8 +1874,11 @@ function legacyGroundRows(a, from = 0) {
       if (/^[\d,.\s()-]+$/.test(t) || /^(주차별|\d+주|\d{1,2}\/\d{1,2}(~\d{1,2}(\/\d{1,2})?)?)$/.test(t)) continue;
       const m = v.match(LEGACY_SPOT);
       const item = m ? m[1].trim() : '', cre = m ? m[2].trim() : v.trim(), sec = m ? +m[3] : (num(r[7]) || '');
+      // 지정율이 있어도 지정금액 칸(O열)이 비어 있으면 엑셀 CM지정비에 안 들어감 → 엑셀 기준으로 지정율을 비고로 옮김
+      let rate = num(r[13]) != null ? num(r[13]) : '', note = str(r[11]);
+      if (rate && r.length > 14 && !(num(r[14]) > 0)) { note = [note, `지정율 ${Math.round(rate * 1000) / 10}% (지정금액 없음)`].filter(Boolean).join(' · '); rate = ''; }
       out.push([cur, kind, prog, str(r[3]), normTime(r[4]), normTime(r[5]), str(r[6]), sec, num(r[8]) || '', num(r[10]) != null ? num(r[10]) : (/^\s*-+\s*$/.test(String(r[10] == null ? '' : r[10])) ? 0 : ''),
-        str(r[19]), item, cre, str(r[12]), num(r[13]) != null ? num(r[13]) : '', num(r[46]) != null ? num(r[46]) : '', str(r[11])]);
+        str(r[19]), item, cre, str(r[12]), rate, num(r[46]) != null ? num(r[46]) : '', note]);
     }
   }
   return out;
@@ -1913,10 +1951,17 @@ function parseReachBlock(a) {
   }
   return pts.length ? { pts: thinCurve(pts), meta, skipped } : null;
 }
+// 누적리치 곡선 줄이기: GRP는 원본 자릿수 그대로(소수 넷째 자리), R1·R3가 같은 구간은 처음·끝 점만 남김 → '가장 가까운 점' 찾기 결과는 원본 곡선과 똑같음 (여러 번 해도 같음)
 function thinCurve(pts) {
-  pts.sort((x, y) => x[0] - y[0]);
-  const out = []; let last = -1;
-  for (const p of pts) { const b = Math.round(p[0] * 10) / 10; if (b !== last) { out.push([Math.round(p[0] * 100) / 100, p[1], p[2]]); last = b; } }
+  const P = pts.filter(p => p && p[0] != null && isFinite(p[0])).map(p => [Math.round(p[0] * 1e4) / 1e4, p[1], p[2]]).sort((x, y) => x[0] - y[0]);
+  const same = (a, b) => a[1] === b[1] && a[2] === b[2];
+  const out = [];
+  for (let i = 0; i < P.length; i++) {
+    const p = P[i]; if (out.length && out[out.length - 1][0] === p[0]) continue;   // 같은 GRP는 처음 것
+    const prev = P[i - 1], next = P[i + 1];
+    if (prev && next && same(prev, p) && same(p, next)) continue;                    // 구간 가운데 점
+    out.push(p);
+  }
   return out;
 }
 
@@ -1963,6 +2008,10 @@ function readFileParts(buf, fileName) {
       notes.push(`${SHEETS[key].label} ${rows.length}행`);
     } else if (name === '리치직접입력') {
       parts.opsReach = {}; for (const r of a.slice(1)) { if (!str(r[0]) || !str(r[1])) continue; const o = {}; if (num(r[2]) != null) o.r1 = num(r[2]); if (num(r[3]) != null) o.r3 = num(r[3]); if (Object.keys(o).length) parts.opsReach[str(r[0]) + '|' + str(r[1])] = o; }
+    } else if (name === 'GRP초수비중') {
+      parts.secPlan = {}; for (const r of a.slice(1)) { const k = str(r[0]), sec = num(r[1]), v = num(r[2]); if (!k || !sec || v == null) continue; (parts.secPlan[k] = parts.secPlan[k] || {})[sec] = v; }
+    } else if (name === '요약리치곡선') {
+      parts.opsCurve = {}; for (const r of a.slice(1)) { const k = str(r[0]), v = str(r[1]); if (k && (v === '지상파케이블' || v === '케이블')) parts.opsCurve[k] = v; }
     } else if (name === '주요프로그램') {
       parts.opsNotes = {}; for (const r of a.slice(1)) if (str(r[0]) && str(r[2])) parts.opsNotes[str(r[0]) + '|' + str(r[1])] = str(r[2]);
     } else if (/누적리치|리치|reach/i.test(name)) {
@@ -2082,6 +2131,16 @@ function reachOvSheet(WS) {
   for (const k of Object.keys(WS.opsReach || {})) { const [a, b] = k.split('|'); const o = WS.opsReach[k] || {}; aoa.push([a, b, o.r1 == null ? '' : o.r1, o.r3 == null ? '' : o.r3]); }
   return { name: '리치직접입력', aoa, widths: [14, 22, 16, 16] };
 }
+function secPlanSheet(WS) {
+  const aoa = [['품목', '초수', '예산 비중 (GRP 계산용)']];
+  for (const k of Object.keys(WS.secPlan || {})) for (const s of Object.keys(WS.secPlan[k] || {})) aoa.push([k, +s, WS.secPlan[k][s]]);
+  return { name: 'GRP초수비중', aoa, widths: [14, 8, 20] };
+}
+function opsCurveSheet(WS) {
+  const aoa = [['품목', '품목 요약 리치 곡선 (직접 고름)']];
+  for (const k of Object.keys(WS.opsCurve || {})) aoa.push([k, WS.opsCurve[k]]);
+  return { name: '요약리치곡선', aoa, widths: [14, 26] };
+}
 function cueOrderSheet(WS) {
   const aoa = [['채널', '순서', '프로그램|요일|시작|종료|시급']];
   for (const ch of Object.keys(WS.cueOrder || {})) (WS.cueOrder[ch] || []).forEach((k, i) => aoa.push([ch, i + 1, k]));
@@ -2095,6 +2154,8 @@ function saveWorkspaceXlsx(WS, M, which, suffix) {
   if (which.length === ALL_SHEETS.length && Object.keys(WS.reach || {}).length) sheets.push(reachSheet(WS));
   if (which.length === ALL_SHEETS.length && Object.keys(WS.opsNotes || {}).length) sheets.push(notesSheet(WS));
   if (which.length === ALL_SHEETS.length && Object.keys(WS.opsReach || {}).length) sheets.push(reachOvSheet(WS));
+  if ((which.length === ALL_SHEETS.length || which.includes('소재')) && Object.keys(WS.secPlan || {}).length) sheets.push(secPlanSheet(WS));
+  if (which.length === ALL_SHEETS.length && Object.keys(WS.opsCurve || {}).length) sheets.push(opsCurveSheet(WS));
   if (which.includes('케이블') && Object.keys(WS.cueOrder || {}).length) sheets.push(cueOrderSheet(WS));
   sheets.push(metaSheet(WS, which));
   const ymTxt = WS.ym.replace('-', '');
@@ -3098,6 +3159,12 @@ function opsHtml() {
   return `<div class="tw free"><table class="t ops ctr"><thead><tr>${T.head.map((h, i) => `<th${i === 9 ? ' class="pgh"' : ''}>${h}</th>`).join('')}</tr></thead><tbody>
   ${T.rows.map(r => `<tr class="${r.t === 'row' ? '' : r.t}">${r.vals.map((v, j) => {
     if (j < 2 && r.t === 'row') return r.span ? `<td class="mg" rowspan="${r.span}">${j === 1 ? `<span class="sw" style="background:${itemColor(r.item)};margin-right:6px"></span>` : ''}${esc(v)}</td>` : '';
+    if (j === 2 && r.t === 'sub' && r.src && r.src.autoCurve) {
+      // 품목 요약 R1·R3에 쓰는 리치 곡선 — 엑셀 운영 요약의 '수동 입력: 지상파케이블 or 케이블'과 같음 (처음엔 지상파 송출이 있으면 지상파케이블)
+      const x = r.src, tip = `품목 요약 R1+·R3+를 찾을 누적리치 곡선이에요. 자동: ${x.autoCurve}${x.curveManual ? ' · 지금은 직접 고른 값' : ''}`;
+      if (readOnly()) return `<td title="${esc(tip)}">${esc(v)}</td>`;
+      return `<td class="curve${x.curveManual ? ' manual' : ''}" title="${esc(tip)}"><select data-curve="${esc(r.item)}" data-auto="${esc(x.autoCurve)}">${['지상파케이블', '케이블'].map(o => `<option${o === v ? ' selected' : ''}>${o}</option>`).join('')}</select></td>`;
+    }
     if (j < 3) return `<td>${esc(v)}</td>`;
     if (j === 9) {
       // 자동 값은 칸 너비에 맞춰 나중에 채움(fitProgs) — 단가 낮은 프로그램부터 빼고 끝에 ' 등'
@@ -3251,6 +3318,11 @@ function fitProgs(root) {
 }
 function bindOpsEdit(root) {
   fitProgs(root);
+  root.querySelectorAll('select[data-curve]').forEach(sel => sel.addEventListener('change', () => {
+    const k = sel.dataset.curve; WS.opsCurve = WS.opsCurve || {};
+    if (sel.value === sel.dataset.auto) delete WS.opsCurve[k]; else WS.opsCurve[k] = sel.value;
+    App.changed('ops'); App.toast(`${esc(k)} 요약 리치를 ${esc(sel.value)} 곡선에서 찾아요${sel.value === sel.dataset.auto ? ' (자동)' : ''}`);
+  }));
   root.querySelectorAll('td.rv[data-rk]').forEach(td => {
     td.addEventListener('focus', () => { const r = document.createRange(); r.selectNodeContents(td); const s = getSelection(); s.removeAllRanges(); s.addRange(r); });
     td.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); td.blur(); } if (e.key === 'Escape') { td.dataset.esc = '1'; td.blur(); } });
@@ -3572,7 +3644,7 @@ const FORM_TABS = { master: el => renderMasterForm(el), 예산: el => renderBudg
 function fixWS(w) {
   w.sheets = w.sheets || {};
   for (const k of ALL_SHEETS) if (!w.sheets[k]) w.sheets[k] = k === '예산' ? [['채널']] : (DEFAULT_MASTER[k] ? DEFAULT_MASTER[k].map(r => r.slice()) : []);
-  w.hidden = w.hidden || {}; w.cueOrder = w.cueOrder || {}; w.opsNotes = w.opsNotes || {}; w.reach = w.reach || {}; w.reachMeta = w.reachMeta || {}; w.opsReach = w.opsReach || {};
+  w.hidden = w.hidden || {}; w.cueOrder = w.cueOrder || {}; w.opsNotes = w.opsNotes || {}; w.reach = w.reach || {}; w.reachMeta = w.reachMeta || {}; w.opsReach = w.opsReach || {}; w.secPlan = w.secPlan || {}; w.opsCurve = w.opsCurve || {};
   // 품목 색 팔레트 v2: 예전 기본색 그대로인 품목만 새 색으로 (직접 고른 색은 유지)
   if (!(w.palV >= 2)) { for (const r of w.sheets.품목 || []) { const c = String(r[3] || '').toLowerCase().replace(/^([0-9a-f]{6})$/, '#$1'); if (PALETTE_V2[c]) r[3] = PALETTE_V2[c]; } w.palV = 2; }
   // 품목 색 v3: 같은 카테고리는 비슷한 계열로 — 기본색 그대로인 품목만 (직접 고른 색은 유지)
@@ -4565,6 +4637,8 @@ const App = {
     if (P.itemLegacy) { WS.itemLegacy = WS.itemLegacy || {}; for (const k in P.itemLegacy) WS.itemLegacy[k] = addAlias(WS.itemLegacy[k] || '', P.itemLegacy[k]); }
     if (P.opsNotes && pick.includes('지상파') && pick.includes('케이블')) WS.opsNotes = P.opsNotes;
     if (P.opsReach && pick.includes('지상파') && pick.includes('케이블')) WS.opsReach = P.opsReach;
+    if (P.opsCurve && pick.includes('지상파') && pick.includes('케이블')) WS.opsCurve = P.opsCurve;
+    if (P.secPlan && pick.includes('소재')) WS.secPlan = P.secPlan;
     const Mb = compute(fixWS(before));
     this.dataReplaced();
     const d = diffModels(Mb, M);
@@ -5244,6 +5318,22 @@ function creNormalize() {
   if (JSON.stringify(out) !== JSON.stringify(WS.sheets.소재 || [])) { WS.sheets.소재 = out; return true; }
   return false;
 }
+// GRP 계산용 초수별 예산 비중 (엑셀 '품목별 집행 기간 및 소재' 표의 15초·30초 예산 비중) — 비우면 소재 금액 비중을 초수별로 합산
+function creSecShares(rr) {
+  const sh = {}; const anyShare = rr.some(r => num(r[4]) != null);
+  for (const r of rr) { const sec = num(r[2]); if (!sec || !str(r[3])) continue; sh[sec] = (sh[sec] || 0) + (anyShare ? (num(r[4]) || 0) : num(r[5]) != null ? num(r[5]) : 1); }
+  const tot = sum(Object.values(sh), v => v); if (!tot) return {};
+  for (const k in sh) sh[k] /= tot; return sh;
+}
+function secPlanHtml(k, rr) {
+  const plan = (WS.secPlan || {})[k] || null, der = creSecShares(rr);
+  const secs = [...new Set(Object.keys(der).concat(Object.keys(plan || {})).map(Number))].filter(x => x > 0).sort((a, b) => a - b);
+  if (secs.length < 2 && !plan) return '';
+  const pl = M.secPlanOf(k), fac = pl ? fmt.dec(pl.factor, 3) : '-';
+  return `<div class="secplan" data-sp="${esc(k)}"><b>GRP 계산 초수 비중</b> <span class="muted">(예산)</span>
+    ${secs.map(sec => `<label>${sec}초 <span class="in pc"><input data-sps="${sec}" class="r" inputmode="decimal" value="${plan && plan[sec] != null ? esc(pctTxt(plan[sec])) : ''}" placeholder="${der[sec] != null ? esc(pctTxt(der[sec])) : '0'}"><span>%</span></span></label>`).join('')}
+    <span class="muted">→ 15초 환산 ×${fac} · ${plan ? '직접 넣은 값' : '비워 두면 소재 금액 비중으로'} · 엑셀 ‘품목별 집행 기간 및 소재’ 표의 예산 비중과 같은 값</span></div>`;
+}
 function renderCreForm(el) {
   if (creNormalize()) App.changed('소재', true);
   const rows = WS.sheets.소재;
@@ -5271,7 +5361,7 @@ function renderCreForm(el) {
         <td class="in"><input data-f="6" value="${esc(str(r[6]))}"></td>
         <td class="in wide"><input data-f="7" value="${esc(str(r[7]))}"></td>
         <td><button class="x" data-del="${i}" title="삭제">✕</button></td></tr>`; }).join('')}
-      </tbody><tfoot><tr class="sub"><td class="l" colspan="3">합계</td><td data-s4></td><td data-s5></td><td></td><td colspan="3"></td></tr></tfoot></table></section>`;
+      </tbody><tfoot><tr class="sub"><td class="l" colspan="3">합계</td><td data-s4></td><td data-s5></td><td></td><td colspan="3"></td></tr></tfoot></table>${secPlanHtml(k, idx.map(i => rows[i]))}</section>`;
   };
   el.innerHTML = `<div class="viewhead"><div><h2>소재</h2><div class="sub">${ymLabel()} · 품목별 운영 소재와 비중. 비중은 % 숫자로 (50 = 50%). 지상파 실제는 지상파 송출 중 그 소재로 나간 비율이에요.</div></div><div class="spacer"></div>
       <select class="btn sm" id="creadd"><option value="">＋ 품목 추가…</option>${avail.map(k => `<option value="${esc(k)}">${esc(k)}${M.budgetItems.includes(k) ? ' (예산 있음)' : ''}</option>`).join('')}</select><button class="btn sm" data-c="xlsx">⤓ 소재 엑셀</button></div>
@@ -5315,6 +5405,13 @@ function renderCreForm(el) {
     inp.addEventListener('click', e => { e.stopPropagation(); if (!document.querySelector('.calpop')) open(); });
     inp.addEventListener('keydown', e => { if ((e.altKey && e.key === 'ArrowDown') || e.key === 'F4') { e.preventDefault(); open(); } });
   });
+  el.querySelectorAll('.secplan[data-sp]').forEach(box => box.querySelectorAll('input[data-sps]').forEach(inp => inp.addEventListener('change', () => {
+    const k = box.dataset.sp; const o = {}; let bad = false;
+    box.querySelectorAll('input[data-sps]').forEach(x => { const t = x.value.trim(); if (!t) return; const n = parsePct(t); if (n === null) { bad = true; x.classList.add('bad'); return; } o[x.dataset.sps] = n; });
+    if (bad) return App.toast('비중은 숫자로 써 주세요 (27 = 27%)');
+    WS.secPlan = WS.secPlan || {}; if (Object.keys(o).length) WS.secPlan[k] = o; else delete WS.secPlan[k];
+    App.changed('소재');
+  })));
   el.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { rows.splice(+b.dataset.del, 1); App.changed('소재'); });
   const addRow = k => { const last = rows.map((r, i) => i).filter(i => rows[i][0] === k).pop(); const lr = last != null ? rows[last] : null; const nr = [k, lr ? lr[1] : '', lr ? lr[2] : '', '', '', '', '', '']; if (last != null) rows.splice(last + 1, 0, nr); else rows.push(nr);
     App.changed('소재', false, () => { const sec = [...App.paneEl('소재').querySelectorAll('.crecard')].find(s => s.dataset.item === k); const ins = sec ? sec.querySelectorAll('input[data-f="3"]') : []; const x = ins[ins.length - 1]; if (x) { x.focus(); x.scrollIntoView({ block: 'center' }); } }); };
@@ -8247,7 +8344,7 @@ const CLOUD = {
   parts(w) {
     const S = w.sheets;
     return {
-      meta: { v: w.v, ym: w.ym, start: w.start, end: w.end, palV: w.palV, itemV: w.itemV, itemLegacy: w.itemLegacy || {}, reachMeta: w.reachMeta || {}, opsNotes: w.opsNotes || {}, opsReach: w.opsReach || {}, adv: w.adv || '' },
+      meta: { v: w.v, ym: w.ym, start: w.start, end: w.end, palV: w.palV, itemV: w.itemV, itemLegacy: w.itemLegacy || {}, reachMeta: w.reachMeta || {}, opsNotes: w.opsNotes || {}, opsReach: w.opsReach || {}, secPlan: w.secPlan || {}, opsCurve: w.opsCurve || {}, adv: w.adv || '' },
       지상파: { rows: S.지상파 || [], hidden: (w.hidden || {}).지상파 || [] },
       케이블: { rows: S.케이블 || [], hidden: (w.hidden || {}).케이블 || [], cueOrder: w.cueOrder || {} },
       예산: S.예산 || [['채널']], 소재: S.소재 || [],
@@ -8260,7 +8357,7 @@ const CLOUD = {
     for (const r of rows || []) { P[r.part] = r.data; this.at[r.part] = r.updated_at; this.sent[r.part] = JSON.stringify(r.data); }
     const w = emptyWorkspace(ym);
     const m = P.meta || {};
-    for (const k of ['v', 'start', 'end', 'palV', 'itemV', 'itemLegacy', 'reachMeta', 'opsNotes', 'opsReach', 'adv']) if (m[k] != null) w[k] = m[k];
+    for (const k of ['v', 'start', 'end', 'palV', 'itemV', 'itemLegacy', 'reachMeta', 'opsNotes', 'opsReach', 'secPlan', 'opsCurve', 'adv']) if (m[k] != null) w[k] = m[k];
     if (P.지상파) { w.sheets.지상파 = P.지상파.rows || []; w.hidden.지상파 = P.지상파.hidden || []; }
     if (P.케이블) { w.sheets.케이블 = P.케이블.rows || []; w.hidden.케이블 = P.케이블.hidden || []; w.cueOrder = P.케이블.cueOrder || {}; }
     if (P.예산) w.sheets.예산 = P.예산; if (P.소재) w.sheets.소재 = P.소재;

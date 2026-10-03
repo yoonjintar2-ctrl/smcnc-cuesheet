@@ -161,6 +161,12 @@ function opsHtml() {
   return `<div class="tw free"><table class="t ops ctr"><thead><tr>${T.head.map((h, i) => `<th${i === 9 ? ' class="pgh"' : ''}>${h}</th>`).join('')}</tr></thead><tbody>
   ${T.rows.map(r => `<tr class="${r.t === 'row' ? '' : r.t}">${r.vals.map((v, j) => {
     if (j < 2 && r.t === 'row') return r.span ? `<td class="mg" rowspan="${r.span}">${j === 1 ? `<span class="sw" style="background:${itemColor(r.item)};margin-right:6px"></span>` : ''}${esc(v)}</td>` : '';
+    if (j === 2 && r.t === 'sub' && r.src && r.src.autoCurve) {
+      // 품목 요약 R1·R3에 쓰는 리치 곡선 — 엑셀 운영 요약의 '수동 입력: 지상파케이블 or 케이블'과 같음 (처음엔 지상파 송출이 있으면 지상파케이블)
+      const x = r.src, tip = `품목 요약 R1+·R3+를 찾을 누적리치 곡선이에요. 자동: ${x.autoCurve}${x.curveManual ? ' · 지금은 직접 고른 값' : ''}`;
+      if (readOnly()) return `<td title="${esc(tip)}">${esc(v)}</td>`;
+      return `<td class="curve${x.curveManual ? ' manual' : ''}" title="${esc(tip)}"><select data-curve="${esc(r.item)}" data-auto="${esc(x.autoCurve)}">${['지상파케이블', '케이블'].map(o => `<option${o === v ? ' selected' : ''}>${o}</option>`).join('')}</select></td>`;
+    }
     if (j < 3) return `<td>${esc(v)}</td>`;
     if (j === 9) {
       // 자동 값은 칸 너비에 맞춰 나중에 채움(fitProgs) — 단가 낮은 프로그램부터 빼고 끝에 ' 등'
@@ -314,6 +320,11 @@ function fitProgs(root) {
 }
 function bindOpsEdit(root) {
   fitProgs(root);
+  root.querySelectorAll('select[data-curve]').forEach(sel => sel.addEventListener('change', () => {
+    const k = sel.dataset.curve; WS.opsCurve = WS.opsCurve || {};
+    if (sel.value === sel.dataset.auto) delete WS.opsCurve[k]; else WS.opsCurve[k] = sel.value;
+    App.changed('ops'); App.toast(`${esc(k)} 요약 리치를 ${esc(sel.value)} 곡선에서 찾아요${sel.value === sel.dataset.auto ? ' (자동)' : ''}`);
+  }));
   root.querySelectorAll('td.rv[data-rk]').forEach(td => {
     td.addEventListener('focus', () => { const r = document.createRange(); r.selectNodeContents(td); const s = getSelection(); s.removeAllRanges(); s.addRange(r); });
     td.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); td.blur(); } if (e.key === 'Escape') { td.dataset.esc = '1'; td.blur(); } });

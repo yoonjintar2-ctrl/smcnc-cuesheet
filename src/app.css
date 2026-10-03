@@ -1027,3 +1027,13 @@ table.t.cue.qm.cg td.kind.fx{position:sticky;z-index:3}
 .cale .l1 .m{margin-left:auto}
 .cale .p{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#3d4650;font-size:11px;-webkit-line-clamp:unset}
 .cale .c{max-width:none;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+/* ===== 11차: 엑셀 기준 맞춤 ===== */
+.crecard .secplan{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:10px 14px;border-top:1px solid var(--rule);font-size:12.5px}
+.crecard .secplan label{display:inline-flex;align-items:center;gap:6px}
+.crecard .secplan .in.pc{display:inline-flex;align-items:center;gap:2px}
+.crecard .secplan input{width:56px;padding:3px 6px;border:1px solid var(--rule);border-radius:6px;background:var(--surface);color:var(--ink);text-align:right;font:inherit}
+.crecard .secplan input.bad{border-color:var(--stop)}
+table.ops td.curve select{font:inherit;font-size:12px;border:1px solid transparent;background:transparent;color:inherit;padding:1px 2px;border-radius:5px;cursor:pointer;text-align:center}
+table.ops td.curve select:hover{border-color:var(--rule)}
+table.ops td.curve.manual select{border-color:var(--acc);font-weight:600}

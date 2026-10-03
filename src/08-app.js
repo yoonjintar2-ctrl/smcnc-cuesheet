@@ -6,7 +6,7 @@ const FORM_TABS = { master: el => renderMasterForm(el), 예산: el => renderBudg
 function fixWS(w) {
   w.sheets = w.sheets || {};
   for (const k of ALL_SHEETS) if (!w.sheets[k]) w.sheets[k] = k === '예산' ? [['채널']] : (DEFAULT_MASTER[k] ? DEFAULT_MASTER[k].map(r => r.slice()) : []);
-  w.hidden = w.hidden || {}; w.cueOrder = w.cueOrder || {}; w.opsNotes = w.opsNotes || {}; w.reach = w.reach || {}; w.reachMeta = w.reachMeta || {}; w.opsReach = w.opsReach || {};
+  w.hidden = w.hidden || {}; w.cueOrder = w.cueOrder || {}; w.opsNotes = w.opsNotes || {}; w.reach = w.reach || {}; w.reachMeta = w.reachMeta || {}; w.opsReach = w.opsReach || {}; w.secPlan = w.secPlan || {}; w.opsCurve = w.opsCurve || {};
   // 품목 색 팔레트 v2: 예전 기본색 그대로인 품목만 새 색으로 (직접 고른 색은 유지)
   if (!(w.palV >= 2)) { for (const r of w.sheets.품목 || []) { const c = String(r[3] || '').toLowerCase().replace(/^([0-9a-f]{6})$/, '#$1'); if (PALETTE_V2[c]) r[3] = PALETTE_V2[c]; } w.palV = 2; }
   // 품목 색 v3: 같은 카테고리는 비슷한 계열로 — 기본색 그대로인 품목만 (직접 고른 색은 유지)
@@ -999,6 +999,8 @@ const App = {
     if (P.itemLegacy) { WS.itemLegacy = WS.itemLegacy || {}; for (const k in P.itemLegacy) WS.itemLegacy[k] = addAlias(WS.itemLegacy[k] || '', P.itemLegacy[k]); }
     if (P.opsNotes && pick.includes('지상파') && pick.includes('케이블')) WS.opsNotes = P.opsNotes;
     if (P.opsReach && pick.includes('지상파') && pick.includes('케이블')) WS.opsReach = P.opsReach;
+    if (P.opsCurve && pick.includes('지상파') && pick.includes('케이블')) WS.opsCurve = P.opsCurve;
+    if (P.secPlan && pick.includes('소재')) WS.secPlan = P.secPlan;
     const Mb = compute(fixWS(before));
     this.dataReplaced();
     const d = diffModels(Mb, M);

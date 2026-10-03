@@ -45,24 +45,33 @@ function buildMaster(WS) {
   }
   return { items, itemAlias, itemHint, itemOrder, channels, chList, chByName, cm, cprp };
 }
+// CM 위치 분류 — 기존 엑셀과 같게 (2026-10 '엑셀 기준')
+//  · 마스터 'CM위치'의 분류 값은 엑셀처럼 그대로 비교: '중CM'·'PIB'만 그 분류, 중CM(하프)·중CM(HB)·중CM(PRE) 같은 건 '그외'(전후CM 등)
+//  · 지상파는 엑셀 지상파 시트의 'CM 구분' 수식과 똑같이: '중'으로 시작 → 중CM, 끝 글자가 1·2·3·D·P → PIB(후TOP·전END와 ±1~3), 나머지 → 그외
 function normCmClass(s) {
-  const t = String(s || '').trim();
-  if (/^중/.test(t)) return '중CM';
-  if (/PIB/i.test(t)) return 'PIB';
+  const t = String(s || '').replace(/\s+/g, '');
+  if (/^중CM$/i.test(t)) return '중CM';
+  if (/^PIB$/i.test(t)) return 'PIB';
   if (/전후/.test(t)) return '전후CM';
-  if (/일반|그외/.test(t)) return '일반';
-  return t || '일반';
+  return '일반';
+}
+function groundCmClass(s) {
+  const t = String(s || '').trim();
+  if (!t) return '일반';
+  if (t.charAt(0) === '중') return '중CM';
+  return /[123DP]$/i.test(t) ? 'PIB' : '일반';
 }
 function cmClassOf(MS, raw, media) {
   const s = str(raw);
-  if (!s) return { cls: media === '지상파' ? '일반' : '전후CM', known: true };
+  if (media === '지상파') return { cls: groundCmClass(s), known: true };
+  if (!s) return { cls: '전후CM', known: true };
   const k = norm(s);
   if (MS.cm.has(k)) return { cls: MS.cm.get(k), known: true };
   let cls;
-  if (/중/.test(s)) cls = '중CM';
+  if (/^중\s*CM$|^중$|중간광고/i.test(s)) cls = '중CM';
   else if (/PIB|TOP|END|PCM/i.test(s)) cls = 'PIB';
   else if (/전|후/.test(s)) cls = '전후CM';
-  else cls = media === '지상파' ? '일반' : '전후CM';
+  else cls = '전후CM';
   return { cls, known: false };
 }
 function resolveItem(MS, raw) {
@@ -111,6 +120,22 @@ function compute(WS) {
   const issue = (sheet, row, col, sev, msg) => issues.push({ sheet, row, col, sev, msg });
   const creatives = parseCreatives(WS, MS);
   const creByItem = groupBy(creatives.filter(c => c.item), c => c.item);
+  // 품목별 'GRP 초수 비중'(예산 비중): WS.secPlan[품목] = {15: 0.27, 30: 0.73} 직접 입력 → 없으면 소재 탭 금액 비중을 초수별로 합산
+  const planCache = new Map();
+  const secPlanOf = item => {
+    if (planCache.has(item)) return planCache.get(item);
+    let res = null;
+    const o = (WS.secPlan || {})[item];
+    const fromShares = (sh, src) => { const ks = Object.keys(sh).filter(k => +k > 0 && sh[k] > 0); const tot = sum(ks, k => sh[k]); return tot > 0 ? { src, shares: Object.fromEntries(ks.map(k => [k, sh[k] / tot])), factor: sum(ks, k => sh[k] * 15 / +k) / tot } : null; };
+    if (o) res = fromShares(o, 'plan');
+    if (!res) {
+      const list = (creByItem.get(item) || []).filter(x => x.sec);
+      const sh = {}; const anyShare = list.some(x => x.share != null);
+      for (const x of list) sh[x.sec] = (sh[x.sec] || 0) + (anyShare ? (x.share || 0) : x.cshare != null ? x.cshare : 1);
+      res = fromShares(sh, 'cre');
+    }
+    planCache.set(item, res); return res;
+  };
 
   // ---- 스팟 ----
   const spots = [];
@@ -237,6 +262,7 @@ function compute(WS) {
     if (sp.weekend) c.we += sp.cnt; else c.wd += sp.cnt;
     c.cmc[sp.cmCls] = (c.cmc[sp.cmCls] || 0) + sp.cnt;
   }
+  const warnedPlan = new Set();
   for (const c of cells.values()) {
     if (c.media === '지상파') { c.bonus = c.bonusSpots; c.value = c.budget + c.bonusSpots; }
     else { c.value = c.priceSum; c.bonus = c.value - c.budget; }
@@ -244,17 +270,15 @@ function compute(WS) {
     // GRP: 예산 ÷ 목표CPRP(15초) × 초수 환산
     let cp = MS.cprp.get(c.media + '|' + norm(c.media === '지상파' ? c.ch : c.mpp)) || MS.cprp.get(c.media + '|' + norm(c.mpp));
     c.cprp = cp || null;
-    let factor = null;
-    if (c.priceSum > 0) { factor = 0; for (const s in c.secPrice) factor += (c.secPrice[s] / c.priceSum) * (15 / (+s)); }
-    else {
-      const list = creByItem.get(c.item) || [];
-      const w = list.filter(x => x.sec);
-      if (w.length) { const tot = sum(w, x => x.share || 1); factor = sum(w, x => (x.share || 1) * 15 / x.sec) / tot; }
-      else factor = 0.5;
-    }
+    // 초수 환산(엑셀 기준): 품목마다 계획한 초수별 예산 비중 하나를 모든 채널에 똑같이 씀 — 실제 송출 초수가 아님
+    const pl = secPlanOf(c.item);
+    let factor = pl ? pl.factor : null;
+    if (factor == null && c.priceSum > 0) { factor = 0; for (const s in c.secPrice) factor += (c.secPrice[s] / c.priceSum) * (15 / (+s)); }
+    if (factor == null) factor = 0.5;
     c.factor = factor;
     c.eq = cp && c.budget ? c.budget / cp : 0;
     c.grp = c.eq * factor;
+    if (c.budget > 0 && !pl && !warnedPlan.has(c.item)) { warnedPlan.add(c.item); issue('소재', -1, null, 'info', `${c.item}: 소재 탭에 초수·금액 비중이 없어 실제 송출 초수로 GRP를 계산했어요`); }
     if (c.budget > 0 && !cp) issue('목표CPRP', -1, 'cprp', 'warn', `${c.media} ${c.media === '지상파' ? c.ch : c.mpp}의 목표 CPRP가 없어 GRP를 계산하지 못했어요`);
     if (c.budget > 0 && c.cnt === 0) issue('예산', -1, null, 'warn', `${c.ch} · ${c.item}: 예산 ${fmt.eok(c.budget, 2)}이 있는데 송출이 0회예요`);
     if (c.budget === 0 && c.cnt > 0 && c.media === '케이블') issue('케이블', -1, null, 'warn', `${c.ch} · ${c.item}: 송출 ${c.cnt}회가 있는데 예산이 0이에요 (보너스율 계산 불가)`);
@@ -284,7 +308,8 @@ function compute(WS) {
       rows.push(r);
     }
     const hasG = its.some(c => c.media === '지상파' && c.cnt > 0);
-    const t = { group: hasG ? '지상파케이블' : '케이블', budget: sum(rows, r => r.budget), cnt: sum(rows, r => r.cnt), grp: sum(rows, r => r.grp), eq: sum(rows, r => r.eq), value: sum(rows, r => r.value) };
+    const autoCurve = hasG ? '지상파케이블' : '케이블', ovCurve = (WS.opsCurve || {})[item];
+    const t = { group: ovCurve === '지상파케이블' || ovCurve === '케이블' ? ovCurve : autoCurve, autoCurve, curveManual: !!ovCurve && ovCurve !== autoCurve, budget: sum(rows, r => r.budget), cnt: sum(rows, r => r.cnt), grp: sum(rows, r => r.grp), eq: sum(rows, r => r.eq), value: sum(rows, r => r.value) };
     const pt = reachAt(reach[t.group], t.grp); t.r1a = pt ? pt[1] : null; t.r3a = pt ? pt[2] : null; reachOv(t, item + '|합계');
     const it = MS.items.get(item);
     ops.push({ item, full: it ? it.full : item, cat: it ? it.cat : '', rows, total: t });
@@ -308,7 +333,7 @@ function compute(WS) {
   })();
   const sevRank = { err: 0, warn: 1, info: 2 };
   issues.sort((a, b) => sevRank[a.sev] - sevRank[b.sev]);
-  return { WS, MS, ym, weeks, spots, cells: cellList, cellMap: cells, budgetItems, activeItems, creatives, ops, issues, reach, gSettle };
+  return { WS, MS, ym, weeks, spots, secPlanOf, cells: cellList, cellMap: cells, budgetItems, activeItems, creatives, ops, issues, reach, gSettle };
 }
 
 function creMatch(a, b) { const x = norm(a).replace(/편$/, ''), y = norm(b).replace(/편$/, ''); return !!x && !!y && (x === y || x.includes(y) || y.includes(x)); }

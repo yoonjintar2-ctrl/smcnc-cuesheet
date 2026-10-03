@@ -70,8 +70,11 @@ function legacyGroundRows(a, from = 0) {
       if (/^[\d,.\s()-]+$/.test(t) || /^(주차별|\d+주|\d{1,2}\/\d{1,2}(~\d{1,2}(\/\d{1,2})?)?)$/.test(t)) continue;
       const m = v.match(LEGACY_SPOT);
       const item = m ? m[1].trim() : '', cre = m ? m[2].trim() : v.trim(), sec = m ? +m[3] : (num(r[7]) || '');
+      // 지정율이 있어도 지정금액 칸(O열)이 비어 있으면 엑셀 CM지정비에 안 들어감 → 엑셀 기준으로 지정율을 비고로 옮김
+      let rate = num(r[13]) != null ? num(r[13]) : '', note = str(r[11]);
+      if (rate && r.length > 14 && !(num(r[14]) > 0)) { note = [note, `지정율 ${Math.round(rate * 1000) / 10}% (지정금액 없음)`].filter(Boolean).join(' · '); rate = ''; }
       out.push([cur, kind, prog, str(r[3]), normTime(r[4]), normTime(r[5]), str(r[6]), sec, num(r[8]) || '', num(r[10]) != null ? num(r[10]) : (/^\s*-+\s*$/.test(String(r[10] == null ? '' : r[10])) ? 0 : ''),
-        str(r[19]), item, cre, str(r[12]), num(r[13]) != null ? num(r[13]) : '', num(r[46]) != null ? num(r[46]) : '', str(r[11])]);
+        str(r[19]), item, cre, str(r[12]), rate, num(r[46]) != null ? num(r[46]) : '', note]);
     }
   }
   return out;
@@ -144,10 +147,17 @@ function parseReachBlock(a) {
   }
   return pts.length ? { pts: thinCurve(pts), meta, skipped } : null;
 }
+// 누적리치 곡선 줄이기: GRP는 원본 자릿수 그대로(소수 넷째 자리), R1·R3가 같은 구간은 처음·끝 점만 남김 → '가장 가까운 점' 찾기 결과는 원본 곡선과 똑같음 (여러 번 해도 같음)
 function thinCurve(pts) {
-  pts.sort((x, y) => x[0] - y[0]);
-  const out = []; let last = -1;
-  for (const p of pts) { const b = Math.round(p[0] * 10) / 10; if (b !== last) { out.push([Math.round(p[0] * 100) / 100, p[1], p[2]]); last = b; } }
+  const P = pts.filter(p => p && p[0] != null && isFinite(p[0])).map(p => [Math.round(p[0] * 1e4) / 1e4, p[1], p[2]]).sort((x, y) => x[0] - y[0]);
+  const same = (a, b) => a[1] === b[1] && a[2] === b[2];
+  const out = [];
+  for (let i = 0; i < P.length; i++) {
+    const p = P[i]; if (out.length && out[out.length - 1][0] === p[0]) continue;   // 같은 GRP는 처음 것
+    const prev = P[i - 1], next = P[i + 1];
+    if (prev && next && same(prev, p) && same(p, next)) continue;                    // 구간 가운데 점
+    out.push(p);
+  }
   return out;
 }
 
@@ -194,6 +204,10 @@ function readFileParts(buf, fileName) {
       notes.push(`${SHEETS[key].label} ${rows.length}행`);
     } else if (name === '리치직접입력') {
       parts.opsReach = {}; for (const r of a.slice(1)) { if (!str(r[0]) || !str(r[1])) continue; const o = {}; if (num(r[2]) != null) o.r1 = num(r[2]); if (num(r[3]) != null) o.r3 = num(r[3]); if (Object.keys(o).length) parts.opsReach[str(r[0]) + '|' + str(r[1])] = o; }
+    } else if (name === 'GRP초수비중') {
+      parts.secPlan = {}; for (const r of a.slice(1)) { const k = str(r[0]), sec = num(r[1]), v = num(r[2]); if (!k || !sec || v == null) continue; (parts.secPlan[k] = parts.secPlan[k] || {})[sec] = v; }
+    } else if (name === '요약리치곡선') {
+      parts.opsCurve = {}; for (const r of a.slice(1)) { const k = str(r[0]), v = str(r[1]); if (k && (v === '지상파케이블' || v === '케이블')) parts.opsCurve[k] = v; }
     } else if (name === '주요프로그램') {
       parts.opsNotes = {}; for (const r of a.slice(1)) if (str(r[0]) && str(r[2])) parts.opsNotes[str(r[0]) + '|' + str(r[1])] = str(r[2]);
     } else if (/누적리치|리치|reach/i.test(name)) {
@@ -313,6 +327,16 @@ function reachOvSheet(WS) {
   for (const k of Object.keys(WS.opsReach || {})) { const [a, b] = k.split('|'); const o = WS.opsReach[k] || {}; aoa.push([a, b, o.r1 == null ? '' : o.r1, o.r3 == null ? '' : o.r3]); }
   return { name: '리치직접입력', aoa, widths: [14, 22, 16, 16] };
 }
+function secPlanSheet(WS) {
+  const aoa = [['품목', '초수', '예산 비중 (GRP 계산용)']];
+  for (const k of Object.keys(WS.secPlan || {})) for (const s of Object.keys(WS.secPlan[k] || {})) aoa.push([k, +s, WS.secPlan[k][s]]);
+  return { name: 'GRP초수비중', aoa, widths: [14, 8, 20] };
+}
+function opsCurveSheet(WS) {
+  const aoa = [['품목', '품목 요약 리치 곡선 (직접 고름)']];
+  for (const k of Object.keys(WS.opsCurve || {})) aoa.push([k, WS.opsCurve[k]]);
+  return { name: '요약리치곡선', aoa, widths: [14, 26] };
+}
 function cueOrderSheet(WS) {
   const aoa = [['채널', '순서', '프로그램|요일|시작|종료|시급']];
   for (const ch of Object.keys(WS.cueOrder || {})) (WS.cueOrder[ch] || []).forEach((k, i) => aoa.push([ch, i + 1, k]));
@@ -326,6 +350,8 @@ function saveWorkspaceXlsx(WS, M, which, suffix) {
   if (which.length === ALL_SHEETS.length && Object.keys(WS.reach || {}).length) sheets.push(reachSheet(WS));
   if (which.length === ALL_SHEETS.length && Object.keys(WS.opsNotes || {}).length) sheets.push(notesSheet(WS));
   if (which.length === ALL_SHEETS.length && Object.keys(WS.opsReach || {}).length) sheets.push(reachOvSheet(WS));
+  if ((which.length === ALL_SHEETS.length || which.includes('소재')) && Object.keys(WS.secPlan || {}).length) sheets.push(secPlanSheet(WS));
+  if (which.length === ALL_SHEETS.length && Object.keys(WS.opsCurve || {}).length) sheets.push(opsCurveSheet(WS));
   if (which.includes('케이블') && Object.keys(WS.cueOrder || {}).length) sheets.push(cueOrderSheet(WS));
   sheets.push(metaSheet(WS, which));
   const ymTxt = WS.ym.replace('-', '');
