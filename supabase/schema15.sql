@@ -2,7 +2,7 @@
 -- 이 파일만 SQL 편집기에서 한 번 실행하면 돼요(여러 번 실행해도 안전). 초기 비밀번호와 첫 관리자 목록은 저장소에 남기지 않고 따로 넣어요(맨 아래 안내).
 -- · 관리자 = 이메일 아이디 + 비밀번호(bcrypt 해시만 저장 — 운영자도 원래 비밀번호를 볼 수 없음)
 -- · 처음(또는 초기화 뒤) 접속하면 비밀번호를 바꾸기 전에는 아무 것도 저장할 수 없음
--- · 예전 공용 비밀번호 접속(cue_login)과 그 해시(cue_secret)는 지움
+-- · 예전 공용 비밀번호 접속(cue_login)은 막음
 
 create table if not exists public.cue_users (
   email text primary key,
@@ -150,9 +150,8 @@ language sql stable security definer set search_path = public as $$
 
 -- 권한
 revoke all on function public.cue_who(text) from public, anon, authenticated;
--- 예전 공용 비밀번호 접속은 없앰 (함수·해시 모두)
-drop function if exists public.cue_login(text);
-drop table if exists public.cue_secret;
+-- 예전 공용 비밀번호 접속은 막음 (함수 실행 권한 회수)
+revoke all on function public.cue_login(text) from public, anon, authenticated;
 do $$ declare f text; begin
   foreach f in array array['cue_login2(text,text)','cue_me(text)','cue_set_pw(text,text,text)','cue_users_list(text)','cue_user_invite(text,text,text)','cue_user_reset(text,text)','cue_user_remove(text,text)',
     'cue_save(text,text,text,text,jsonb,timestamptz,text)','cue_lock(text,text,text,text,text,text)','cue_view_settings(text)','cue_admin_setting(text,text,text,jsonb)','cue_view_year(text,text)'] loop
@@ -160,8 +159,7 @@ do $$ declare f text; begin
     execute format('grant execute on function public.%s to anon, authenticated', f);
   end loop;
 end $$;
--- 공용 비밀번호로 열려 있던 세션은 끊음 (모두 계정으로 다시 접속)
-delete from public.cue_sessions where email is null;
+-- 공용 비밀번호로 열려 있던 세션(email 없음)은 cue_chk 가 쓸 때 끊음 (모두 계정으로 다시 접속)
 
 -- 초기 비밀번호·첫 관리자 목록은 저장소에 남기지 않음. SQL 편집기에서 따로:
 --   insert into public.cue_conf (k, v) values ('init_pw_hash', extensions.crypt('초기-비밀번호', extensions.gen_salt('bf'))) on conflict (k) do update set v = excluded.v;
