@@ -98,6 +98,9 @@ function renderMasterForm(el) {
   const an = el.querySelector('#advname'); if (an && !CLOUD.on) an.onchange = () => { WS.adv = an.value.trim(); App.changed('meta', true); App.toast(`광고주 이름: ${esc(advName())}`); };
   const body = el.querySelector('#mbody');
   ({ 품목: mItems, 채널: mChannels, CM위치: mCm, 목표CPRP: mCprp, 매칭규칙: mRules })[cur](body, el);
+  // 열 너비: 내용 길이에 맞추고 남는 너비는 비고(채널은 별칭)에 · 머리글 경계를 끌어서 조절
+  const tb = body.querySelector('table.t.form');
+  if (tb) { const hs = [...tb.querySelectorAll('thead tr:first-child th')].map(th => th.textContent.trim()); const fx = hs.findIndex(h => /^(비고|별칭)/.test(h)); colFit(tb, 'mst:' + cur, { flex: fx }); }
   bindEnterDown(body);
   renderMasterSide(el);
   el._refresh = () => renderMasterSide(el);

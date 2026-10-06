@@ -249,3 +249,58 @@ function keepMergedVisible(root) {
   addEventListener('scroll', q, { passive: true, capture: true }); addEventListener('resize', q);
   setTimeout(paint, 0); setTimeout(paint, 300);
 }
+// ---------- 표 열 너비: 내용 길이에 맞춘 기본 너비 + 머리글 경계를 끌어서 조절 (13차 · 마스터) ----------
+// opts.flex = 남는 너비를 받을 열 번호(비고·별칭) · 끌어서 바꾼 너비는 이 브라우저에만 기억 (경계를 두 번 누르면 기본 너비로)
+const COLW = {};
+function colwLoad(key) { if (COLW[key]) return COLW[key]; let o = {}; try { o = JSON.parse(localStorage.getItem('colw:' + key) || '{}') || {}; } catch (e) { } return (COLW[key] = o); }
+function colwSave(key) { try { localStorage.setItem('colw:' + key, JSON.stringify(COLW[key] || {})); } catch (e) { } }
+function colFit(table, key, opts = {}) {
+  const ths = [...table.querySelectorAll('thead tr:first-child th')]; const n = ths.length; if (!n) return;
+  const rows = [...table.querySelectorAll('tbody tr')].filter(tr => tr.children.length === n);
+  // 글자 너비는 실제 글꼴로 재기 (캔버스는 웹 글꼴이 안 잡힐 때가 있어 한글이 좁게 나옴)
+  const sp = colFit.sp || (colFit.sp = Object.assign(document.createElement('span'), { style: 'position:absolute;left:-9999px;top:0;white-space:pre;visibility:hidden' }));
+  if (!sp.isConnected) document.body.appendChild(sp);
+  const fontOf = el => { const s = getComputedStyle(el); return `${s.fontWeight} ${s.fontSize} ${s.fontFamily}`; };
+  const hf = fontOf(ths[0]); const inp0 = table.querySelector('td.in input:not([type=color]),td.in select'); const cf = fontOf(inp0 || rows[0] && rows[0].children[0] || table);
+  const mw = (t, f) => { sp.style.font = f; sp.textContent = String(t || ''); return sp.offsetWidth; };
+  // 입력 칸 글자는 입력 칸 자체로 잼 (입력 칸은 글꼴 대체가 달라 span보다 넓게 그려질 때가 있음)
+  const ip = colFit.ip || (colFit.ip = Object.assign(document.createElement('input'), { tabIndex: -1, style: 'position:absolute;left:-9999px;top:0;width:1px;padding:0;border:0;visibility:hidden' }));
+  if (!ip.isConnected) document.body.appendChild(ip);
+  const iw = (t, f) => { ip.style.font = f; ip.value = String(t || ''); return Math.max(ip.scrollWidth, mw(t, f)); };
+  const want = ths.map((th, j) => {
+    let w = mw(th.textContent.trim(), hf) + 24;
+    for (const tr of rows) {
+      const td = tr.children[j];
+      if (td.querySelector('input[type=color]')) { w = Math.max(w, 58); continue; }
+      const el = td.querySelector('input,select');
+      if (el) { const t = el.tagName === 'SELECT' ? (el.selectedOptions[0] || {}).text : (el.value || el.placeholder); w = Math.max(w, iw(t, cf) + (el.tagName === 'SELECT' ? 50 : el.getAttribute('list') ? 56 : 36)); }   // 목록(datalist) 입력 칸은 오른쪽 ▾ 자리
+      else w = Math.max(w, mw(td.textContent.trim(), cf) + 22);
+    }
+    return Math.max(34, Math.min(opts.max || 320, Math.ceil(w)));
+  });
+  const saved = colwLoad(key); const flex = opts.flex == null ? -1 : opts.flex;
+  const W = want.map((w, j) => saved[j] || w);
+  const host = table.parentElement;
+  let colg = table.querySelector('colgroup'); if (colg) colg.remove();
+  colg = document.createElement('colgroup'); colg.innerHTML = W.map(() => '<col>').join(''); table.insertBefore(colg, table.firstChild);
+  const cols = [...colg.children];
+  const apply = () => {
+    if (flex >= 0) { const others = W.reduce((a, w, j) => j === flex ? a : a + w, 0); W[flex] = Math.max(saved[flex] || want[flex], (host.clientWidth || 0) - others - 2); }
+    cols.forEach((c, j) => c.style.width = W[j] + 'px');
+    table.style.width = W.reduce((a, w) => a + w, 0) + 'px';
+  };
+  table.classList.add('colfit'); table.style.tableLayout = 'fixed'; apply();
+  ths.forEach((th, j) => {
+    if (j === n - 1 && flex !== j) return;
+    const h = document.createElement('span'); h.className = 'colrs'; h.title = '끌어서 열 너비 조절 · 두 번 누르면 기본 너비'; th.appendChild(h);
+    h.addEventListener('mousedown', e => {
+      e.preventDefault(); e.stopPropagation(); const x0 = e.clientX, w0 = W[j]; document.body.classList.add('colresizing'); h.classList.add('on');
+      const mv = ev => { W[j] = Math.max(34, Math.round(w0 + ev.clientX - x0)); saved[j] = W[j]; apply(); };
+      const up = () => { removeEventListener('mousemove', mv); removeEventListener('mouseup', up); document.body.classList.remove('colresizing'); h.classList.remove('on'); colwSave(key); };
+      addEventListener('mousemove', mv); addEventListener('mouseup', up);
+    });
+    h.addEventListener('dblclick', e => { e.stopPropagation(); delete saved[j]; W[j] = want[j]; colwSave(key); apply(); });
+  });
+  if (table._ro) table._ro.disconnect();
+  if (flex >= 0 && typeof ResizeObserver !== 'undefined') { let lw = host.clientWidth; table._ro = new ResizeObserver(() => { if (!table.isConnected) return table._ro.disconnect(); if (Math.abs(host.clientWidth - lw) > 1) { lw = host.clientWidth; apply(); } }); table._ro.observe(host); }
+}

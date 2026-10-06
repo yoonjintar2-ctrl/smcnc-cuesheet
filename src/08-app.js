@@ -585,7 +585,8 @@ const App = {
     el.innerHTML = `<div class="sheetwrap"><section class="card sheetcard"><div class="hd"><h3>${def.label}</h3><span class="sub tnum" data-stat></span><div class="spacer"></div><span class="hint">${esc(def.hint)}</span>
       <div class="gridbar">
         <div class="grp">${B('undo', '↶ 되돌리기', 'Ctrl+Z')}${B('redo', '↷ 다시', 'Ctrl+Y')}</div>
-        <div class="grp">${B('find', '찾기', 'Ctrl+F')}${B('replace', '바꾸기', 'Ctrl+H')}${B('bon', '본방만', name === '지상파' ? '본방 행만 보기 (지상파는 재방 표시가 없는 정규 편성 = 본방)' : '프로그램명에 <본방>·<생방>이 있는 행만 보기')}${B('mid', '중CM만', 'CM 위치가 중CM인 행만 보기')}${B('fclr', '필터 해제', '모든 열의 필터를 해제')}</div>
+        <div class="grp">${B('find', '찾기', 'Ctrl+F')}${B('replace', '찾아바꾸기', 'Ctrl+H')}</div>
+        <div class="grp fgrp"><span class="glab">필터</span>${B('bon', '본방만', name === '지상파' ? '본방 행만 보기 (지상파는 재방 표시가 없는 정규 편성 = 본방)' : '프로그램명에 <본방>·<생방>이 있는 행만 보기')}${B('mid', '중CM만', 'CM 위치가 중CM인 행만 보기')}${B('fclr', '필터 해제', '모든 열의 필터를 해제')}</div>
         <div class="grp">${B('all', '전체 선택', 'Ctrl+A')}${B('hide', '행 숨기기', '선택한 행을 숨겨요 (집계에는 포함)')}${B('unhide', '숨긴 행 표시', '숨긴 행을 모두 다시 보여줘요')}${B('add', '＋ 10행', '끝에 빈 행 10개')}</div>
         <div class="grp">${B('xlsx', '⤓ 이 시트 엑셀', '이 시트만 엑셀로 (숨긴 행 유지)')}<button class="btn sm ghost" data-a="wipe">시트 비우기</button></div>
         <span class="gridstat" data-gs></span>
@@ -738,6 +739,7 @@ const App = {
       else if (k === 'ch') { const ch = resolveCh(M.MS, v); if (!ch) { cls = 'unk'; tip = '마스터에 없는 채널'; } else if (ch.name !== str(v)) tip = `→ ${ch.name}`; }
     }
     if (name === '지상파' && k === 'amount' && str(rv[2]) && (v === '' || v === 0 || v === '0')) { t = '보너스'; cls += ' bonus'; }
+    if (col.money && cls.indexOf('bonus') < 0) cls += ' money';   // 금액(단가·금액)만 오른쪽 정렬
     const iss = this.issIdx(name).get(di + ':' + c);
     if (iss) { cls += ' ' + iss.sev; tip = iss.msg; }
     return { t, cls, bg, tip };

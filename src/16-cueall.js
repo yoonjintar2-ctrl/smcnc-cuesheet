@@ -66,7 +66,7 @@ function renderCueAll(root) {
   const days = new Set(rows.map(s => s.day).filter(Boolean)).size;
   const dTxt = f.a ? `${f.a.m}/${f.a.d} – ${f.b ? `${f.b.m}/${f.b.d}` : ''}` : `${M.ym.m}/1 – ${M.ym.m}/${daysInMonth(M.ym.y, M.ym.m)}`;
   const chOpts = chs.map(c => { const x = M.MS.chByName.get(c); return { v: c, t: c, sub: x ? (x.media === '지상파' ? '지상파' : x.mpp) : '' }; });
-  const itOpts = items.map(k => ({ v: k, t: k, color: M.MS.items.has(k) ? itemColor(k) : '#b9c2cb' }));
+  const itOpts = items.map(k => ({ v: k, t: k, color: M.MS.items.has(k) ? itemColor(k) : '#c1c1c1' }));
   const W = { media: 74, ch: 128, item: 122, prog: 0, date: 62, dow: 46, start: 76, end: 76, sec: 50, cre: 120, cm: 120, grade: 52, price: 100 };
   root.innerHTML = `<div class="viewhead"><div><h2>전체 큐시트</h2><div class="sub">${ymLabel()} · 지상파·케이블을 섞어 <b>날짜 → 시작 시간</b> 순으로, 1행 = 1회 송출 · 광고주에게 주는 결과 데이터 형식</div></div><div class="spacer"></div>
       <button class="btn pri" id="ca-dl">⤓ 다운로드 (엑셀)</button></div>

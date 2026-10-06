@@ -6,18 +6,18 @@ const ZF = '#,##0;-#,##0;"-"';   // 0은 '-'로
 function xrBd(c, w) { const s = { style: w || 'thin', color: { rgb: c } }; return { top: s, bottom: s, left: s, right: s }; }
 function xs2(base, extra) { const o = JSON.parse(JSON.stringify(base)); for (const k in extra || {}) o[k] = Object.assign({}, o[k] || {}, extra[k]); return o; }
 const XRS = (() => {
-  const cell = { font: { name: XRF, sz: 10, color: { rgb: '1D2833' } }, alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, border: xrBd('DFE4E9') };
+  const cell = { font: { name: XRF, sz: 10, color: { rgb: '262626' } }, alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, border: xrBd('E3E3E3') };
   return {
-    title: { font: { name: XRF, sz: 16, bold: true, color: { rgb: '1D2833' } }, alignment: { horizontal: 'left', vertical: 'center' } },
-    sec: { font: { name: XRF, sz: 12, bold: true, color: { rgb: '2B4256' } }, alignment: { horizontal: 'left', vertical: 'center' } },
-    sec2: { font: { name: XRF, sz: 10, bold: true, color: { rgb: '3F5B73' } }, alignment: { horizontal: 'left', vertical: 'center' } },
-    note: { font: { name: XRF, sz: 9, color: { rgb: '8794A0' } }, alignment: { horizontal: 'left', vertical: 'center' } },
-    head: { font: { name: XRF, sz: 10, bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '2F4659' } }, alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, border: xrBd('5A7085') },
+    title: { font: { name: XRF, sz: 16, bold: true, color: { rgb: '262626' } }, alignment: { horizontal: 'left', vertical: 'center' } },
+    sec: { font: { name: XRF, sz: 12, bold: true, color: { rgb: '3F3F3F' } }, alignment: { horizontal: 'left', vertical: 'center' } },
+    sec2: { font: { name: XRF, sz: 10, bold: true, color: { rgb: '575757' } }, alignment: { horizontal: 'left', vertical: 'center' } },
+    note: { font: { name: XRF, sz: 9, color: { rgb: '929292' } }, alignment: { horizontal: 'left', vertical: 'center' } },
+    head: { font: { name: XRF, sz: 10, bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '424242' } }, alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, border: xrBd('6D6D6D') },
     cell,
-    lab: xs2(cell, { font: { bold: true }, fill: { fgColor: { rgb: 'F7F9FA' } } }),
-    grp: xs2(cell, { font: { bold: true, color: { rgb: '2B4256' } }, fill: { fgColor: { rgb: 'EEF2F6' } } }),
-    subt: xs2(cell, { font: { bold: true, color: { rgb: '2B4256' } }, fill: { fgColor: { rgb: 'DFE7EF' } }, border: xrBd('C5D2DE') }),
-    tot: xs2(cell, { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '3F5B73' } }, border: xrBd('3F5B73') }),
+    lab: xs2(cell, { font: { bold: true }, fill: { fgColor: { rgb: 'F9F9F9' } } }),
+    grp: xs2(cell, { font: { bold: true, color: { rgb: '3F3F3F' } }, fill: { fgColor: { rgb: 'F1F1F1' } } }),
+    subt: xs2(cell, { font: { bold: true, color: { rgb: '3F3F3F' } }, fill: { fgColor: { rgb: 'E6E6E6' } }, border: xrBd('D0D0D0') }),
+    tot: xs2(cell, { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '575757' } }, border: xrBd('575757') }),
     bon: xs2(cell, { fill: { fgColor: { rgb: 'FCEEF4' } } }),
   };
 })();
@@ -54,7 +54,7 @@ function xrToSheet(b) {
 
 // ---------- 엑셀 차트 (DrawingML) ----------
 function xmlEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-const xrHex = h => String(h || '#8794a0').replace('#', '').toUpperCase().slice(0, 6);
+const xrHex = h => String(h || '#929292').replace('#', '').toUpperCase().slice(0, 6);
 function xrTx(sz, color, bold) { return `<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="${sz}" b="${bold ? 1 : 0}"><a:solidFill><a:srgbClr val="${color}"/></a:solidFill><a:latin typeface="${XRF}"/><a:ea typeface="${XRF}"/></a:defRPr></a:pPr><a:endParaRPr lang="ko-KR"/></a:p></c:txPr>`; }
 function xrFill(hex) { return `<c:spPr><a:solidFill><a:srgbClr val="${xrHex(hex)}"/></a:solidFill><a:ln w="12700"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:ln></c:spPr>`; }
 function xrStrLit(list) { return `<c:strLit><c:ptCount val="${list.length}"/>${list.map((v, i) => `<c:pt idx="${i}"><c:v>${xmlEsc(v)}</c:v></c:pt>`).join('')}</c:strLit>`; }
@@ -62,9 +62,9 @@ function xrNumLit(list, fmt) { return `<c:numLit><c:formatCode>${xmlEsc(fmt || '
 // sp: { type:'bar'|'doughnut', dir:'bar'|'col', group:'clustered'|'stacked', title, cats:[], series:[{name, color, vals:[], pts:[색…]}], fmt, labels:true, legend:'b'|'r'|null, hole }
 function xrChart(sp) {
   const fmt = sp.fmt || '#,##0';
-  const dl = (show, pos) => show ? `<c:dLbls><c:numFmt formatCode="${xmlEsc(sp.type === 'doughnut' ? '0%' : fmt)}" sourceLinked="0"/><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>${xrTx(sp.lblSz || 800, sp.lblColor || (sp.type === 'doughnut' || sp.group === 'stacked' ? 'FFFFFF' : '55636F'), true)}${pos ? `<c:dLblPos val="${pos}"/>` : ''}<c:showLegendKey val="0"/><c:showVal val="${sp.type === 'doughnut' ? 0 : 1}"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="${sp.type === 'doughnut' ? 1 : 0}"/><c:showBubbleSize val="0"/>${sp.type === 'doughnut' ? '<c:showLeaderLines val="0"/>' : ''}</c:dLbls>` : '<c:dLbls><c:delete val="1"/></c:dLbls>';
+  const dl = (show, pos) => show ? `<c:dLbls><c:numFmt formatCode="${xmlEsc(sp.type === 'doughnut' ? '0%' : fmt)}" sourceLinked="0"/><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>${xrTx(sp.lblSz || 800, sp.lblColor || (sp.type === 'doughnut' || sp.group === 'stacked' ? 'FFFFFF' : '616161'), true)}${pos ? `<c:dLblPos val="${pos}"/>` : ''}<c:showLegendKey val="0"/><c:showVal val="${sp.type === 'doughnut' ? 0 : 1}"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="${sp.type === 'doughnut' ? 1 : 0}"/><c:showBubbleSize val="0"/>${sp.type === 'doughnut' ? '<c:showLeaderLines val="0"/>' : ''}</c:dLbls>` : '<c:dLbls><c:delete val="1"/></c:dLbls>';
   // 칸 색이 진하면 흰 글자, 옅으면 진한 글자 (점마다)
-  const inkOf = hex => { const c = hexToRgb('#' + xrHex(hex)) || [128, 128, 128]; return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255 > 0.6 ? '1D2833' : 'FFFFFF'; };
+  const inkOf = hex => { const c = hexToRgb('#' + xrHex(hex)) || [128, 128, 128]; return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255 > 0.6 ? '262626' : 'FFFFFF'; };
   const ptLbls = (s, pos) => (sp.type === 'doughnut' || sp.group === 'stacked') && s.pts ? s.pts.map((col, k) => col ? `<c:dLbl><c:idx val="${k}"/><c:numFmt formatCode="${xmlEsc(sp.type === 'doughnut' ? '0%' : fmt)}" sourceLinked="0"/><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>${xrTx(sp.lblSz || 800, inkOf(col), true)}${pos ? `<c:dLblPos val="${pos}"/>` : ''}<c:showLegendKey val="0"/><c:showVal val="${sp.type === 'doughnut' ? 0 : 1}"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="${sp.type === 'doughnut' ? 1 : 0}"/><c:showBubbleSize val="0"/></c:dLbl>` : '').join('') : '';
   const dl2 = (s, show, pos) => show ? dl(true, pos).replace('<c:dLbls>', '<c:dLbls>' + ptLbls(s, pos)) : dl(false);
   const ser = (s, i) => `<c:ser><c:idx val="${i}"/><c:order val="${i}"/><c:tx><c:v>${xmlEsc(s.name)}</c:v></c:tx>${xrFill(s.color)}${sp.type === 'bar' ? '<c:invertIfNegative val="0"/>' : ''}${(s.pts || []).map((col, k) => col ? `<c:dPt><c:idx val="${k}"/>${sp.type === 'bar' ? '<c:invertIfNegative val="0"/><c:bubble3D val="0"/>' : '<c:bubble3D val="0"/>'}${xrFill(col)}</c:dPt>` : '').join('')}${dl2(s, sp.labels !== false && s.labels !== false, sp.type === 'bar' ? (sp.group === 'stacked' ? 'ctr' : 'outEnd') : null)}<c:cat>${xrStrLit(sp.cats)}</c:cat><c:val>${xrNumLit(s.vals, fmt)}</c:val></c:ser>`;
@@ -73,15 +73,15 @@ function xrChart(sp) {
     plot = `<c:doughnutChart><c:varyColors val="1"/>${sp.series.map(ser).join('')}<c:firstSliceAng val="0"/><c:holeSize val="${sp.hole || 58}"/></c:doughnutChart>`;
   } else {
     const ax = (id, cross, pos, cat) => cat
-      ? `<c:catAx><c:axId val="${id}"/><c:scaling><c:orientation val="${sp.dir === 'bar' ? 'maxMin' : 'minMax'}"/></c:scaling><c:delete val="0"/><c:axPos val="${pos}"/><c:numFmt formatCode="General" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:spPr><a:ln w="9525"><a:solidFill><a:srgbClr val="C9D1D9"/></a:solidFill></a:ln></c:spPr>${xrTx(900, '55636F', false)}<c:crossAx val="${cross}"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:noMultiLvlLbl val="0"/></c:catAx>`
-      : `<c:valAx><c:axId val="${id}"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="${sp.hideVal ? 1 : 0}"/><c:axPos val="${pos}"/><c:majorGridlines><c:spPr><a:ln w="6350"><a:solidFill><a:srgbClr val="ECEFF2"/></a:solidFill></a:ln></c:spPr></c:majorGridlines><c:numFmt formatCode="${xmlEsc(fmt)}" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:spPr><a:ln><a:noFill/></a:ln></c:spPr>${xrTx(800, '8794A0', false)}<c:crossAx val="${cross}"/><c:crosses val="${sp.dir === 'bar' ? 'max' : 'autoZero'}"/><c:crossBetween val="between"/></c:valAx>`;
+      ? `<c:catAx><c:axId val="${id}"/><c:scaling><c:orientation val="${sp.dir === 'bar' ? 'maxMin' : 'minMax'}"/></c:scaling><c:delete val="0"/><c:axPos val="${pos}"/><c:numFmt formatCode="General" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:spPr><a:ln w="9525"><a:solidFill><a:srgbClr val="D0D0D0"/></a:solidFill></a:ln></c:spPr>${xrTx(900, '616161', false)}<c:crossAx val="${cross}"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:noMultiLvlLbl val="0"/></c:catAx>`
+      : `<c:valAx><c:axId val="${id}"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="${sp.hideVal ? 1 : 0}"/><c:axPos val="${pos}"/><c:majorGridlines><c:spPr><a:ln w="6350"><a:solidFill><a:srgbClr val="EFEFEF"/></a:solidFill></a:ln></c:spPr></c:majorGridlines><c:numFmt formatCode="${xmlEsc(fmt)}" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:spPr><a:ln><a:noFill/></a:ln></c:spPr>${xrTx(800, '929292', false)}<c:crossAx val="${cross}"/><c:crosses val="${sp.dir === 'bar' ? 'max' : 'autoZero'}"/><c:crossBetween val="between"/></c:valAx>`;
     plot = `<c:barChart><c:barDir val="${sp.dir || 'col'}"/><c:grouping val="${sp.group || 'clustered'}"/><c:varyColors val="0"/>${sp.series.map(ser).join('')}<c:gapWidth val="${sp.gap || 60}"/>${sp.group === 'stacked' ? '<c:overlap val="100"/>' : '<c:overlap val="-10"/>'}<c:axId val="5001"/><c:axId val="5002"/></c:barChart>`
       + ax(5001, 5002, sp.dir === 'bar' ? 'l' : 'b', true) + ax(5002, 5001, sp.dir === 'bar' ? 't' : 'l', false);
   }
-  const title = sp.title ? `<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="1100" b="1"/></a:pPr><a:r><a:rPr lang="ko-KR" sz="1100" b="1"><a:solidFill><a:srgbClr val="1D2833"/></a:solidFill><a:latin typeface="${XRF}"/><a:ea typeface="${XRF}"/></a:rPr><a:t>${xmlEsc(sp.title)}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title><c:autoTitleDeleted val="0"/>` : '<c:autoTitleDeleted val="1"/>';
-  const legend = sp.legend ? `<c:legend><c:legendPos val="${sp.legend}"/><c:overlay val="0"/>${xrTx(900, '55636F', false)}</c:legend>` : '';
+  const title = sp.title ? `<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="1100" b="1"/></a:pPr><a:r><a:rPr lang="ko-KR" sz="1100" b="1"><a:solidFill><a:srgbClr val="262626"/></a:solidFill><a:latin typeface="${XRF}"/><a:ea typeface="${XRF}"/></a:rPr><a:t>${xmlEsc(sp.title)}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title><c:autoTitleDeleted val="0"/>` : '<c:autoTitleDeleted val="1"/>';
+  const legend = sp.legend ? `<c:legend><c:legendPos val="${sp.legend}"/><c:overlay val="0"/>${xrTx(900, '616161', false)}</c:legend>` : '';
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><c:roundedCorners val="0"/><c:chart>${title}<c:plotArea><c:layout/>${plot}<c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr></c:plotArea>${legend}<c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/></c:chart><c:spPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:ln w="9525"><a:solidFill><a:srgbClr val="DFE4E9"/></a:solidFill></a:ln></c:spPr>${xrTx(900, '55636F', false)}</c:chartSpace>`;
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><c:roundedCorners val="0"/><c:chart>${title}<c:plotArea><c:layout/>${plot}<c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr></c:plotArea>${legend}<c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/></c:chart><c:spPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:ln w="9525"><a:solidFill><a:srgbClr val="E3E3E3"/></a:solidFill></a:ln></c:spPr>${xrTx(900, '616161', false)}</c:chartSpace>`;
 }
 // 쓴 xlsx(zip)를 열어 눈금선 끄기 · 차트 넣기
 function xrPost(arr, builders) {
@@ -140,7 +140,7 @@ const xrTitle = what => `${advName()} ${M.ym ? M.ym.m + '월' : WS.ym} TV ${what
 function xrHierTable(b, r0, c0, T, numFmt) {
   const nv = T.head.length - 3; let r = r0;
   const gs = new Set(); if (T.groups) { let j = 0; for (const [, n] of T.groups) { gs.add(j); j += n; } }
-  const gEdge = (s, j) => gs.has(j) && j > 0 ? xs2(s, { border: { left: { style: 'medium', color: { rgb: '6F8296' } } } }) : s;
+  const gEdge = (s, j) => gs.has(j) && j > 0 ? xs2(s, { border: { left: { style: 'medium', color: { rgb: '7F7F7F' } } } }) : s;
   if (T.groups) {
     for (let k = 0; k < 3; k++) { b.put(r, c0 + k, T.head[k] === 'MPP' ? 'PP' : T.head[k], XRS.head); b.merge(r, c0 + k, r + 1, c0 + k, XRS.head); }
     let j = 0; for (const [g, n] of T.groups) { b.put(r, c0 + 3 + j, g, gEdge(XRS.head, j)); b.merge(r, c0 + 3 + j, r, c0 + 3 + j + n - 1, XRS.head); j += n; }
@@ -206,10 +206,10 @@ function xrOpsSheet(only) {
     const iv = items.map(k => { const cc = cells.filter(c => c.item === k); return { k, b: sum(cc, c => c.budget) / 1e8, x: sum(cc, c => c.bonus) / 1e8 }; });
     const H = Math.max(16, items.length * 2 + 6);
     b.chart(xrChart({ type: 'bar', dir: 'bar', group: 'stacked', title: '품목별 예산·보너스 (억원)', cats: iv.map(x => x.k), fmt: '0.0', legend: 'b', gap: 45,
-      series: [{ name: '예산', color: '#3f5b73', vals: iv.map(x => x.b), pts: iv.map(x => itemColor(x.k)) }, { name: '보너스', color: '#c9d4de', vals: iv.map(x => x.x), pts: iv.map(x => itemLight(x.k)), labels: true }], lblColor: '1D2833' }), 1, r, 8, r + H);
+      series: [{ name: '예산', color: '#575757', vals: iv.map(x => x.b), pts: iv.map(x => itemColor(x.k)) }, { name: '보너스', color: '#d2d2d2', vals: iv.map(x => x.x), pts: iv.map(x => itemLight(x.k)), labels: true }], lblColor: '262626' }), 1, r, 8, r + H);
     const steps = [0, 0.18, 0.34, 0.48, 0.6, 0.7, 0.78];
-    const gv = SUM_GROUPS.map((g, i) => ({ g, v: sum(cells.filter(c => c.group === g), c => c.budget), col: i === 0 ? '#3f5b73' : tint('#3f5b73', steps[i] || 0.8) })).filter(x => x.v > 0);
-    b.chart(xrChart({ type: 'doughnut', title: '방송사별 예산 비중', cats: gv.map(x => x.g), legend: 'r', series: [{ name: '예산', color: '#3f5b73', vals: gv.map(x => x.v), pts: gv.map(x => x.col) }] }), 9, r, 15, r + H);
+    const gv = SUM_GROUPS.map((g, i) => ({ g, v: sum(cells.filter(c => c.group === g), c => c.budget), col: i === 0 ? '#575757' : tint('#575757', steps[i] || 0.8) })).filter(x => x.v > 0);
+    b.chart(xrChart({ type: 'doughnut', title: '방송사별 예산 비중', cats: gv.map(x => x.g), legend: 'r', series: [{ name: '예산', color: '#575757', vals: gv.map(x => x.v), pts: gv.map(x => x.col) }] }), 9, r, 15, r + H);
     r += H + 2;
   }
   // 송출 횟수
@@ -221,7 +221,7 @@ function xrOpsSheet(only) {
       series: items.map(k => ({ name: k, color: itemColor(k), vals: W.map((_, i) => sum(cells.filter(c => c.item === k), c => c.wk[i])) })) }), 1, r, 9, r + H);
     const cmd = m => { const A = aggCells(cells.filter(c => c.media === m)); const mid = A.cmc.중CM || 0, pib = A.cmc.PIB || 0; return { n: A.cnt, v: [mid, pib, A.cnt - mid - pib] }; };
     let c = 9;
-    for (const m of ['지상파', '케이블']) { const d = cmd(m); if (!d.n) continue; b.chart(xrChart({ type: 'doughnut', title: `${m} 중CM · PIB 비중 (${fmt.int(d.n)}회)`, cats: ['중CM', 'PIB', '전후CM 등'], legend: 'b', series: [{ name: m, color: CMC.mid, vals: d.v, pts: [CMC.mid, CMC.pib, CMC.fb] }], lblColor: '1D2833' }), c, r, c + 5, r + H); c += 5; }
+    for (const m of ['지상파', '케이블']) { const d = cmd(m); if (!d.n) continue; b.chart(xrChart({ type: 'doughnut', title: `${m} 중CM · PIB 비중 (${fmt.int(d.n)}회)`, cats: ['중CM', 'PIB', '전후CM 등'], legend: 'b', series: [{ name: m, color: CMC.mid, vals: d.v, pts: [CMC.mid, CMC.pib, CMC.fb] }], lblColor: '262626' }), c, r, c + 5, r + H); c += 5; }
     r += H + 1;
     const A = aggCells(cells); const secs = Object.keys(A.sec).map(Number).filter(x => x > 0 && A.sec[x] > 0).sort((a, b2) => a - b2);
     b.chart(xrChart({ type: 'doughnut', title: '초수별 노출수', cats: secs.map(x => x + '초'), legend: 'b', series: [{ name: '초수', color: '#13958a', vals: secs.map(x => A.sec[x]), pts: secs.map(secColor) }] }), 1, r, 6, r + H);
@@ -273,7 +273,7 @@ function xrGroundSheet() {
   }
   b.put(r, 1, '큐시트', XRS.sec); b.put(r, 4, '같은 프로그램·시간·단가는 한 줄로 묶고 주차 칸에 품목·소재·초수·날짜 · 분홍 = 중CM·본방', XRS.note); b.heights[r] = 26; r++;
   // 2줄 머리글
-  const one = ['채널', '구분', '프로그램', '요일', '시작', '종료', '시급', '초수', '단가', '횟수', '금액'];
+  const one = ['방송사', '구분', '프로그램', '요일', '시작', '종료', '시급', '초수', '단가', '횟수', '금액'];
   one.forEach((h, k) => { b.put(r, 1 + k, h, XRS.head); b.merge(r, 1 + k, r + 1, 1 + k, XRS.head); });
   b.put(r, 12, 'CM지정', XRS.head); b.merge(r, 12, r, 14, XRS.head);
   ['CM 순서', '지정율', '지정금액\n(원, VAT 별도)'].forEach((h, k) => b.put(r + 1, 12 + k, h, XRS.head));
@@ -364,13 +364,13 @@ function xrCreSheet() {
 // ---------- ⑥ 큐시트 캘린더 ----------
 function xrCalSheet(weeks) {
   const b = XRSheet('큐시트 캘린더', xrTitle('큐시트 캘린더'));
-  const per = [10, 6, 4, 26, 8];
+  const per = [10, 6, 9, 26, 8];
   b.widths = [3].concat(CAL_WD.flatMap(() => per));
   let r = 3;
-  b.put(r, 1, '날짜 칸마다 그날 나간 광고를 시작 시간 순으로 — 채널 · 시간 · 초수 · 프로그램(전체 이름) · CM 위치 (왼쪽 색 = 품목)', XRS.note); b.heights[r] = 22; r++;
+  b.put(r, 1, '날짜 칸마다 그날 나간 광고를 시작 시간 순으로 — 채널 · 시간 · 품목(품목 색) · 프로그램(전체 이름) · CM 위치', XRS.note); b.heights[r] = 22; r++;
   CAL_WD.forEach((w, i) => { const c = 1 + i * 5; b.put(r, c, w, i >= 5 ? xs2(XRS.head, { fill: { fgColor: { rgb: '5A2B3A' } } }) : XRS.head); b.merge(r, c, r, c + 4); }); b.heights[r] = 22; r++;
   for (const wk of weeks) {
-    wk.forEach((c, i) => { const cc = 1 + i * 5; b.put(r, cc, c ? `${M.ym.m}월 ${c.d}일${c.n ? ` · ${c.n}회` : ''}` : '', c ? xs2(XRS.grp, { alignment: { horizontal: 'left' }, font: { color: { rgb: i === 6 ? 'D6453D' : i === 5 ? '2F6FC4' : '2B4256' } } }) : XRS.cell); b.merge(r, cc, r, cc + 4); });
+    wk.forEach((c, i) => { const cc = 1 + i * 5; b.put(r, cc, c ? `${M.ym.m}월 ${c.d}일${c.n ? ` · ${c.n}회` : ''}` : '', c ? xs2(XRS.grp, { alignment: { horizontal: 'left' }, font: { color: { rgb: i >= 5 ? 'D6453D' : '2C2C2E' } } }) : XRS.cell); b.merge(r, cc, r, cc + 4); });
     r++;
     const mx = Math.max(1, ...wk.map(c => c ? c.list.length : 0));
     for (let k = 0; k < mx; k++) {
@@ -378,8 +378,9 @@ function xrCalSheet(weeks) {
         const e = c && c.list[k], cc = 1 + i * 5;
         if (!e) { for (let j = 0; j < 5; j++) b.put(r, cc + j, '', XRS.cell); return; }
         const mid = e.cmCls === '중CM', st = mid ? XRS.bon : XRS.cell;
-        b.put(r, cc, e.ch, xs2(st, { fill: { fgColor: { rgb: hexRgb(itemLight(e.item)) } }, font: { bold: true } }));
-        b.put(r, cc + 1, e.st, st); b.put(r, cc + 2, e.sec || '', st); b.put(r, cc + 3, e.prog + (e.n > 1 ? ` ×${e.n}` : ''), xs2(st, { alignment: { horizontal: 'left', wrapText: true } }));
+        const ic = itemColor(e.item);
+        b.put(r, cc, e.ch, xs2(st, { font: { bold: true } }));
+        b.put(r, cc + 1, e.st, st); b.put(r, cc + 2, e.item || e.itemRaw || '', xs2(st, { fill: { fgColor: { rgb: hexRgb(ic) } }, font: { bold: true, color: { rgb: hexRgb(inkOn(ic)) } } })); b.put(r, cc + 3, e.prog + (e.n > 1 ? ` ×${e.n}` : ''), xs2(st, { alignment: { horizontal: 'center', wrapText: true } }));
         b.put(r, cc + 4, e.cm, mid ? xs2(st, { font: { bold: true, color: { rgb: 'E0005A' } } }) : st);
       });
       r++;

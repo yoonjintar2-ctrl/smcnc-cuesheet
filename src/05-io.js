@@ -228,10 +228,10 @@ function readFileParts(buf, fileName) {
 
 // ---- 쓰기 ----
 const XS = {
-  head: { font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 10, name: '맑은 고딕' }, fill: { fgColor: { rgb: '3F5B73' } }, alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, border: bd('2B4256') },
-  sub: { font: { bold: true, sz: 10, name: '맑은 고딕', color: { rgb: '1D2833' } }, fill: { fgColor: { rgb: 'E7EDF2' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: bd('C9D4DE') },
-  cell: { font: { sz: 10, name: '맑은 고딕', color: { rgb: '1D2833' } }, alignment: { vertical: 'center' }, border: bd('DFE4E9') },
-  total: { font: { bold: true, sz: 10, name: '맑은 고딕', color: { rgb: '1D2833' } }, fill: { fgColor: { rgb: 'EEF1F4' } }, alignment: { vertical: 'center' }, border: bd('C9D4DE') },
+  head: { font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 10, name: '맑은 고딕' }, fill: { fgColor: { rgb: '575757' } }, alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, border: bd('3F3F3F') },
+  sub: { font: { bold: true, sz: 10, name: '맑은 고딕', color: { rgb: '262626' } }, fill: { fgColor: { rgb: 'ECECEC' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: bd('D2D2D2') },
+  cell: { font: { sz: 10, name: '맑은 고딕', color: { rgb: '262626' } }, alignment: { vertical: 'center' }, border: bd('E3E3E3') },
+  total: { font: { bold: true, sz: 10, name: '맑은 고딕', color: { rgb: '262626' } }, fill: { fgColor: { rgb: 'F1F1F1' } }, alignment: { vertical: 'center' }, border: bd('D2D2D2') },
 };
 function bd(c) { const s = { style: 'thin', color: { rgb: c } }; return { top: s, bottom: s, left: s, right: s }; }
 function xsMerge(base, extra) { return JSON.parse(JSON.stringify(Object.assign({}, base, extra || {}))); }
