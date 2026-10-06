@@ -42,8 +42,13 @@ const OBUI = {
     if (p.length) await this.add(p); else this.refresh();
   },
   async add(list) {
-    const arr = [...(list || [])];
+    let arr = [...(list || [])];
     if (!arr.length) return;
+    // 16차: 이 사이트에서 받은 엑셀(_meta 시트가 있음)은 온보딩이 아니라 '다시 넣기'로
+    const own = [], raw = [];
+    for (const f of arr) (await obIsOwnFile(f) ? own : raw).push(f);
+    if (own.length) { if (!raw.length && !OB.files.length) this.close(); App.handleFiles(own, true, true); }
+    arr = raw; if (!arr.length) return;
     if (!this.media) { this.pending = this.pending.concat(arr); this.render(); return; }
     this.busy = `파일 ${arr.length}개 읽는 중…`; this.render();
     await new Promise(r => setTimeout(r, 20));
@@ -96,9 +101,10 @@ const OBUI = {
       return `<button class="obmd ${m === '지상파' ? 'g' : 'c'}${App.tab === m ? ' cur' : ''}" data-md="${m}" ${this.locking ? 'disabled' : ''}><b>${m} 입력</b><small>${sub}</small>${this.locking === m ? '<span class="lk">잠그는 중…</span>' : who ? `<span class="lk">🔒 ${esc(who)}님 작업 중</span>` : ''}</button>`;
     };
     this.box.innerHTML = `
-    <div class="obh"><div><h2>방송사 큐시트 온보딩</h2><div class="sub">어느 시트에 넣을까요?</div></div><button class="btn ghost obx" title="닫기 (Esc)">✕</button></div>
+    <div class="obh"><div><h2>엑셀 넣기</h2><div class="sub">방송사 원본 큐시트는 넣을 시트를 먼저 골라 주세요. 이 사이트에서 받은 엑셀은 그대로 끌어다 놓아도 돼요.</div></div><button class="btn ghost obx" title="닫기 (Esc)">✕</button></div>
     <div class="obb obpick0">
       <div class="obmedia">${btn('지상파', 'KBS · MBC · SBS 원본')}${btn('케이블', 'PP · 종편 원본')}</div>
+      <button class="obown" data-own>📄 이 사이트에서 받은 엑셀 다시 넣기<small>⤓로 받은 큐시트 엑셀 · 지난 달 백업 (여러 개 가능)</small></button><input type="file" class="obownf" accept=".xlsx,.xlsm" multiple hidden>
       ${on ? '<div class="muted small obnote">고른 시트는 넣는 동안 다른 관리자가 고칠 수 없어요.</div>' : ''}
       ${this.pending.length ? `<div class="obpend">📄 파일 ${this.pending.length}개 대기 중 — 시트를 고르면 바로 읽어요</div>` : ''}
     </div>
@@ -106,6 +112,9 @@ const OBUI = {
     this.box.querySelector('.obx').onclick = () => this.close();
     this.box.querySelector('[data-ob="close"]').onclick = () => this.close();
     this.box.querySelectorAll('[data-md]').forEach(b => b.onclick = () => this.pickMedia(b.dataset.md));
+    const of = this.box.querySelector('.obownf');
+    this.box.querySelector('[data-own]').onclick = () => of.click();
+    of.onchange = () => { const f = [...of.files]; of.value = ''; if (!f.length) return; this.close(); App.handleFiles(f, true, true); };
     const cur = this.box.querySelector('.obmd.cur') || this.box.querySelector('.obmd'); if (cur && !this.locking) cur.focus();
   },
   // 매칭 규칙 (창 위쪽 · 펼쳤을 때만 그림)
@@ -340,3 +349,8 @@ const OBUI = {
     App.toast(msg, 7000);
   },
 };
+// 이 사이트에서 받은 엑셀인지 (다시 넣기용 _meta 시트가 있으면)
+async function obIsOwnFile(f) {
+  if (!/\.xls[xm]?$/i.test(f.name || '')) return false;
+  try { const wb = XLSX.read(new Uint8Array(await f.arrayBuffer()), { type: 'array', bookSheets: true }); return (wb.SheetNames || []).includes('_meta'); } catch (e) { return false; }
+}

@@ -109,12 +109,11 @@ function renderMasterSide(el) {
   const side = el.querySelector('#mside'); if (!side) return;
   const cur = el._mst || '품목';
   let h = `<div class="card"><div class="hd"><h4>안내</h4></div><div class="bd small">${esc(MST_HELP[cur])}
-    <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-mx="xlsx">⤓ 품목·채널 등 관리 목록 엑셀</button><button class="btn sm ghost" data-mx="reset">${esc(SHEETS[cur].label)} 기본값으로</button></div></div></div>`;
+    <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm ghost" data-mx="reset">${esc(SHEETS[cur].label)} 기본값으로</button></div></div></div>`;
   if (cur === '품목') h += `<div class="card"><div class="hd"><h4>색상 미리보기</h4></div><div class="bd"><div class="chips">${[...M.MS.items.values()].map(it => `<span class="spot" style="--c:${it.light};--b:${it.color};display:inline-block">${esc(it.key)}</span>`).join('')}</div></div></div>`;
   h += App.unknownHtml();
   side.innerHTML = h;
   App.bindUnknown(side);
-  side.querySelector('[data-mx="xlsx"]').onclick = () => saveWorkspaceXlsx(WS, M, MASTER_SHEETS, '마스터');
   side.querySelector('[data-mx="reset"]').onclick = () => App.confirm(`${SHEETS[cur].label}을(를) 기본값으로`, `<p>처음 받은 기본 ${esc(SHEETS[cur].label)} 목록으로 되돌려요. 직접 추가·수정한 내용은 사라지고, 지금 상태는 변경 이력에 버전으로 남겨 둘게요.</p>`, '되돌리기', async () => {
     await App.saveVersion(`마스터 ${SHEETS[cur].label} 기본값 복원 전`, true);
     WS.sheets[cur] = DEFAULT_MASTER[cur].map(r => r.slice()); App.changed('master'); App.toast('기본값으로 되돌렸어요');
@@ -432,7 +431,7 @@ function renderBudgetForm(el) {
   }
   body += `<tr class="tot" data-st="all"><td class="l" colspan="2">합계</td>${cols.map((_, j) => `<td>${fmt.won(T.col[j])}</td>`).join('')}<td>${fmt.won(T.all)}</td></tr>`;
   el.innerHTML = `<div class="viewhead"><div><div class="sub">${ymLabel()} · 채널 × 품목 예산 (원, VAT 별도)${roTab('예산') ? '' : `. '1.5억', '3000만'처럼 써도 되고, 엑셀 범위를 복사해 칸에 붙여넣으면 그 칸부터 채워져요.`}</div></div><div class="spacer"></div>
-      <button class="btn sm" data-b="paste">엑셀 표 통째로 붙여넣기</button><button class="btn sm" data-b="fill">기본 채널 넣기</button><button class="btn sm" data-b="xlsx">⤓ 예산 엑셀</button><button class="btn sm ghost" data-b="wipe">금액 비우기</button></div>
+      <button class="btn sm" data-b="paste">엑셀 표 통째로 붙여넣기</button><button class="btn sm" data-b="fill">기본 채널 넣기</button><button class="btn sm ghost" data-b="wipe">금액 비우기</button></div>
     <div class="formwrap"><div class="stack">
       <section class="card itchips"><div class="hd"><h3>품목</h3><span class="sub">누르면 예산표 열로 넣고 빼요. 열 순서가 요약 표·그래프의 품목 순서예요.</span></div><div class="bd"><div class="chips">${items.map(it => `<button class="chipbtn ${have.has(it.key) ? 'on' : ''}" data-it="${esc(it.key)}"><span class="sw" style="background:${it.color}"></span>${esc(it.key)}</button>`).join('')}</div></div></section>
       <section class="card"><div class="tw free bud"><table class="t form budget"><colgroup><col class="cpp"><col class="cch">${cols.map(() => '<col class="cv">').join('')}<col class="cv"></colgroup><thead><tr><th class="l pph">PP</th><th class="l chh">채널</th>${cols.map(colHead).join('')}<th class="rth">계</th></tr></thead><tbody>${body}</tbody></table></div></section>
@@ -506,7 +505,6 @@ function renderBudgetForm(el) {
   el.querySelectorAll('[data-rx]').forEach(b => b.onclick = () => { const i = +b.dataset.rx; const t = T.row[i]; const go = () => { WS.sheets.예산.splice(i + 1, 1); App.changed('예산'); }; if (!t) return go(); App.confirm(`'${rows[i][0]}' 행 빼기`, `<p>예산 <b>${fmt.won(t)}원</b>이 들어 있어요.</p>`, '빼기', go); });
   el.querySelectorAll('[data-rmap]').forEach(s => s.onchange = () => { if (!s.value) return; WS.sheets.예산[+s.dataset.rmap + 1][0] = s.value; App.changed('예산'); });
   // 상단 버튼
-  el.querySelector('[data-b="xlsx"]').onclick = () => xrDownload([xrBudgetSheet()], xrDataSheets(['예산']), xrName('예산'));
   el.querySelector('[data-b="fill"]').onclick = () => { const add = M.MS.chList.slice(0, 21).filter(c => !present.has(c.name)); add.forEach(c => WS.sheets.예산.push([c.name].concat(cols.map(() => '')))); App.changed('예산'); App.toast(add.length ? `채널 ${add.length}개를 넣었어요` : '기본 채널은 이미 다 있어요'); };
   el.querySelector('[data-b="wipe"]').onclick = () => App.confirm('예산 금액 비우기', '<p>품목 열과 채널 행은 두고 금액만 지워요. 지금 상태는 버전으로 남겨 둘게요.</p>', '비우기', async () => { await App.saveVersion('예산 비우기 전 자동 백업', true); WS.sheets.예산 = [WS.sheets.예산[0]].concat(WS.sheets.예산.slice(1).map(r => [r[0]].concat(cols.map(() => '')))); App.changed('예산'); });
   el.querySelector('[data-b="paste"]').onclick = () => budPasteDialog();
@@ -702,7 +700,7 @@ function renderCreForm(el) {
       </tbody><tfoot><tr class="sub"><td class="l" colspan="3">합계</td><td data-s4></td><td data-s5></td><td></td><td colspan="3"></td></tr></tfoot></table>${secPlanHtml(k, idx.map(i => rows[i]))}</section>`;
   };
   el.innerHTML = `<div class="viewhead"><div><div class="sub">${ymLabel()} · 품목별 운영 소재와 비중. 비중은 % 숫자로 (50 = 50%). 지상파 실제는 지상파 송출 중 그 소재로 나간 비율이에요.</div></div><div class="spacer"></div>
-      <select class="btn sm" id="creadd"><option value="">＋ 품목 추가…</option>${avail.map(k => `<option value="${esc(k)}">${esc(k)}${M.budgetItems.includes(k) ? ' (예산 있음)' : ''}</option>`).join('')}</select><button class="btn sm" data-c="xlsx">⤓ 소재 엑셀</button></div>
+      <select class="btn sm" id="creadd"><option value="">＋ 품목 추가…</option>${avail.map(k => `<option value="${esc(k)}">${esc(k)}${M.budgetItems.includes(k) ? ' (예산 있음)' : ''}</option>`).join('')}</select></div>
     ${missing.length ? `<div class="note warn">예산은 있는데 소재가 없는 품목: ${missing.map(k => `<button class="chipbtn" data-addit="${esc(k)}"><span class="sw" style="background:${itemColor(k)}"></span>${esc(k)} 추가</button>`).join(' ')}</div>` : ''}
     <div class="crecards">${keys.map(card).join('') || '<section class="card"><div class="empty">위의 ＋ 품목 추가로 시작하세요. 예산에 넣은 품목은 노란 안내에서 바로 추가할 수 있어요.</div></section>'}</div>`;
   const sums = () => el.querySelectorAll('.crecard').forEach(sec => {
@@ -758,7 +756,6 @@ function renderCreForm(el) {
   el.querySelector('#creadd').onchange = e => { if (e.target.value) addRow(e.target.value); };
   el.querySelectorAll('[data-delitem]').forEach(b => b.onclick = () => { const k = b.dataset.delitem; const n = rows.filter(r => r[0] === k && str(r[3])).length; const go = () => { WS.sheets.소재 = rows.filter(r => r[0] !== k); App.changed('소재'); }; if (!n) return go(); App.confirm(`'${k}' 소재 빼기`, `<p>소재 ${n}개를 지워요.</p>`, '빼기', go); });
   el.querySelectorAll('[data-imap]').forEach(s => s.onchange = () => { if (!s.value) return; rows.forEach(r => { if (r[0] === s.dataset.imap) r[0] = s.value; }); App.changed('소재'); });
-  el.querySelector('[data-c="xlsx"]').onclick = () => xrDownload([xrCreSheet()], xrDataSheets(['소재']), xrName('소재'));
   if (roTab('소재')) lockForm(el);
 }
 

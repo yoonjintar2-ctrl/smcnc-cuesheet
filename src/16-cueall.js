@@ -68,8 +68,7 @@ function renderCueAll(root) {
   const chOpts = chs.map(c => { const x = M.MS.chByName.get(c); return { v: c, t: c, sub: x ? (x.media === '지상파' ? '지상파' : x.mpp) : '' }; });
   const itOpts = items.map(k => ({ v: k, t: k, color: M.MS.items.has(k) ? itemColor(k) : '#c1c1c1' }));
   const W = { media: 74, ch: 128, item: 122, prog: 0, date: 62, dow: 46, start: 76, end: 76, sec: 50, cre: 120, cm: 120, grade: 52, price: 100 };
-  root.innerHTML = `<div class="viewhead"><div><h2>전체 큐시트</h2><div class="sub">${ymLabel()} · 지상파·케이블을 섞어 <b>날짜 → 시작 시간</b> 순으로, 1행 = 1회 송출 · 광고주에게 주는 결과 데이터 형식</div></div><div class="spacer"></div>
-      <button class="btn pri" id="ca-dl">⤓ 다운로드 (엑셀)</button></div>
+  root.innerHTML = `<div class="viewhead"><div><h2>전체 큐시트</h2><div class="sub">${ymLabel()} · 지상파·케이블을 섞어 <b>날짜 → 시작 시간</b> 순으로, 1행 = 1회 송출 · 광고주에게 주는 결과 데이터 형식</div></div></div>
     <section class="card cafilter"><div class="bd">
       ${mselHtml('media', '구분', [{ v: '지상파', t: '지상파' }, { v: '케이블', t: '케이블' }], f.media)}
       ${mselHtml('ch', '방송사', chOpts, f.ch)}
@@ -118,26 +117,4 @@ function renderCueAll(root) {
   qi.oninput = debounce(() => { f.q = qi.value; const pos = qi.selectionStart; re(); const n = root.querySelector('#ca-q'); n.focus(); n.setSelectionRange(pos, pos); }, 250);
   const rs = root.querySelector('#ca-reset'); if (rs) rs.onclick = () => { Object.assign(f, { media: null, ch: null, item: null, a: null, b: null, q: '' }); re(); };
   root.querySelectorAll('[data-cacol]').forEach(i => i.onchange = () => { f.cols[i.dataset.cacol] = i.checked ? 1 : 0; re(true); });
-  root.querySelector('#ca-dl').onclick = () => exportCueAll(rows);
-}
-function exportCueAll(rows) {
-  const cols = cueAllCols();
-  const serial = d => (Date.UTC(M.ym.y, M.ym.m - 1, d) - Date.UTC(1899, 11, 30)) / 86400000;
-  const head = ['No'].concat(cols.map(c => c[1]));
-  const aoa = [head].concat(rows.map((s, i) => [i + 1].concat(cols.map(([k]) => k === 'date' ? (s.day ? serial(s.day) : '') : k === 'sec' || k === 'price' ? (cueAllVal(s, k) === '' ? '' : +cueAllVal(s, k)) : cueAllVal(s, k)))));
-  const iItem = cols.findIndex(c => c[0] === 'item') + 1, iDate = cols.findIndex(c => c[0] === 'date') + 1;
-  const W = { media: 8, ch: 16, item: 14, prog: 46, date: 12, dow: 6, start: 9, end: 9, sec: 6, cre: 18, cm: 12, grade: 6, price: 12 };
-  const f = cueAllUI(); const tag = f.a ? `_${f.a.m}${pad2(f.a.d)}-${f.b ? f.b.m + pad2(f.b.d) : ''}` : '';
-  downloadBook([{ name: '전체 큐시트', aoa, widths: [6].concat(cols.map(([k]) => W[k] || 10)),
-    autofilter: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: aoa.length - 1, c: head.length - 1 } }),
-    numFmt: (r, c) => c === iDate ? 'yyyy-mm-dd' : c === 0 ? '0' : '#,##0',
-    styler: (r, c) => {
-      if (r === 0) return null;
-      const s = rows[r - 1];
-      if (c === iItem) { const it = M.MS.items.get(s.item); if (it) return xsMerge(XS.cell, { fill: { fgColor: { rgb: hexRgb(it.light) } }, alignment: { horizontal: 'center', vertical: 'center' } }); }
-      const k = cols[c - 1] && cols[c - 1][0];
-      if (c === 0 || ['media', 'ch', 'date', 'dow', 'start', 'end', 'sec', 'grade'].includes(k)) return xsMerge(XS.cell, { alignment: { horizontal: 'center', vertical: 'center' } });
-      return null;
-    } }], `코웨이 큐시트_${M.ym.y % 100}년 ${M.ym.m}월${tag}_결과데이터.xlsx`);
-  App.toast(`${fmt.int(rows.length)}행을 엑셀로 내려받았어요`);
 }

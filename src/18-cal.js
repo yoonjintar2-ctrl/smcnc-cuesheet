@@ -46,7 +46,7 @@ function renderCal(root) {
       ${mselHtml('calch', '채널', chOpts, f.ch)}
       <div class="calits" role="group" aria-label="품목 필터"><button type="button" class="cit all${f.item ? '' : ' on'}" data-cit="">전체</button>${items.map(k => `<button type="button" class="cit${f.item && f.item.has(k) ? ' on' : ''}" data-cit="${esc(k)}" style="--c:${itemColor(k)};--cl:${itemLight(k)}"><i></i>${esc(k)}</button>`).join('')}</div>
       ${f.ch || f.item || f.media !== 'all' ? '<button class="btn sm ghost" id="cal-reset">필터 해제</button>' : ''}
-      <div class="spacer"></div>${isNowMonth ? '<button class="btn sm" id="cal-today">오늘로</button>' : ''}${xlBtn('cal', '캘린더 엑셀')}<span class="helpw"><button class="helpq" id="cal-help" aria-label="캘린더 보는 법" title="캘린더 보는 법">?</button><div class="helppop" hidden>${help}</div></span>
+      <div class="spacer"></div>${isNowMonth ? '<button class="btn sm" id="cal-today">오늘로</button>' : ''}<span class="helpw"><button class="helpq" id="cal-help" aria-label="캘린더 보는 법" title="캘린더 보는 법">?</button><div class="helppop" hidden>${help}</div></span>
     </div></section>
     <section class="card calcard"><div class="calw"><table class="calt"><colgroup>${CAL_WD.map(() => '<col>').join('')}</colgroup><thead><tr>${CAL_WD.map((w, i) => `<th class="${i >= 5 ? 'we' : ''}">${w}</th>`).join('')}</tr></thead><tbody>
     ${weeks.map(wk => `<tr>${wk.map((c, i) => {
@@ -87,9 +87,7 @@ function renderCal(root) {
     re();
   });
   const rs = root.querySelector('#cal-reset'); if (rs) rs.onclick = () => { Object.assign(f, { media: 'all', ch: null, item: null }); re(); };
-  root.querySelector('[data-xl="cal"]').onclick = () => exportCal(weeks);
 }
 // 엑셀: 요일 머리글(5칸씩 병합) → 주마다 날짜 줄(병합) + 송출 줄(채널 · 시간 · 초수 · 프로그램 · CM)
-function exportCal(weeks) { xrDownload([xrCalSheet(weeks)], null, xrName('큐시트캘린더')); }
 // 배경색 위 글자색: 밝은 바탕이면 진한 글자
 function calInk(hex) { const c = hexToRgb(hex) || [128, 128, 128]; const L = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255; return L > 0.62 ? '#1c1c1c' : '#fff'; }

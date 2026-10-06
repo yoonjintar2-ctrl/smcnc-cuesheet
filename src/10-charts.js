@@ -125,8 +125,10 @@ function dnDraw(st) {
     const hit = new Path2D(); hit.addPath(tp); hit.addPath(G.wall(b0, b1, Ro, z0, z1, s.o)); hit.addPath(G.top(s, z0)); hp[i] = hit;
   }
   st.hp = hp;
+  // 16차: vlabel = 레이블을 도넛 위(뒤쪽 조각) · 아래(앞쪽 조각) 줄에 두고 세로 설명선으로 이음 → 옆으로 넓어지지 않음
+  if (st.sweep > 0.98 && st.opts && st.opts.vlabel) dnVLabels(st, S, total, G, ff);
   // 라벨 : 아래 불투명한 바탕(예산) 테두리 기준 + 짧은 지시선 (다 펼친 뒤에만)
-  if (st.sweep > 0.98) for (const s of S) {
+  else if (st.sweep > 0.98) for (const s of S) {
     const share = s.value / total; if (share < 0.035) continue;
     const sn = Math.sin(s.mid), cs = Math.cos(s.mid), front = sn > -0.05;
     const zz = front ? H0 * 0.5 : H0;
@@ -169,6 +171,38 @@ function dnDraw(st) {
   ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,.92)';
   ctx.font = '700 15px ' + ff; ctx.strokeText(c1, cx, cy - H0 - 4); ctx.fillStyle = '#262626'; ctx.fillText(c1, cx, cy - H0 - 4);
   ctx.font = '12px ' + ff; ctx.strokeText(c2, cx, cy - H0 + 13); ctx.fillStyle = '#616161'; ctx.fillText(c2, cx, cy - H0 + 13);
+}
+function dnVLabels(st, S, total, G, ff) {
+  const ctx = st.ctx, W = st.W, H = st.H, { R, H0 } = st.g;
+  const L = [];
+  for (const s of S) {
+    const share = s.value / total; if (share < 0.03) continue;
+    const up = Math.sin(s.mid) < 0;   // 뒤쪽(위) 조각 → 위 줄, 앞쪽(아래) 조각 → 아래 줄
+    const a = G.P(s.mid, R * 0.97, up ? H0 : 0, s.o);
+    const l1 = `${s.label} ${Math.round(share * 100)}%`, l2 = st.opts.valFmt ? st.opts.valFmt(s.value) : fmt.eok(s.value, 1);
+    ctx.font = '600 11.5px ' + ff; const w1 = ctx.measureText(l1).width; ctx.font = '10.5px ' + ff; const w2 = ctx.measureText(l2).width;
+    L.push({ s, up, ax: a[0], ay: a[1], w: Math.max(w1, w2) + 8, l1, l2, x: a[0] });
+  }
+  // 같은 줄 안에서 겹치지 않게 좌우로 밀기 (캔버스 안쪽으로)
+  for (const up of [true, false]) {
+    const row = L.filter(l => l.up === up).sort((p, q) => p.ax - q.ax); if (!row.length) continue;
+    for (let i = 0; i < row.length; i++) { const lo = i ? row[i - 1].x + (row[i - 1].w + row[i].w) / 2 + 4 : row[i].w / 2 + 2; row[i].x = Math.max(row[i].x, lo); }
+    for (let i = row.length - 1; i >= 0; i--) { const hi = i < row.length - 1 ? row[i + 1].x - (row[i + 1].w + row[i].w) / 2 - 4 : W - row[i].w / 2 - 2; row[i].x = Math.min(row[i].x, hi); }
+  }
+  // 글자 줄은 도넛 가까이 (칸이 높아도 설명선이 너무 길어지지 않게)
+  const { cy, t } = st.g; const yTop = Math.max(13, cy - R * t - H0 - 52), yBot = Math.min(H - 18, cy + R * t + 40);
+  for (const l of L) {
+    const col = shade(l.s.color, -0.3);
+    const ly = l.up ? yTop + 18 : yBot - 14;   // 설명선이 끝나는 높이 (글자 바로 아래/위)
+    ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(l.ax, l.ay);
+    const elbow = l.up ? ly + 6 : ly - 6;
+    ctx.lineTo(l.ax, elbow); ctx.lineTo(l.x, ly); ctx.stroke();
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(l.ax, l.ay, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,.94)';
+    const t1 = l.up ? yTop - 1 : yBot, t2 = t1 + 13;
+    ctx.font = '600 11.5px ' + ff; ctx.strokeText(l.l1, l.x, t1); ctx.fillStyle = '#262626'; ctx.fillText(l.l1, l.x, t1);
+    ctx.font = '10.5px ' + ff; ctx.strokeText(l.l2, l.x, t2); ctx.fillStyle = '#616161'; ctx.fillText(l.l2, l.x, t2);
+  }
 }
 function dnMove(st, e) {
   if (!st.S || !st.S.length) return;
@@ -216,7 +250,7 @@ function itemBars(host, rows, opts = {}) {
       const okX = xw && pb + px - xw - 8 > used + 6;
       e.lbx.style.visibility = okX ? '' : 'hidden'; e.lbx.style.left = (pb + px - xw - 7) + 'px'; e.lbx.style.color = shade(x.color, isLight(x.color) ? -0.34 : -0.14);   // 다른 레이블처럼 품목 색 계열
       e.lbv.textContent = v.b + v.x > 0 ? fmt.eok(v.b + Math.max(0, v.x), 1) : '';
-      e.lbv.style.left = (pb + px + 7) + 'px';
+      e.lbv.style.left = Math.max(pb + px + 7, inB ? 0 : pb + 6 + bw + 8) + 'px';   // 예산 글자가 막대 밖이면 그 뒤에 (겹치지 않게)
     });
   };
   const target = rows.map(x => ({ b: x.budget, x: Math.max(0, x.bonus) }));

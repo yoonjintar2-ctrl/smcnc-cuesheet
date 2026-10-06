@@ -1381,3 +1381,24 @@ table.t.cue.qm.cg td.wk{min-width:124px}
 .obm.modal.pick{height:auto;width:min(720px,100%)}
 .obm.pick .obb{flex:none;padding:28px 24px 30px}
 .oc-row[hidden]{display:none}
+/* 16차: 초수별 · 요일별 · 중CM 비중 = 작은 카드 3개 + 중CM·PIB 막대를 한 줄에 */
+.mixrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.75fr);gap:16px;margin-bottom:16px;align-items:stretch}
+.card.mixcard{display:flex;flex-direction:column;margin:0;min-width:0}
+.mixcard .hd{flex:none;flex-wrap:nowrap;gap:6px}
+.mixcard .hd h3{white-space:nowrap}
+.mixcard .hd .sub{white-space:nowrap}
+.mixcard .hd .seg button{padding:0 7px;font-size:11px}
+.mixcard .bd{flex:1 1 auto;min-height:260px;position:relative;padding:0}
+.mixcard .mxd{position:absolute;inset:2px 6px 6px}
+.mixrow .card.cmcard{margin:0;min-width:0}
+@media (max-width:1300px){.mixrow{grid-template-columns:repeat(3,minmax(0,1fr))}.mixrow .cmcard{grid-column:1/-1}}
+@media (max-width:760px){.mixrow{grid-template-columns:1fr}}
+/* 16차: 소계·합계 줄에 마우스를 올려도 색 그대로 (흰 글자가 사라지던 문제) */
+table.t tr.sub:hover td:not(.mg):not(.cat){background-color:#e6e6e8}
+table.t tr.tot:hover td{background-color:#575757}
+table.t.budget tr.tot:hover td{background-color:#575757}
+table.t.yeart tr.tot:hover td.yt{background-color:#3a3a3c}table.t.yeart tr.sub:hover td.yt{background-color:#dcdce0}
+.obown{display:flex;flex-direction:column;align-items:center;gap:2px;width:min(616px,100%);padding:12px 16px;border:1.5px dashed #c7c7cc;border-radius:12px;background:var(--surface);cursor:pointer;font:inherit;font-weight:600;color:var(--ink)}
+.obown small{font-weight:400;color:var(--muted);font-size:12px}
+.obown:hover{border-color:#2c2c2e}
+.mixcard .hd .seg button{white-space:nowrap}

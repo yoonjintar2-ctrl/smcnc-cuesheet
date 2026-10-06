@@ -87,7 +87,7 @@ const App = {
     { id: 'year', g: '운영 누적', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3.4 16.4h13.2M5.6 13.6V9.8M9 13.6V6.4M12.4 13.6V8.4M15.8 13.6V4.2"/>', items: [['year', '월별 광고비']] },
     { id: 'input', g: '규칙 관리', note: '관리자 전용', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M3.2 14.2 12.6 4.8l2.6 2.6-9.4 9.4H3.2z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M11 6.4l2.6 2.6"/>', items: [['master', '품목 관리'], ['mch', '채널 관리'], ['mcm', 'CM위치 보정 규칙'], ['mcprp', '목표 CPRP']] },
     { id: 'plan', g: '당월 입력', note: '관리자 전용', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 3.4h11.2v13.4H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 7.4h5.6M7.2 10.4h5.6M7.2 13.4h3.4"/>', items: [['예산', '당월 예산'], ['소재', '당월 소재'], ['지상파', '지상파 입력'], ['케이블', '케이블 입력'], ['reach', '리치 입력']] },
-    { id: 'cue', g: '큐시트', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.8 3.6h14.4v12.8H2.8z"/><path fill="none" stroke="currentColor" stroke-width="1.7" d="M2.8 7.6h14.4M7.6 7.6v8.8"/>', items: [['summary', '요약'], ['cueall', '전체 큐시트'], ['cueg', '지상파 큐시트'], ['cuec', '케이블 큐시트'], ['cal', '큐시트 캘린더']] },
+    { id: 'cue', g: '큐시트', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.8 3.6h14.4v12.8H2.8z"/><path fill="none" stroke="currentColor" stroke-width="1.7" d="M2.8 7.6h14.4M7.6 7.6v8.8"/>', items: [['summary', '요약'], ['crev', '당월 소재'], ['cueg', '지상파 큐시트'], ['cuec', '케이블 큐시트'], ['cal', '큐시트 캘린더'], ['cueall', '전체 큐시트']] },
     { id: 'chk', g: '점검', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 10.4l3.6 3.6L16 5.6"/>', items: [['issues', '확인 필요'], ['history', '변경 이력']] },
   ],
   // 지금 보여 줄 분류 (뷰어: 큐시트만)
@@ -113,7 +113,7 @@ const App = {
     setH(); try { new ResizeObserver(setH).observe(shell); } catch (e) { }
     if (REPORT) {
       WS = fixWS(REPORT.ws); setM(compute(WS));
-      this.TABS = [{ id: 'cue', g: '', items: [['summary', '요약'], ['cueall', '전체 큐시트'], ['cueg', '지상파 큐시트'], ['cuec', '케이블 큐시트'], ['cal', '큐시트 캘린더']] }];
+      this.TABS = [{ id: 'cue', g: '', items: [['summary', '요약'], ['crev', '당월 소재'], ['cueg', '지상파 큐시트'], ['cuec', '케이블 큐시트'], ['cal', '큐시트 캘린더'], ['cueall', '전체 큐시트']] }];
       this.go('summary'); return;
     }
     if (cloud) return this.initCloud();
@@ -222,21 +222,14 @@ const App = {
     const brand = `<div class="brand"><h1>SM C&amp;C TV 큐시트</h1><span class="advchip" id="advchip">${esc(advName())}</span></div>`;
     const ym = '<div class="monthbox"><select id="yearsel" title="연도"></select><select id="monthsel" title="월"></select></div>';
     if (CLOUD.on && !CLOUD.admin) return `<div class="shell" id="shell"><header class="top">${brand}${ym}
-      <div class="spacer"></div><span class="rolechip">뷰어</span><button class="btn" id="b-admin">관리자 모드 접속</button></header><nav class="nav" id="nav"></nav></div><main id="view"></main><div class="toast" id="toast"></div>`;
+      <div class="spacer"></div><span class="rolechip">뷰어</span><button class="btn ibtn" id="b-bak" title="큐시트 엑셀 받기" aria-label="큐시트 엑셀 받기"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 3.2v9.2M6.4 9l3.6 3.6L13.6 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.6 13.4v2.4c0 .6.4 1 1 1h10.8c.6 0 1-.4 1-1v-2.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="btn" id="b-admin">관리자 모드 접속</button></header><nav class="nav" id="nav"></nav></div><main id="view"></main><div class="toast" id="toast"></div>`;
     if (REPORT) return `<div class="shell" id="shell"><header class="top"><div class="brand"><h1>${esc(REPORT.title || '큐시트 보고')}</h1></div><div class="spacer"></div><div class="status">업데이트 ${fmt.time(REPORT.at)}</div><button class="btn sm" onclick="window.print()">인쇄</button></header><nav class="nav" id="nav"></nav></div><main id="view"></main><div class="toast" id="toast"></div>`;
     return `<div class="shell" id="shell"><header class="top">
       ${brand}${ym}
       <div class="spacer"></div><div class="status" id="status"></div>
       <button class="btn pri" id="b-save" title="지금 상태를 저장하고 변경 이력에 남겨요 (Ctrl+S)">저장</button>
-      <div class="dd" id="dd-bak"><button class="btn ibtn" id="b-bak" title="엑셀 받기 · 백업" aria-label="엑셀 받기 · 백업"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 3.2v9.2M6.4 9l3.6 3.6L13.6 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.6 13.4v2.4c0 .6.4 1 1 1h10.8c.6 0 1-.4 1-1v-2.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dd-menu">
-        <div class="dd-h">엑셀</div>
-        <button data-bak="all">큐시트 엑셀 받기<small>운영 요약 · 예산표 · 지상파/케이블 큐시트 · 소재 운영 (다시 넣기용 데이터도 함께)</small></button>
-        <button data-bak="지상파">지상파 시트만<small>입력 시트 그대로 (담당자끼리 주고받기)</small></button>
-        <button data-bak="케이블">케이블 시트만</button>
-        <button data-bak="plan">예산·소재만</button>
-        <button data-bak="master">마스터만</button>
-        <hr><button data-bak="restore">백업 파일 다시 넣기…<small>이 도구에서 받은 엑셀을 골라 그대로 넣어요</small></button></div></div>
-      <button class="btn ibtn" id="b-onboard" title="방송사 큐시트 온보딩 — 방송사에서 받은 원본 큐시트 엑셀을 자동 매칭해서 지상파·케이블 시트에 넣기" aria-label="방송사 큐시트 온보딩"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 4v12M4 10h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <button class="btn ibtn" id="b-bak" title="큐시트 엑셀 받기 (운영 요약 · 예산표 · 소재 · 캘린더 · 지상파/케이블 큐시트 · 전체 큐시트)" aria-label="큐시트 엑셀 받기"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 3.2v9.2M6.4 9l3.6 3.6L13.6 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.6 13.4v2.4c0 .6.4 1 1 1h10.8c.6 0 1-.4 1-1v-2.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="btn ibtn" id="b-onboard" title="엑셀 넣기 — 방송사 원본 큐시트(자동 매칭) 또는 이 사이트에서 받은 엑셀" aria-label="엑셀 넣기"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 4v12M4 10h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       ${CLOUD.on ? `<div class="dd" id="dd-admin"><button class="btn" id="b-adm">${esc((CLOUD.tok && CLOUD.tok.name) || '관리자')} ▾</button><div class="dd-menu">
         <button data-adm="link">뷰어 링크 복사<small>보기만 하는 링크 (광고주·내부 공유용)</small></button>
         <button data-adm="view">뷰어 화면으로 보기<small>새 탭에서 뷰어가 보는 화면</small></button>
@@ -360,6 +353,7 @@ const App = {
       else if (tab === 'history') this.renderHistory(el);
       else if (tab === 'reach') this.renderReach(el);
       else if (tab === 'cal') renderCal(el);
+      else if (tab === 'crev') renderCreView(el);
       else if (tab === 'year') renderYear(el);
       else if (FORM_TABS[tab]) FORM_TABS[tab](el);
       if (!readOnly() && LOCK.blocked(tab)) lockForm(el);
@@ -450,6 +444,7 @@ const App = {
   },
   bindCloudTop() {
     const b = document.getElementById('b-admin'); if (b) b.onclick = () => this.loginDialog();
+    const bk = document.getElementById('b-bak'); if (bk && readOnly()) bk.onclick = () => downloadFullReport();   // 뷰어: 보고용 시트만 (다시 넣기용 데이터 없이)
     const dd = document.getElementById('dd-admin'); if (!dd) return;
     document.getElementById('b-adm').onclick = e => { e.stopPropagation(); dd.classList.toggle('open'); };
     document.addEventListener('click', () => dd.classList.remove('open'));
@@ -585,17 +580,7 @@ const App = {
     document.getElementById('b-onboard').onclick = () => OBUI.open();
     document.getElementById('filein').onchange = e => { this.handleFiles([...e.target.files], true); e.target.value = ''; };
     document.getElementById('b-save').onclick = () => this.manualSave();
-    const dd = document.getElementById('dd-bak');
-    document.getElementById('b-bak').onclick = e => { e.stopPropagation(); dd.classList.toggle('open'); };
-    document.addEventListener('click', () => dd.classList.remove('open'));
-    dd.querySelectorAll('[data-bak]').forEach(b => b.onclick = () => {
-      const w = b.dataset.bak; dd.classList.remove('open');
-      if (w === 'restore') return document.getElementById('filein').click();
-      if (w === 'all') downloadFullReport();
-      else if (w === 'plan') saveWorkspaceXlsx(WS, M, ['예산', '소재'], '예산소재');
-      else if (w === 'master') saveWorkspaceXlsx(WS, M, MASTER_SHEETS, '마스터');
-      else saveWorkspaceXlsx(WS, M, [w], w);
-    });
+    document.getElementById('b-bak').onclick = () => downloadFullReport();
     const br = document.getElementById('b-report'); if (br) br.onclick = () => this.exportReport();
   },
   // '저장' 버튼: 지금 상태를 저장하고 변경 이력에 남김 (자동 저장은 그대로 켜져 있음)
@@ -713,7 +698,7 @@ const App = {
         <div class="grp">${B('find', '찾기', 'Ctrl+F')}${B('replace', '찾아바꾸기', 'Ctrl+H')}</div>
         <div class="grp fgrp"><span class="glab">필터</span>${B('bon', '본방만', name === '지상파' ? '본방 행만 보기 (지상파는 재방 표시가 없는 정규 편성 = 본방)' : '프로그램명에 <본방>·<생방>이 있는 행만 보기')}${B('mid', '중CM만', 'CM 위치가 중CM인 행만 보기')}${B('fclr', '필터 해제', '모든 열의 필터를 해제')}</div>
         <div class="grp">${B('all', '전체 선택', 'Ctrl+A')}${B('add', '＋ 10행', '끝에 빈 행 10개')}</div>
-        <div class="grp">${B('xlsx', '⤓ 이 시트 엑셀', '이 시트만 엑셀로 (숨긴 행 유지)')}<button class="btn sm ghost" data-a="wipe">시트 비우기</button></div>
+        <div class="grp"><button class="btn sm ghost" data-a="wipe">시트 비우기</button></div>
         <span class="gridstat" data-gs></span>
       </div></div>
       <div class="gridfilter" data-fsum></div><div class="gridhost"></div></section></div>`;
@@ -1115,8 +1100,8 @@ const App = {
   },
 
   // ---------- 가져오기 ----------
-  async handleFiles(files, restore) {
-    if (OBUI.bg) return OBUI.add(files);
+  async handleFiles(files, restore, viaOb) {
+    if (OBUI.bg && !viaOb) return OBUI.add(files);
     this.toast('파일을 읽는 중…', 2000);
     const raw = [], bulk = [];
     for (const f of files) {

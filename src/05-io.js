@@ -181,7 +181,10 @@ function readFileParts(buf, fileName) {
       if (k === 'adv' && str(v)) parts.adv = str(v);
     }
   }
+  // 16차: 보고용 엑셀(⤓)의 보이는 시트(운영 요약·예산표·소재 운영·큐시트 캘린더·지상파/케이블/전체 큐시트)는 읽지 않음 — 데이터는 숨김 시트에
+  const REPORT_SHEET = /^(운영 요약|예산표|소재 운영|큐시트 캘린더|지상파 큐시트|케이블 큐시트|전체 큐시트)/;
   for (const name of wb.SheetNames) {
+    if (wb.Sheets['_meta'] && REPORT_SHEET.test(name)) continue;
     const a = sheetAoa(wb.Sheets[name]);
     const key = ALL_SHEETS.find(s => norm(s) === norm(name)) || (norm(name) === norm('목표 CPRP') ? '목표CPRP' : null);
     if (key && key !== '예산' && SHEETS[key].cols && (key === '지상파' || key === '케이블')) {
