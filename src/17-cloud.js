@@ -70,7 +70,7 @@ const CLOUD = {
   parts(w) {
     const S = w.sheets;
     return {
-      meta: { v: w.v, ym: w.ym, start: w.start, end: w.end, palV: w.palV, itemV: w.itemV, itemLegacy: w.itemLegacy || {}, reachMeta: w.reachMeta || {}, opsNotes: w.opsNotes || {}, opsReach: w.opsReach || {}, secPlan: w.secPlan || {}, opsCurve: w.opsCurve || {}, adv: w.adv || '' },
+      meta: { v: w.v, ym: w.ym, start: w.start, end: w.end, palV: w.palV, itemV: w.itemV, itemLegacy: w.itemLegacy || {}, reachMeta: w.reachMeta || {}, opsNotes: w.opsNotes || {}, opsReach: w.opsReach || {}, secPlan: w.secPlan || {}, opsCurve: w.opsCurve || {}, reviewOk: w.reviewOk || {}, adv: w.adv || '' },
       지상파: { rows: S.지상파 || [], hidden: (w.hidden || {}).지상파 || [] },
       케이블: { rows: S.케이블 || [], hidden: (w.hidden || {}).케이블 || [], cueOrder: w.cueOrder || {} },
       예산: S.예산 || [['채널']], 소재: S.소재 || [],
@@ -83,7 +83,7 @@ const CLOUD = {
     for (const r of rows || []) { P[r.part] = r.data; this.at[r.part] = r.updated_at; this.sent[r.part] = JSON.stringify(r.data); }
     const w = emptyWorkspace(ym);
     const m = P.meta || {};
-    for (const k of ['v', 'start', 'end', 'palV', 'itemV', 'itemLegacy', 'reachMeta', 'opsNotes', 'opsReach', 'secPlan', 'opsCurve', 'adv']) if (m[k] != null) w[k] = m[k];
+    for (const k of ['v', 'start', 'end', 'palV', 'itemV', 'itemLegacy', 'reachMeta', 'opsNotes', 'opsReach', 'secPlan', 'opsCurve', 'reviewOk', 'adv']) if (m[k] != null) w[k] = m[k];
     if (P.지상파) { w.sheets.지상파 = P.지상파.rows || []; w.hidden.지상파 = P.지상파.hidden || []; }
     if (P.케이블) { w.sheets.케이블 = P.케이블.rows || []; w.hidden.케이블 = P.케이블.hidden || []; w.cueOrder = P.케이블.cueOrder || {}; }
     if (P.예산) w.sheets.예산 = P.예산; if (P.소재) w.sheets.소재 = P.소재;

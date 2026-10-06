@@ -222,6 +222,9 @@ function cueHpager(root) {
     const L = fix.map(th => th.style.left);
     tb.querySelectorAll('tbody td.fx').forEach(td => { const k = +td.dataset.fx; if (L[k] != null) td.style.left = L[k]; });
     hpager(card, wrap, { snap: () => [...tb.querySelectorAll('thead th.wkh')].map(th => th.offsetLeft - x), leftPad: () => x });
+    // 고정 열 오른쪽 그림자는 옆으로 넘겼을 때만 (처음엔 요일 열 왼쪽에 그림자가 보이지 않게)
+    const upd = () => tb.classList.toggle('hscrolled', wrap.scrollLeft > 2);
+    wrap.addEventListener('scroll', upd, { passive: true }); upd();
   });
 }
 function keepMergedVisible(root) {

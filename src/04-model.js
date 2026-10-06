@@ -117,7 +117,7 @@ function compute(WS) {
   const ym = parseYM(WS.ym);
   const weeks = buildWeeks(WS.ym, 1, ym ? daysInMonth(ym.y, ym.m) : 31);
   const issues = [];
-  const issue = (sheet, row, col, sev, msg) => issues.push({ sheet, row, col, sev, msg });
+  const issue = (sheet, row, col, sev, msg, extra) => { const o = Object.assign({ sheet, row, col, sev, msg }, extra || {}); issues.push(o); return o; };
   const creatives = parseCreatives(WS, MS);
   const creByItem = groupBy(creatives.filter(c => c.item), c => c.item);
   // 품목별 'GRP 초수 비중'(예산 비중): WS.secPlan[품목] = {15: 0.27, 30: 0.73} 직접 입력 → 없으면 소재 탭 금액 비중을 초수별로 합산
@@ -139,7 +139,7 @@ function compute(WS) {
 
   // ---- 스팟 ----
   const spots = [];
-  const dupSeen = new Map();
+  const dupSeen = new Map(), dupFirst = new Set();
   for (const sheet of ['지상파', '케이블']) {
     const def = SHEETS[sheet]; const ci = k => colIndex(sheet, k);
     const rows = WS.sheets[sheet] || [];
@@ -201,8 +201,12 @@ function compute(WS) {
       }
       // 중복
       const dk = [sheet, sp.ch, sp.day, sp.prog, sp.start, sp.cmRaw, sp.item, sp.cre].join('|');
-      if (dupSeen.has(dk)) issue(sheet, i, 'prog', 'info', `${dupSeen.get(dk) + 1}행과 똑같은 송출이에요 (중복 확인)`);
-      else dupSeen.set(dk, i);
+      if (dupSeen.has(dk)) {
+        const f = dupSeen.get(dk), key = 'dup|' + dk;
+        const what = `${sp.ch} ${ym ? ym.m + '/' : ''}${sp.day || '?'} ${sp.start || ''} · ${cleanProg(sp.prog) || sp.prog}${sp.item ? ' · ' + sp.item : ''}${sp.cmRaw ? ' · ' + sp.cmRaw : ''}`;
+        if (!dupFirst.has(dk)) { dupFirst.add(dk); issue(sheet, f, 'prog', 'info', `${what} — 똑같은 송출이 여러 행에 있어요`, { key, sug: 'dup' }); }
+        issue(sheet, i, 'prog', 'info', `${f + 1}행과 똑같은 송출이에요 (${what})`, { key, sug: 'dup' });
+      } else dupSeen.set(dk, i);
       spots.push(sp);
     });
   }
@@ -331,6 +335,34 @@ function compute(WS) {
     const link = ((R('KBS').paid || 0) + (R('MBC').paid || 0)) * 0.2 + (R('SBS').budget || 0) * 0.1;
     return { rows, paid, desig, link, reserve: budget - (paid + desig + link), budget };
   })();
+  // ---- 확인 필요: 이상해 보이는 데이터 (괜찮으면 '확인 필요' 탭에서 체크 → WS.reviewOk에 기억, 입력 시트 강조 해제) ----
+  const progOf = s => cleanProg(s.prog) || s.prog;
+  // ① 같은 편성(채널·프로그램·요일·시작·초수·CM)인데 단가가 다름
+  for (const [gk, l] of groupBy(spots.filter(s => s.chInfo && s.price), s => [s.src, s.ch, progOf(s), s.dowRaw || s.dow, s.start, s.sec, s.cmRaw].join('|'))) {
+    const ps = [...new Set(l.map(s => s.price))].sort((a, b) => a - b); if (ps.length < 2) continue;
+    const s0 = l[0], key = 'price|' + gk + '|' + ps.join('/');
+    for (const s of l) issue(s.src, s.row, 'price', 'warn', `같은 편성(${s0.ch} · ${progOf(s0)} · ${s0.dowRaw || s0.dow || ''} ${s0.start || ''} · ${s0.sec || ''}초${s0.cmRaw ? ' · ' + s0.cmRaw : ''})인데 단가가 ${ps.map(x => fmt.won(x)).join(' / ')}로 달라요`, { key, sug: 'price' });
+  }
+  // ② 지상파 유상인데 금액이 단가와 다름
+  for (const s of spots) if (s.src === '지상파' && s.amount > 0 && s.price && s.amount !== s.price) issue('지상파', s.row, 'amount', 'warn', `유상 금액 ${fmt.won(s.amount)}이 단가 ${fmt.won(s.price)}와 달라요 (${s.ch} · ${progOf(s)})`, { sug: 'amt' });
+  // ③ 소재 운영기간 밖 송출
+  for (const s of spots) {
+    if (!s.item || !s.cre || !s.day || !creByItem.has(s.item)) continue;
+    const hit = creByItem.get(s.item).find(c => creMatch(c.cre, s.cre)); if (!hit || !hit.period || typeof parsePeriod !== 'function') continue;
+    const P = parsePeriod(hit.period, ym), dk = ym.y * 10000 + ym.m * 100 + s.day; if (P && P.a && P.b && (dk < dKey(P.a) || dk > dKey(P.b))) issue(s.src, s.row, 'date', 'warn', `${s.item} '${hit.cre}' 소재가 운영기간(${hit.period}) 밖에 나갔어요`, { key: `creday|${s.item}|${hit.cre}|${hit.period}`, sug: 'creday' });
+  }
+  // ④ 흔치 않은 초수 · 시작 시간 없음
+  for (const s of spots) {
+    if (s.sec && ![10, 15, 20, 30, 40, 45, 60].includes(s.sec)) issue(s.src, s.row, 'sec', 'warn', `${s.sec}초 — 흔치 않은 초수예요`, { sug: 'sec' });
+    if (!s.start) issue(s.src, s.row, 'start', 'warn', '시작 시간이 비어 있어요 (캘린더·시간 순 정렬에서 맨 앞으로 가요)', { sug: 'start' });
+  }
+  // ⑤ 케이블 밸류가 예산보다 작음 (보너스 음수)
+  for (const c of cellList) if (c.media === '케이블' && c.budget > 0 && c.cnt > 0 && c.value < c.budget) issue('예산', -1, null, 'warn', `${c.ch} · ${c.item}: 송출 단가 합 ${fmt.eok(c.value, 2)}이 예산 ${fmt.eok(c.budget, 2)}보다 작아요 (보너스 음수)`, { key: 'negb|' + c.ch + '|' + c.item, sug: 'negb' });
+  // ⑥ 소재 금액 비중 합계가 100%가 아님 (기간이 하나인 품목만)
+  for (const [item, l] of creByItem) { const ps = new Set(l.map(c => c.period)); if (ps.size > 1) continue; const sh = l.filter(c => c.share != null); if (!sh.length) continue; const t = sum(sh, c => c.share); if (Math.abs(t - 1) > 0.005) issue('소재', sh[0].row, 'share', 'warn', `${item} 소재 금액 비중 합계가 ${fmt.pct(t)}예요`, { key: 'cshare|' + item + '|' + Math.round(t * 1000), sug: 'cshare' }); }
+  // 기억용 키: 같은 칸·같은 내용이면 같은 키 (행 내용이 바뀌면 새로 확인)
+  for (const i of issues) if (!i.key) { const r = i.row >= 0 ? (WS.sheets[i.sheet] || [])[i.row] : null; i.key = [i.sev, i.sheet, i.col || '', String(i.msg).replace(/\d+행/g, ''), r ? hash32(JSON.stringify(r)) : ''].join('|'); }
+  const okMap = WS.reviewOk || {}; for (const i of issues) i.ok = !!okMap[i.key];
   const sevRank = { err: 0, warn: 1, info: 2 };
   issues.sort((a, b) => sevRank[a.sev] - sevRank[b.sev]);
   return { WS, MS, ym, weeks, spots, secPlanOf, cells: cellList, cellMap: cells, budgetItems, activeItems, creatives, ops, issues, reach, gSettle };
@@ -356,6 +388,7 @@ function progsText(list, maxChars) {
 }
 
 // 집계 도우미
+function hash32(t) { let h = 0x811c9dc5; for (let i = 0; i < t.length; i++) h = Math.imul(h ^ t.charCodeAt(i), 16777619); return (h >>> 0).toString(36); }
 function aggCells(cells) {
   const r = { budget: 0, value: 0, bonus: 0, cnt: 0, grp: 0, eq: 0, wk: null, wd: 0, we: 0, cmc: { 중CM: 0, PIB: 0, 전후CM: 0, 일반: 0 }, sec: {} };
   for (const c of cells) {

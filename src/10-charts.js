@@ -344,7 +344,7 @@ function cmStackHtml(cells, unit, sort) {
     const ti = ordered.push(T) - 1;
     tot += `<div class="cmsr tot" data-i="${ti}"><div class="nm"><span class="mtag ${m === '지상파' ? 'g' : 'c'}">${m}</span>전체</div>${bar(T, 0.05)}<div class="n tnum"><b>${fmt.pct(T.sm + T.sp)}</b><small>중CM+PIB · ${fmt.int(n)}회</small></div></div>`;
   }
-  let h = `<div class="cmsb${unit === 'ch' ? ' ch' : ''}"><div class="cmtot"><div class="cmtot-h">매체 합계</div>${tot}</div>`;
+  let h = `<div class="cmsb${unit === 'ch' ? ' ch' : ''}">`;   // 매체 합계는 위의 도넛 두 개로 (cmDonutsHtml)
   // ② 세부 (PP별 / 채널별)
   for (const m of media) {
     const l = rows.filter(r => r.media === m).sort((a, b) => key(b) - key(a) || b.n - a.n);

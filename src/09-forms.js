@@ -131,24 +131,37 @@ function mstDelete(el, sheet, i, label, used) {
 }
 
 // ---- 품목 ---- (별칭 없음: 약칭이 유일한 이름 · ⋮⋮ 끌어서 순서)
+// 같은 카테고리끼리 붙도록 정렬 (카테고리 순서 = 처음 나온 순서, 카테고리 안에서는 지금 순서 유지)
+function groupItemsByCat(rows) {
+  const cats = [...new Set(rows.map(r => str(r[2]) || '기타'))];
+  const out = cats.flatMap(c => rows.filter(r => (str(r[2]) || '기타') === c));
+  if (out.every((r, i) => r === rows[i])) return false;
+  rows.splice(0, rows.length, ...out); return true;
+}
 function mItems(body, el) {
   const rows = WS.sheets.품목; const U = usageMaps();
+  if (groupItemsByCat(rows)) App.changed('master', true);
   const cats = [...new Set(rows.map(r => str(r[2])).filter(Boolean))];
   body.innerHTML = `<div class="fhd"><div class="muted small">약칭이 큐시트·예산·소재에 쓰는 <b>유일한 이름</b>이에요(별칭 없음). 약칭을 바꾸면 이번 달 시트에 적힌 이름도 함께 바뀌어요. 왼쪽 ⋮⋮를 끌어 순서를 바꿔요.</div><div class="spacer"></div><button class="btn sm pri" data-add>＋ 품목 추가</button></div>
   <datalist id="dl-cat">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
-  <div class="tw free"><table class="t form"><thead><tr><th></th><th>색</th><th class="l">약칭 (큐시트 표기)</th><th class="l">정식명 (운영 요약)</th><th class="l">카테고리</th><th class="l">비고 (작업자 메모)</th><th>이번 달</th><th></th></tr></thead><tbody>
+  <div class="tw free"><table class="t form mitems"><thead><tr><th></th><th class="l">카테고리</th><th class="l">약칭 (큐시트 표기)</th><th class="l">정식명 (운영 요약)</th><th>색상</th><th class="l">비고 (작업자 메모)</th><th>이번 달</th><th></th></tr></thead><tbody>
   ${rows.map((r, i) => {
     const key = str(r[0]); const n = U.item.get(key) || 0, b = U.budItem.get(key) || 0, cr = U.creItem.get(key) || 0;
-    return `<tr data-i="${i}"><td class="dh" title="끌어서 순서 바꾸기">⋮⋮</td>
-    <td class="c"><label class="colorpick" style="--c:${colorVal(r[3])}"><input type="color" data-f="3" value="${colorVal(r[3])}"></label></td>
+    const cat = str(r[2]) || '기타', first = i === 0 || (str(rows[i - 1][2]) || '기타') !== cat;
+    return `<tr data-i="${i}"${first && i ? ' class="catstart"' : ''}><td class="dh" title="끌어서 순서 바꾸기 (같은 카테고리 안에서)">⋮⋮</td>
+    <td class="in"><input data-f="2" value="${esc(str(r[2]))}" list="dl-cat"${first ? '' : ' class="catrep"'}></td>
     <td class="in"><input data-f="0" value="${esc(key)}" placeholder="약칭" class="${key ? '' : 'need'}"></td>
     <td class="in"><input data-f="1" value="${esc(str(r[1]))}"></td>
-    <td class="in"><input data-f="2" value="${esc(str(r[2]))}" list="dl-cat"></td>
+    <td class="c"><label class="colorpick" style="--c:${colorVal(r[3])}"><input type="color" data-f="3" value="${colorVal(r[3])}"></label></td>
     <td class="in wide"><input data-f="4" value="${esc(str(r[4]))}" placeholder="${key ? '' : '예: 10월부터 신규 · 소재 2종'}"></td>
     <td class="use">${n || b || cr ? [n ? fmt.int(n) + '회' : '', b ? fmt.eok(b, 2) : '', cr ? '소재 ' + cr : ''].filter(Boolean).join(' · ') : '<span class="muted">-</span>'}</td>
     <td><button class="x" data-del title="삭제">✕</button></td></tr>`;
   }).join('')}</tbody></table></div>`;
-  body.querySelector('[data-add]').onclick = () => { rows.push(['', '', cats[0] || '기타', nextColor(), '']); App.changed('master', true); renderMasterForm(el); mstFocusLast(el, 0); };
+  body.querySelector('[data-add]').onclick = () => {
+    const nr = ['', '', cats[0] || '기타', nextColor(), '']; rows.push(nr); groupItemsByCat(rows);   // 같은 카테고리 자리로 들어감
+    const idx = rows.indexOf(nr); App.changed('master', true); renderMasterForm(el);
+    const x = el.querySelector(`#mbody tr[data-i="${idx}"] input[data-f="0"]`); if (x) { x.focus(); x.scrollIntoView({ block: 'center' }); }
+  };
   dragRows(body.querySelector('tbody'), order => { reorderBy(rows, order); App.changed('master', true); renderMasterForm(el); });
   body.querySelectorAll('tr[data-i]').forEach(tr => {
     const i = +tr.dataset.i, r = rows[i];
@@ -160,6 +173,7 @@ function mItems(body, el) {
         const v = inp.value.trim();
         if (f === 0) return mRename('item', '품목', i, v, inp, el);
         r[f] = v; App.changed('master', true); if (f === 3) renderMasterSide(el);
+        if (f === 2 && groupItemsByCat(rows)) renderMasterForm(el);
       });
     });
   });
@@ -385,8 +399,7 @@ function renderBudgetForm(el) {
   const secOf = r => { const c = resolveCh(M.MS, r[0]); return c ? c.media : '미확인'; };
   const present = new Set(rows.map(r => r[0]));
   const cellCnt = (ch, k) => { const c = M.cellMap.get(ch + '|' + k); return c && c.cnt ? `<small class="cc">${fmt.int(c.cnt)}회</small>` : ''; };
-  const colHead = (k, j) => { const it = M.MS.items.get(k); return `<th class="ih${it ? '' : ' unk'}" data-col="${j}"><div class="ihd">${it ? `<span class="sw" style="background:${it.color}"></span>` : ''}<span class="nm">${esc(k || '(이름 없음)')}</span></div>
-    <div class="iha">${j > 0 ? `<button data-cl="${j}" title="왼쪽으로">◀</button>` : ''}${j < cols.length - 1 ? `<button data-cr="${j}" title="오른쪽으로">▶</button>` : ''}<button data-cx="${j}" title="열 빼기">✕</button></div>
+  const colHead = (k, j) => { const it = M.MS.items.get(k); return `<th class="ih${it ? '' : ' unk'}" data-col="${j}" title="${roTab('예산') ? '' : '끌어서 열 순서 바꾸기 · 표 위로 끌어 올리면 열 빼기'}"><div class="ihd">${it ? `<span class="sw" style="background:${it.color}"></span>` : ''}<span class="nm">${esc(k || '(이름 없음)')}</span></div>
     ${it ? '' : `<select data-cmap="${j}" class="mapsel"><option value="">마스터 품목으로…</option>${items.filter(x => !have.has(x.key)).map(x => `<option value="${esc(x.key)}">${esc(x.key)}</option>`).join('')}</select>`}</th>`; };
   let body = '';
   for (const sec of ['지상파', '케이블', '미확인']) {
@@ -406,7 +419,7 @@ function renderBudgetForm(el) {
     if (sec !== '미확인') body += `<tr class="sub" data-st="${sec}"><td class="l" colspan="2">${sec} 계</td>${cols.map((_, j) => `<td>${(sec === '지상파' ? T.g : T.c)[j] ? fmt.won((sec === '지상파' ? T.g : T.c)[j]) : '-'}</td>`).join('')}<td>${fmt.won(sec === '지상파' ? T.gAll : T.cAll)}</td></tr>`;
   }
   body += `<tr class="tot" data-st="all"><td class="l" colspan="2">합계</td>${cols.map((_, j) => `<td>${fmt.won(T.col[j])}</td>`).join('')}<td>${fmt.won(T.all)}</td></tr>`;
-  el.innerHTML = `<div class="viewhead"><div><h2>예산</h2><div class="sub">${ymLabel()} · 채널 × 품목 예산 (원, VAT 별도)${roTab('예산') ? '' : `. '1.5억', '3000만'처럼 써도 되고, 엑셀 범위를 복사해 칸에 붙여넣으면 그 칸부터 채워져요.`}</div></div><div class="spacer"></div>
+  el.innerHTML = `<div class="viewhead"><div><h2>당월 예산</h2><div class="sub">${ymLabel()} · 채널 × 품목 예산 (원, VAT 별도)${roTab('예산') ? '' : `. '1.5억', '3000만'처럼 써도 되고, 엑셀 범위를 복사해 칸에 붙여넣으면 그 칸부터 채워져요.`}</div></div><div class="spacer"></div>
       <button class="btn sm" data-b="paste">엑셀 표 통째로 붙여넣기</button><button class="btn sm" data-b="fill">기본 채널 넣기</button><button class="btn sm" data-b="xlsx">⤓ 예산 엑셀</button><button class="btn sm ghost" data-b="wipe">금액 비우기</button></div>
     <div class="formwrap"><div class="stack">
       <section class="card itchips"><div class="hd"><h3>품목</h3><span class="sub">누르면 예산표 열로 넣고 빼요. 열 순서가 요약 표·그래프의 품목 순서예요.</span></div><div class="bd"><div class="chips">${items.map(it => `<button class="chipbtn ${have.has(it.key) ? 'on' : ''}" data-it="${esc(it.key)}"><span class="sw" style="background:${it.color}"></span>${esc(it.key)}</button>`).join('')}</div></div></section>
@@ -459,10 +472,10 @@ function renderBudgetForm(el) {
     const t = T.col[j]; if (!t) return delCol(j);
     App.confirm(`'${k}' 열 빼기`, `<p>${esc(k)} 예산 <b>${fmt.won(t)}원</b>이 들어 있어요. 열을 빼면 금액도 지워져요.</p>`, '빼기', () => delCol(j));
   });
-  el.querySelectorAll('[data-cx]').forEach(b => b.onclick = () => { const j = +b.dataset.cx; const t = T.col[j]; if (!t) return delCol(j); App.confirm(`'${cols[j] || '(이름 없음)'}' 열 빼기`, `<p>예산 <b>${fmt.won(t)}원</b>이 들어 있어요. 열을 빼면 금액도 지워져요.</p>`, '빼기', () => delCol(j)); });
-  const swapCol = (a, b2) => { WS.sheets.예산.forEach(r => { [r[a + 1], r[b2 + 1]] = [r[b2 + 1], r[a + 1]]; }); App.changed('예산'); };
-  el.querySelectorAll('[data-cl]').forEach(b => b.onclick = () => swapCol(+b.dataset.cl, +b.dataset.cl - 1));
-  el.querySelectorAll('[data-cr]').forEach(b => b.onclick = () => swapCol(+b.dataset.cr, +b.dataset.cr + 1));
+  // 품목 열: 머리글을 끌어서 순서 바꾸기 · 표 위(빨간 띠)로 끌어 올리면 열 빼기
+  const askDel = j => { const t = T.col[j]; if (!t) return delCol(j); App.confirm(`'${cols[j] || '(이름 없음)'}' 열 빼기`, `<p>예산 <b>${fmt.won(t)}원</b>이 들어 있어요. 열을 빼면 금액도 지워져요.</p>`, '빼기', () => delCol(j)); };
+  const moveCol = (a, to) => { if (to === a || to === a + 1) return; WS.sheets.예산.forEach(r => { while (r.length < cols.length + 1) r.push(''); const v = r.splice(a + 1, 1)[0]; r.splice((to > a ? to - 1 : to) + 1, 0, v); }); App.changed('예산'); };
+  if (!roTab('예산')) bindColDrag(tb, cols, moveCol, askDel);
   el.querySelectorAll('[data-cmap]').forEach(s => s.onchange = () => { if (!s.value) return; WS.sheets.예산[0][+s.dataset.cmap + 1] = s.value; App.changed('예산'); });
   // 채널 행
   el.querySelectorAll('[data-addch]').forEach(b => b.onclick = e => {
@@ -481,13 +494,50 @@ function renderBudgetForm(el) {
   el.querySelectorAll('[data-rx]').forEach(b => b.onclick = () => { const i = +b.dataset.rx; const t = T.row[i]; const go = () => { WS.sheets.예산.splice(i + 1, 1); App.changed('예산'); }; if (!t) return go(); App.confirm(`'${rows[i][0]}' 행 빼기`, `<p>예산 <b>${fmt.won(t)}원</b>이 들어 있어요.</p>`, '빼기', go); });
   el.querySelectorAll('[data-rmap]').forEach(s => s.onchange = () => { if (!s.value) return; WS.sheets.예산[+s.dataset.rmap + 1][0] = s.value; App.changed('예산'); });
   // 상단 버튼
-  el.querySelector('[data-b="xlsx"]').onclick = () => saveWorkspaceXlsx(WS, M, ['예산'], '예산');
+  el.querySelector('[data-b="xlsx"]').onclick = () => xrDownload([xrBudgetSheet()], xrDataSheets(['예산']), xrName('예산'));
   el.querySelector('[data-b="fill"]').onclick = () => { const add = M.MS.chList.slice(0, 21).filter(c => !present.has(c.name)); add.forEach(c => WS.sheets.예산.push([c.name].concat(cols.map(() => '')))); App.changed('예산'); App.toast(add.length ? `채널 ${add.length}개를 넣었어요` : '기본 채널은 이미 다 있어요'); };
   el.querySelector('[data-b="wipe"]').onclick = () => App.confirm('예산 금액 비우기', '<p>품목 열과 채널 행은 두고 금액만 지워요. 지금 상태는 버전으로 남겨 둘게요.</p>', '비우기', async () => { await App.saveVersion('예산 비우기 전 자동 백업', true); WS.sheets.예산 = [WS.sheets.예산[0]].concat(WS.sheets.예산.slice(1).map(r => [r[0]].concat(cols.map(() => '')))); App.changed('예산'); });
   el.querySelector('[data-b="paste"]').onclick = () => budPasteDialog();
   renderBudgetSide(el);
   if (roTab('예산')) lockForm(el);
   el._refresh = () => { el.querySelectorAll('td.bi').forEach(td => { const inp = td.querySelector('input'); const r = WS.sheets.예산[+inp.dataset.r + 1]; const k = WS.sheets.예산[0][+inp.dataset.c + 1]; const old = td.querySelector('.cc'); if (old) old.remove(); const h = cellCnt(r && r[0], k); if (h) td.insertAdjacentHTML('beforeend', h); }); renderBudgetSide(el); };
+}
+function bindColDrag(tb, cols, onMove, onDel) {
+  const ths = [...tb.querySelectorAll('thead th.ih')];
+  ths.forEach(th => th.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || e.target.closest('select,input,button')) return;
+    const j = +th.dataset.col, x0 = e.clientX, y0 = e.clientY; let drag = null;
+    const zoneTop = () => tb.querySelector('thead').getBoundingClientRect().top;
+    const move = ev => {
+      if (!drag) {
+        if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < 6) return;
+        const r = th.getBoundingClientRect();
+        const ghost = document.createElement('div'); ghost.className = 'colghost'; ghost.innerHTML = th.querySelector('.ihd').outerHTML; ghost.style.width = r.width + 'px'; document.body.appendChild(ghost);
+        const zone = document.createElement('div'); zone.className = 'coldel'; zone.innerHTML = `<b>여기로 끌어 놓으면</b> '${esc(cols[j] || '(이름 없음)')}' 열을 빼요`;
+        const tr = (tb.closest('.tw') || tb).getBoundingClientRect(), top = zoneTop();
+        Object.assign(zone.style, { left: Math.max(8, tr.left) + 'px', width: Math.min(tr.width, innerWidth - 16) + 'px', top: Math.max(8, top - 54) + 'px' });
+        document.body.appendChild(zone);
+        const mark = document.createElement('div'); mark.className = 'colmark'; document.body.appendChild(mark);
+        drag = { ghost, zone, mark, to: j, del: false }; th.classList.add('dragging'); document.body.classList.add('coldragging');
+      }
+      drag.ghost.style.left = ev.clientX + 8 + 'px'; drag.ghost.style.top = ev.clientY + 8 + 'px';
+      const zr = drag.zone.getBoundingClientRect();
+      drag.del = ev.clientY < zoneTop() - 4 || (ev.clientY >= zr.top && ev.clientY <= zr.bottom);
+      drag.zone.classList.toggle('on', drag.del);
+      // 끼워 넣을 자리: 가장 가까운 머리글 경계
+      let to = ths.length, bx = null;
+      for (let k = 0; k < ths.length; k++) { const r = ths[k].getBoundingClientRect(); if (ev.clientX < r.left + r.width / 2) { to = k; bx = r.left; break; } bx = r.right; }
+      drag.to = to; const hr = ths[0].getBoundingClientRect(), tbr = tb.getBoundingClientRect();
+      Object.assign(drag.mark.style, { left: (bx - 1) + 'px', top: hr.top + 'px', height: Math.min(tbr.bottom, innerHeight) - hr.top + 'px', display: drag.del || to === j || to === j + 1 ? 'none' : 'block' });
+    };
+    const up = () => {
+      removeEventListener('pointermove', move); removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
+      if (!drag) return;
+      drag.ghost.remove(); drag.zone.remove(); drag.mark.remove(); th.classList.remove('dragging'); document.body.classList.remove('coldragging');
+      if (drag.del) onDel(j); else onMove(j, drag.to);
+    };
+    addEventListener('pointermove', move); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+  }));
 }
 function renderBudgetSide(el) {
   const side = el.querySelector('#bside'); if (!side) return;
@@ -605,7 +655,7 @@ function renderCreForm(el) {
         <td><button class="x" data-del="${i}" title="삭제">✕</button></td></tr>`; }).join('')}
       </tbody><tfoot><tr class="sub"><td class="l" colspan="3">합계</td><td data-s4></td><td data-s5></td><td></td><td colspan="3"></td></tr></tfoot></table>${secPlanHtml(k, idx.map(i => rows[i]))}</section>`;
   };
-  el.innerHTML = `<div class="viewhead"><div><h2>소재</h2><div class="sub">${ymLabel()} · 품목별 운영 소재와 비중. 비중은 % 숫자로 (50 = 50%). 지상파 실제는 지상파 송출 중 그 소재로 나간 비율이에요.</div></div><div class="spacer"></div>
+  el.innerHTML = `<div class="viewhead"><div><h2>당월 소재</h2><div class="sub">${ymLabel()} · 품목별 운영 소재와 비중. 비중은 % 숫자로 (50 = 50%). 지상파 실제는 지상파 송출 중 그 소재로 나간 비율이에요.</div></div><div class="spacer"></div>
       <select class="btn sm" id="creadd"><option value="">＋ 품목 추가…</option>${avail.map(k => `<option value="${esc(k)}">${esc(k)}${M.budgetItems.includes(k) ? ' (예산 있음)' : ''}</option>`).join('')}</select><button class="btn sm" data-c="xlsx">⤓ 소재 엑셀</button></div>
     ${missing.length ? `<div class="note warn">예산은 있는데 소재가 없는 품목: ${missing.map(k => `<button class="chipbtn" data-addit="${esc(k)}"><span class="sw" style="background:${itemColor(k)}"></span>${esc(k)} 추가</button>`).join(' ')}</div>` : ''}
     <div class="crecards">${keys.map(card).join('') || '<section class="card"><div class="empty">위의 ＋ 품목 추가로 시작하세요. 예산에 넣은 품목은 노란 안내에서 바로 추가할 수 있어요.</div></section>'}</div>`;
@@ -662,7 +712,7 @@ function renderCreForm(el) {
   el.querySelector('#creadd').onchange = e => { if (e.target.value) addRow(e.target.value); };
   el.querySelectorAll('[data-delitem]').forEach(b => b.onclick = () => { const k = b.dataset.delitem; const n = rows.filter(r => r[0] === k && str(r[3])).length; const go = () => { WS.sheets.소재 = rows.filter(r => r[0] !== k); App.changed('소재'); }; if (!n) return go(); App.confirm(`'${k}' 소재 빼기`, `<p>소재 ${n}개를 지워요.</p>`, '빼기', go); });
   el.querySelectorAll('[data-imap]').forEach(s => s.onchange = () => { if (!s.value) return; rows.forEach(r => { if (r[0] === s.dataset.imap) r[0] = s.value; }); App.changed('소재'); });
-  el.querySelector('[data-c="xlsx"]').onclick = () => saveWorkspaceXlsx(WS, M, ['소재'], '소재');
+  el.querySelector('[data-c="xlsx"]').onclick = () => xrDownload([xrCreSheet()], xrDataSheets(['소재']), xrName('소재'));
   if (roTab('소재')) lockForm(el);
 }
 

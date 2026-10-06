@@ -206,6 +206,8 @@ function readFileParts(buf, fileName) {
       parts.opsReach = {}; for (const r of a.slice(1)) { if (!str(r[0]) || !str(r[1])) continue; const o = {}; if (num(r[2]) != null) o.r1 = num(r[2]); if (num(r[3]) != null) o.r3 = num(r[3]); if (Object.keys(o).length) parts.opsReach[str(r[0]) + '|' + str(r[1])] = o; }
     } else if (name === 'GRP초수비중') {
       parts.secPlan = {}; for (const r of a.slice(1)) { const k = str(r[0]), sec = num(r[1]), v = num(r[2]); if (!k || !sec || v == null) continue; (parts.secPlan[k] = parts.secPlan[k] || {})[sec] = v; }
+    } else if (name === '확인함') {
+      parts.reviewOk = {}; for (const r of a.slice(1)) if (str(r[0])) parts.reviewOk[str(r[0])] = 1;
     } else if (name === '요약리치곡선') {
       parts.opsCurve = {}; for (const r of a.slice(1)) { const k = str(r[0]), v = str(r[1]); if (k && (v === '지상파케이블' || v === '케이블')) parts.opsCurve[k] = v; }
     } else if (name === '주요프로그램') {
@@ -352,6 +354,7 @@ function saveWorkspaceXlsx(WS, M, which, suffix) {
   if (which.length === ALL_SHEETS.length && Object.keys(WS.opsReach || {}).length) sheets.push(reachOvSheet(WS));
   if ((which.length === ALL_SHEETS.length || which.includes('소재')) && Object.keys(WS.secPlan || {}).length) sheets.push(secPlanSheet(WS));
   if (which.length === ALL_SHEETS.length && Object.keys(WS.opsCurve || {}).length) sheets.push(opsCurveSheet(WS));
+  if (which.length === ALL_SHEETS.length && Object.keys(WS.reviewOk || {}).length) sheets.push({ name: '확인함', aoa: [['확인 필요에서 괜찮다고 체크한 항목 (키)']].concat(Object.keys(WS.reviewOk).map(k => [k])), widths: [80] });
   if (which.includes('케이블') && Object.keys(WS.cueOrder || {}).length) sheets.push(cueOrderSheet(WS));
   sheets.push(metaSheet(WS, which));
   const ymTxt = WS.ym.replace('-', '');

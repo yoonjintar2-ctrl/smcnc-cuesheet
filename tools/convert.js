@@ -64,7 +64,7 @@ const URL = 'file://' + path.resolve(__dirname, '../dist/코웨이TV큐시트.ht
     const tag = res.ym.replace('-', '');
     fs.writeFileSync(path.join(OUT, res.ym + '.json'), JSON.stringify({ ym: res.ym, label: label || '', parts: res.parts, ws: res.ws, stats: res.stats }));
     // 백업 엑셀 (앱의 '엑셀 백업 → 전체 백업 받기'와 같은 파일)
-    const [dl] = await Promise.all([p.waitForEvent('download'), p.evaluate(() => saveWorkspaceXlsx(WS, M, ALL_SHEETS, '백업'))]);
+    const [dl] = await Promise.all([p.waitForEvent('download'), p.evaluate(() => downloadFullReport())]);
     const xl = path.join(OUT, `코웨이TV큐시트_${tag}_백업.xlsx`); await dl.saveAs(xl);
     console.log(JSON.stringify({ ym: res.ym, notes: res.notes, fixed: res.fixed, unkItems: res.unkItems, unkChs: res.unkChs, stats: res.stats, errSample: res.errSample }, null, 0));
   }

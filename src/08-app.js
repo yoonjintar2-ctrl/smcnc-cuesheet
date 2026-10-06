@@ -6,7 +6,7 @@ const FORM_TABS = { master: el => renderMasterForm(el), 예산: el => renderBudg
 function fixWS(w) {
   w.sheets = w.sheets || {};
   for (const k of ALL_SHEETS) if (!w.sheets[k]) w.sheets[k] = k === '예산' ? [['채널']] : (DEFAULT_MASTER[k] ? DEFAULT_MASTER[k].map(r => r.slice()) : []);
-  w.hidden = w.hidden || {}; w.cueOrder = w.cueOrder || {}; w.opsNotes = w.opsNotes || {}; w.reach = w.reach || {}; w.reachMeta = w.reachMeta || {}; w.opsReach = w.opsReach || {}; w.secPlan = w.secPlan || {}; w.opsCurve = w.opsCurve || {};
+  w.hidden = w.hidden || {}; w.cueOrder = w.cueOrder || {}; w.opsNotes = w.opsNotes || {}; w.reach = w.reach || {}; w.reachMeta = w.reachMeta || {}; w.opsReach = w.opsReach || {}; w.secPlan = w.secPlan || {}; w.opsCurve = w.opsCurve || {}; w.reviewOk = w.reviewOk || {};
   // 품목 색 팔레트 v2: 예전 기본색 그대로인 품목만 새 색으로 (직접 고른 색은 유지)
   if (!(w.palV >= 2)) { for (const r of w.sheets.품목 || []) { const c = String(r[3] || '').toLowerCase().replace(/^([0-9a-f]{6})$/, '#$1'); if (PALETTE_V2[c]) r[3] = PALETTE_V2[c]; } w.palV = 2; }
   // 품목 색 v3: 같은 카테고리는 비슷한 계열로 — 기본색 그대로인 품목만 (직접 고른 색은 유지)
@@ -79,9 +79,9 @@ const App = {
   // 메뉴: 평소엔 분류(입력 · 운영사항 · 큐시트 · 점검)만 한 줄 → 누르면 전체 메뉴가 한 판에 펼쳐짐 (미디어 대시보드와 같은 방식)
   TABS: [
     { id: 'input', g: '입력', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M3.2 14.2 12.6 4.8l2.6 2.6-9.4 9.4H3.2z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M11 6.4l2.6 2.6"/>', items: [['master', '마스터'], ['지상파', '지상파'], ['케이블', '케이블'], ['reach', '누적리치']] },
-    { id: 'plan', g: '운영사항', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 3.4h11.2v13.4H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 7.4h5.6M7.2 10.4h5.6M7.2 13.4h3.4"/>', items: [['예산', '예산'], ['소재', '소재']] },
+    { id: 'plan', g: '운영사항', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 3.4h11.2v13.4H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 7.4h5.6M7.2 10.4h5.6M7.2 13.4h3.4"/>', items: [['예산', '당월 예산'], ['소재', '당월 소재']] },
     { id: 'cue', g: '큐시트', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.8 3.6h14.4v12.8H2.8z"/><path fill="none" stroke="currentColor" stroke-width="1.7" d="M2.8 7.6h14.4M7.6 7.6v8.8"/>', items: [['summary', '요약'], ['cueall', '전체 큐시트'], ['cueg', '지상파 큐시트'], ['cuec', '케이블 큐시트'], ['cal', '큐시트 캘린더']] },
-    { id: 'chk', g: '점검', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 10.4l3.6 3.6L16 5.6"/>', items: [['issues', '검증'], ['history', '변경 이력']] },
+    { id: 'chk', g: '점검', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 10.4l3.6 3.6L16 5.6"/>', items: [['issues', '확인 필요'], ['history', '변경 이력']] },
   ],
   // 지금 보여 줄 분류 (뷰어: 운영사항 · 큐시트만)
   areas() { return readOnly() && !REPORT ? this.TABS.filter(a => a.id === 'plan' || a.id === 'cue') : this.TABS; },
@@ -212,14 +212,15 @@ const App = {
       ${brand}${ym}
       <div class="spacer"></div><div class="status" id="status"></div>
       <button class="btn pri" id="b-save" title="지금 상태를 저장하고 변경 이력에 남겨요 (Ctrl+S)">저장</button>
-      <div class="dd" id="dd-bak"><button class="btn" id="b-bak">엑셀 백업 ▾</button><div class="dd-menu">
-        <button data-bak="all">전체 백업 받기<small>입력·마스터·누적리치 전부 (로우데이터 엑셀)</small></button>
-        <button data-bak="지상파">지상파 시트만</button>
+      <div class="dd" id="dd-bak"><button class="btn ibtn" id="b-bak" title="엑셀 받기 · 백업" aria-label="엑셀 받기 · 백업"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 3.2v9.2M6.4 9l3.6 3.6L13.6 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.6 13.4v2.4c0 .6.4 1 1 1h10.8c.6 0 1-.4 1-1v-2.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dd-menu">
+        <div class="dd-h">엑셀</div>
+        <button data-bak="all">큐시트 엑셀 받기<small>운영 요약 · 예산표 · 지상파/케이블 큐시트 · 소재 운영 (다시 넣기용 데이터도 함께)</small></button>
+        <button data-bak="지상파">지상파 시트만<small>입력 시트 그대로 (담당자끼리 주고받기)</small></button>
         <button data-bak="케이블">케이블 시트만</button>
         <button data-bak="plan">예산·소재만</button>
         <button data-bak="master">마스터만</button>
-        <hr><button data-bak="restore">백업 파일 다시 넣기…<small>이 도구에서 받은 백업 엑셀을 골라 그대로 넣어요</small></button></div></div>
-      <button class="btn" id="b-onboard" title="방송사에서 받은 원본 큐시트 엑셀을 자동 매칭해서 지상파·케이블 시트에 넣기">방송사 큐시트 온보딩</button>
+        <hr><button data-bak="restore">백업 파일 다시 넣기…<small>이 도구에서 받은 엑셀을 골라 그대로 넣어요</small></button></div></div>
+      <button class="btn ibtn" id="b-onboard" title="방송사 큐시트 온보딩 — 방송사에서 받은 원본 큐시트 엑셀을 자동 매칭해서 지상파·케이블 시트에 넣기" aria-label="방송사 큐시트 온보딩"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 4v12M4 10h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       ${CLOUD.on ? `<div class="dd" id="dd-admin"><button class="btn" id="b-adm">관리자 ▾</button><div class="dd-menu">
         <button data-adm="link">뷰어 링크 복사<small>보기만 하는 링크 (광고주·내부 공유용)</small></button>
         <button data-adm="view">뷰어 화면으로 보기<small>새 탭에서 뷰어가 보는 화면</small></button>
@@ -233,14 +234,15 @@ const App = {
   renderNav() {
     const nav = document.getElementById('nav'); if (!nav) return;
     const cnt = { 지상파: (WS.sheets.지상파 || []).filter(r => !isBlankRow(r)).length, 케이블: (WS.sheets.케이블 || []).filter(r => !isBlankRow(r)).length };
-    const err = M.issues.filter(i => i.sev === 'err').length, warn = M.issues.filter(i => i.sev === 'warn').length;
+    const err = M.issues.filter(i => !i.ok && i.sev === 'err').length, warn = M.issues.filter(i => !i.ok && i.sev === 'warn').length;
+    const todo = new Set(M.issues.filter(i => !i.ok).map(i => i.key)).size;
     const unk = this.unknownNames(); const unkN = unk.items.size + unk.chs.size;
     const badge = id => {
       if (readOnly()) return '';
       const lk = LOCK.other(id); if (lk) return `<span class="badge lk" title="${esc(lk)}님이 작업 중">🔒 ${esc(lk)}</span>`;
       if (cnt[id]) return `<span class="badge">${fmt.int(cnt[id])}</span>`;
       if (id === 'master' && unkN) return `<span class="badge err" title="마스터에 없는 이름">${unkN}</span>`;
-      if (id === 'issues' && (err || warn)) return `<span class="badge ${err ? 'err' : 'warn'}">${err || warn}</span>`;
+      if (id === 'issues' && todo) return `<span class="badge ${err ? 'err' : warn ? 'warn' : ''}" title="확인 전 ${todo}건">${todo}</span>`;
       return '';
     };
     const areas = this.areas();
@@ -319,6 +321,7 @@ const App = {
     const el = this.paneEl(tab);
     for (const k in this.panes) this.panes[k].hidden = k !== tab;
     if (GRID_SHEETS.includes(tab)) { window.scrollTo(0, 0); this.showGrid(tab); return; }
+    if (tab === 'cal' && prev !== tab) calUI().jump = true;   // 캘린더는 열 때마다 오늘이 있는 주로
     if (force || tab === 'cal' || el.dataset.ver !== String(M.ver) || !el.firstChild) this.renderPane(tab);   // 캘린더는 '지금' 줄 때문에 열 때마다 새로
     if (prev !== tab) window.scrollTo(0, this.scrollMem[tab] || 0);
   },
@@ -473,7 +476,7 @@ const App = {
     dd.querySelectorAll('[data-bak]').forEach(b => b.onclick = () => {
       const w = b.dataset.bak; dd.classList.remove('open');
       if (w === 'restore') return document.getElementById('filein').click();
-      if (w === 'all') saveWorkspaceXlsx(WS, M, ALL_SHEETS, '백업');
+      if (w === 'all') downloadFullReport();
       else if (w === 'plan') saveWorkspaceXlsx(WS, M, ['예산', '소재'], '예산소재');
       else if (w === 'master') saveWorkspaceXlsx(WS, M, MASTER_SHEETS, '마스터');
       else saveWorkspaceXlsx(WS, M, [w], w);
@@ -718,7 +721,7 @@ const App = {
     if (!M._ii) M._ii = {};
     if (!M._ii[sheet]) {
       const m = new Map();
-      for (const i of M.issues) if (i.sheet === sheet && i.row >= 0) { const k = i.row + ':' + (i.col == null ? -1 : colIndex(sheet, i.col)); if (!m.has(k)) m.set(k, i); }
+      for (const i of M.issues) if (!i.ok && i.sheet === sheet && i.row >= 0) { const k = i.row + ':' + (i.col == null ? -1 : colIndex(sheet, i.col)); if (!m.has(k)) m.set(k, i); }
       M._ii[sheet] = m;
     }
     return M._ii[sheet];
@@ -766,8 +769,8 @@ const App = {
       <div class="mini" style="margin-top:10px">${its.map(k => { const v = sum(cs.filter(c => c.item === k), c => c.cnt); return `<div class="r"><span>${esc(k)}</span><span class="b"><span style="width:${v / mx * 100}%;background:${itemColor(k)}"></span></span><span class="v">${fmt.int(v)}</span></div>`; }).join('')}</div>
       <div class="mini" style="margin-top:10px">${M.weeks.map((w, i) => `<div class="r"><span class="muted">${w.label} ${w.range}</span><span class="b"><span style="width:${(A.wk[i] || 0) / Math.max(1, ...A.wk) * 100}%;background:${SLATE[1]}"></span></span><span class="v">${fmt.int(A.wk[i] || 0)}</span></div>`).join('')}</div></div></div>`;
     this.renderSideSel(name);
-    const list = M.issues.filter(i => i.sheet === name);
-    iss.innerHTML = this.unknownHtml() + `<div class="card"><div class="hd"><h4>확인 필요 ${list.length ? `<span class="badge ${list.some(i => i.sev === 'err') ? 'err' : 'warn'}">${list.length}</span>` : ''}</h4></div><div class="bd">${list.length ? `<div class="issues">${list.slice(0, 80).map((i, k) => `<div class="iss" data-i="${k}"><span class="sev ${i.sev}"></span>${i.row >= 0 ? `<span class="rw">${i.row + 1}행</span>` : ''}<span>${esc(i.msg)}</span></div>`).join('')}${list.length > 80 ? `<div class="muted small">… 외 ${list.length - 80}건 (검증 탭)</div>` : ''}</div>` : '<span class="muted small">문제 없어요</span>'}</div></div>`;
+    const list = M.issues.filter(i => i.sheet === name && !i.ok);
+    iss.innerHTML = this.unknownHtml() + `<div class="card"><div class="hd"><h4>확인 필요 ${list.length ? `<span class="badge ${list.some(i => i.sev === 'err') ? 'err' : 'warn'}">${list.length}</span>` : ''}</h4></div><div class="bd">${list.length ? `<div class="issues">${list.slice(0, 80).map((i, k) => `<div class="iss" data-i="${k}"><span class="sev ${i.sev}"></span>${i.row >= 0 ? `<span class="rw">${i.row + 1}행</span>` : ''}<span>${esc(i.msg)}</span></div>`).join('')}${list.length > 80 ? `<div class="muted small">… 외 ${list.length - 80}건 (확인 필요 탭)</div>` : ''}</div>` : '<span class="muted small">문제 없어요</span>'}</div></div>`;
     iss.querySelectorAll('[data-i]').forEach(d => d.onclick = () => { const i = list[+d.dataset.i]; if (i.row >= 0) this.grids[name].gotoData(i.row, i.col ? colIndex(name, i.col) : 0); });
     this.bindUnknown(iss);
   },
@@ -902,22 +905,48 @@ const App = {
     wrap.addEventListener('scroll', () => { this.reachScroll = wrap.scrollLeft; }, { passive: true });
   },
 
-  // ---------- 검증 ----------
+  // ---------- 확인 필요: 이상해 보이는 데이터 → 괜찮으면 체크 (WS.reviewOk) → 입력 시트 강조 해제 ----------
+  reviewEntries() {
+    const by = new Map();
+    for (const i of M.issues) { let e = by.get(i.key); if (!e) by.set(i.key, e = { key: i.key, sev: i.sev, sug: i.sug || '', msg: i.msg, ok: i.ok, refs: [] }); if (i.row >= 0) e.refs.push({ sheet: i.sheet, row: i.row, col: i.col }); else if (!e.refs.length) e.sheet = i.sheet; }
+    for (const e of by.values()) { if (e.sug === 'dup' && e.refs.length) e.msg = e.msg.replace(/여러 행에 있어요$/, `${e.refs.length}행에 있어요`); if (e.sug === 'creday') e.msg += ` — ${e.refs.length}회`; if (e.sug === 'price') e.msg += ` — ${e.refs.length}회`; }
+    return [...by.values()];
+  },
+  REVIEW_G: [
+    ['err', '집계에서 빠지는 행', '날짜·채널·품목·초수를 읽지 못해 합계에 안 들어가요. 고치거나, 일부러 그런 거면 체크하세요.'],
+    ['price', '같은 편성인데 단가가 달라요', '채널·프로그램·요일·시작 시간·초수·CM 위치가 같은데 단가가 둘 이상이에요. 날짜별로 단가가 바뀐 거면 괜찮아요.'],
+    ['creday', '소재 운영기간 밖에 나간 송출', '소재 탭의 운영기간과 송출 날짜가 맞지 않아요. 운영기간을 고치거나, 맞는 송출이면 체크하세요.'],
+    ['dup', '똑같은 송출이 두 번 이상', '모든 칸이 같은 행이 여러 개예요. 실제로 두 번 나갔으면 괜찮아요.'],
+    ['amt', '유상 금액이 단가와 달라요', '지상파 유상 송출의 금액과 단가가 달라요.'],
+    ['negb', '보너스가 음수', '케이블 송출 단가 합이 예산보다 작아요.'],
+    ['cshare', '소재 비중 합계', '소재 금액 비중 합계가 100%가 아니에요.'],
+    ['sec', '흔치 않은 초수', ''],
+    ['start', '시작 시간 없음', ''],
+    ['warn', '숫자가 틀릴 수 있는 행', ''],
+    ['info', '참고', ''],
+  ],
   renderIssues(el) {
-    const all = M.issues;
-    const f = UI.issueSev;
-    const list = all.filter(i => f === 'all' || i.sev === f);
-    const by = groupBy(list, i => i.sheet);
-    const c = s => all.filter(i => i.sev === s).length;
-    el.innerHTML = `<div class="viewhead"><div><h2>검증</h2><div class="sub">누르면 해당 시트의 그 칸으로 이동해요. 오류는 집계에서 빠지는 행, 주의는 숫자가 틀릴 수 있는 행, 정보는 확인만 하면 되는 행이에요.</div></div><div class="spacer"></div>
-      ${segHtml('sev', [['all', `전체 ${all.length}`], ['err', `오류 ${c('err')}`], ['warn', `주의 ${c('warn')}`], ['info', `정보 ${c('info')}`]], f)}</div>
-      <div class="sheetwrap"><div class="stack">${list.length ? [...by].map(([sheet, its]) => `<section class="card"><div class="hd"><h3>${esc((SHEETS[sheet] || {}).label || sheet)}</h3><span class="sub">${its.length}건</span></div><div class="bd"><div class="issues" style="max-height:none">
-        ${its.slice(0, 400).map(i => `<div class="iss" data-s="${esc(sheet)}" data-r="${i.row}" data-c="${esc(i.col || '')}"><span class="sev ${i.sev}"></span>${i.row >= 0 ? `<span class="rw">${i.row + 1}행</span>` : '<span class="rw">—</span>'}<span>${esc(i.msg)}</span></div>`).join('')}
-        ${its.length > 400 ? `<div class="muted small">… 외 ${its.length - 400}건</div>` : ''}</div></div></section>`).join('') : '<section class="card"><div class="empty">확인할 항목이 없어요</div></section>'}</div>
-      <aside class="side">${this.unknownHtml() || '<div class="card"><div class="bd small muted">마스터에 없는 품목·채널 이름이 생기면 여기서 바로 별칭으로 연결할 수 있어요.</div></div>'}</aside></div>`;
-    bindSeg(el, 'sev', v => { UI.issueSev = v; this.renderPane('issues'); });
+    const all = this.reviewEntries();
+    const showOk = UI.reviewOk === 'ok';
+    const list = all.filter(e => !!e.ok === showOk);
+    const gOf = e => e.sev === 'err' ? 'err' : e.sug || e.sev;
+    const groups = this.REVIEW_G.map(([id, t, d]) => ({ id, t, d, es: list.filter(e => gOf(e) === id) })).filter(g => g.es.length);
+    const nTodo = all.filter(e => !e.ok).length, nOk = all.length - nTodo;
+    const lab = s => (SHEETS[s] || {}).label || s;
+    const refHtml = e => { const r = e.refs; if (!r.length) return e.sheet ? `<button class="rref" data-s="${esc(e.sheet)}" data-r="-1">${esc(lab(e.sheet))}</button>` : ''; return r.slice(0, 6).map(x => `<button class="rref" data-s="${esc(x.sheet)}" data-r="${x.row}" data-c="${esc(x.col || '')}">${esc(lab(x.sheet))} ${x.row + 1}행</button>`).join('') + (r.length > 6 ? `<span class="muted small">외 ${r.length - 6}</span>` : ''); };
+    el.innerHTML = `<div class="viewhead"><div><h2>확인 필요</h2><div class="sub">이상해 보일 수 있는 데이터를 찾아 모았어요. <b>괜찮으면 체크</b>하세요 — 체크하면 입력 시트의 강조 표시가 사라지고 '확인함'으로 옮겨져요. 행 번호를 누르면 그 행으로 가요.</div></div><div class="spacer"></div>
+      ${segHtml('rvok', [['todo', `확인 전 ${nTodo}`], ['ok', `확인함 ${nOk}`]], showOk ? 'ok' : 'todo')}</div>
+      <div class="sheetwrap"><div class="stack">${groups.length ? groups.map(g => `<section class="card rvg"><div class="hd"><h3>${esc(g.t)}</h3><span class="sub">${g.es.length}건${g.d ? ' · ' + esc(g.d) : ''}</span><div class="spacer"></div>${showOk ? '' : `<button class="btn sm ghost" data-rvall="${g.id}">모두 괜찮아요</button>`}</div><div class="bd rvlist">
+        ${g.es.slice(0, 300).map(e => `<label class="rvi ${e.sev}${e.ok ? ' ok' : ''}"><input type="checkbox" data-rk="${esc(e.key)}"${e.ok ? ' checked' : ''}><span class="sev ${e.sev}"></span><span class="rvm">${esc(e.msg)}</span><span class="rvrefs">${refHtml(e)}</span></label>`).join('')}
+        ${g.es.length > 300 ? `<div class="muted small">… 외 ${g.es.length - 300}건</div>` : ''}</div></section>`).join('') : `<section class="card"><div class="empty">${showOk ? '아직 확인한 항목이 없어요' : '확인할 항목이 없어요 👍'}</div></section>`}</div>
+      <aside class="side">${this.unknownHtml() || '<div class="card"><div class="bd small muted">마스터에 없는 품목·채널 이름이 생기면 여기서 바로 연결할 수 있어요.</div></div>'}</aside></div>`;
+    bindSeg(el, 'rvok', v => { UI.reviewOk = v; this.renderPane('issues'); });
     this.bindUnknown(el);
-    el.querySelectorAll('.iss[data-s]').forEach(d => d.onclick = () => {
+    const setOk = (keys, on) => { WS.reviewOk = WS.reviewOk || {}; for (const k of keys) { if (on) WS.reviewOk[k] = 1; else delete WS.reviewOk[k]; } App.changed('meta'); };
+    el.querySelectorAll('input[data-rk]').forEach(cb => cb.onchange = () => { cb.closest('.rvi').classList.toggle('ok', cb.checked); setTimeout(() => setOk([cb.dataset.rk], cb.checked), 180); });
+    el.querySelectorAll('[data-rvall]').forEach(b => b.onclick = () => { const g = groups.find(x => x.id === b.dataset.rvall); if (g) setOk(g.es.map(e => e.key), true); });
+    el.querySelectorAll('.rref').forEach(d => d.onclick = ev => {
+      ev.preventDefault(); ev.stopPropagation();
       const s = d.dataset.s, r = +d.dataset.r, col = d.dataset.c || null;
       if (GRID_SHEETS.includes(s)) { this.go(s); if (r >= 0) this.grids[s].gotoData(r, col ? Math.max(0, colIndex(s, col)) : 0); }
       else if (MASTER_SHEETS.includes(s)) { UI.master = s; this.go('master', true); }
@@ -1000,6 +1029,7 @@ const App = {
     if (P.opsNotes && pick.includes('지상파') && pick.includes('케이블')) WS.opsNotes = P.opsNotes;
     if (P.opsReach && pick.includes('지상파') && pick.includes('케이블')) WS.opsReach = P.opsReach;
     if (P.opsCurve && pick.includes('지상파') && pick.includes('케이블')) WS.opsCurve = P.opsCurve;
+    if (P.reviewOk && pick.includes('지상파') && pick.includes('케이블')) WS.reviewOk = P.reviewOk;
     if (P.secPlan && pick.includes('소재')) WS.secPlan = P.secPlan;
     const Mb = compute(fixWS(before));
     this.dataReplaced();

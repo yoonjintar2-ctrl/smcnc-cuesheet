@@ -1037,3 +1037,78 @@ table.t.cue.qm.cg td.kind.fx{position:sticky;z-index:3}
 table.ops td.curve select{font:inherit;font-size:12px;border:1px solid transparent;background:transparent;color:inherit;padding:1px 2px;border-radius:5px;cursor:pointer;text-align:center}
 table.ops td.curve select:hover{border-color:var(--rule)}
 table.ops td.curve.manual select{border-color:var(--acc);font-weight:600}
+/* ===== 12차 ===== */
+/* 요약: 왼쪽 초수별·요일별 노출수 / 오른쪽 중CM·PIB (매체 합계 도넛 2개) */
+.grid2.cmrow{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);align-items:stretch}
+.cmrow .mixcol{display:grid;grid-template-rows:1fr 1fr;gap:16px;min-width:0}
+.cmrow .mixcol .mixcard{position:static;display:flex;flex-direction:column;margin:0}
+.cmrow .mixcol .mixcard>.bd{flex:1;display:flex;flex-direction:column;justify-content:center}
+.cmdonuts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:14px}
+.cmdn{background:var(--surface3);border:1px solid var(--rule);border-radius:12px;padding:10px 12px}
+.cmdn-h{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12.5px}
+.cmdn .mixb{grid-template-columns:128px minmax(0,1fr);gap:12px}
+@media (max-width:1100px){.grid2.cmrow{grid-template-columns:1fr}.cmrow .mixcol{grid-template-rows:auto}}
+.cmdn .mixl .mr{grid-template-columns:12px 62px minmax(30px,1fr) auto 36px;gap:6px}
+.cmdn .mixl .ml{white-space:nowrap}
+/* 마스터 품목: 카테고리 묶음 */
+table.mitems tr.catstart td{border-top:2px solid var(--rule)}
+table.mitems input.catrep{color:var(--muted)}
+/* 예산표: 머리글 진하게 · 계/합계 강조 · 품목 열 끌기 */
+table.t.budget thead th{background:#2f4659;color:#fff;border-color:#2f4659}
+table.t.budget thead th.ih .nm{color:#fff;font-weight:700}
+table.t.budget thead th.ih{cursor:grab;user-select:none}
+table.t.budget thead th.ih.dragging{opacity:.35}
+table.t.budget thead th.ih.unk{background:#8f3d35;color:#fff}
+table.t.budget thead th.ih .sw{box-shadow:0 0 0 1.5px rgba(255,255,255,.85)}
+table.t.budget tr.sub td{background:#dfe7ef;color:var(--acc-deep);font-weight:700;border-top:1px solid #c5d2de}
+table.t.budget tr.tot td{background:#3f5b73;color:#fff;font-weight:800;border-color:#3f5b73}
+table.t.budget tr.grp td{background:#eef2f6}
+.colghost{position:fixed;z-index:9999;pointer-events:none;background:#2f4659;color:#fff;border-radius:8px;padding:7px 8px;box-shadow:0 8px 24px rgba(29,40,51,.28);font-size:12px;font-weight:700;opacity:.95}
+.colghost .ihd{display:flex;align-items:center;justify-content:center;gap:5px}
+.coldel{position:fixed;z-index:9998;height:44px;display:flex;align-items:center;justify-content:center;gap:6px;border:2px dashed #c98b84;border-radius:10px;background:rgba(251,238,236,.96);color:var(--stop);font-size:13px;box-shadow:0 4px 14px rgba(29,40,51,.12);transition:background .12s,transform .12s}
+.coldel.on{background:#8f3d35;color:#fff;border-color:#8f3d35;transform:scale(1.02)}
+.colmark{position:fixed;z-index:9997;width:3px;border-radius:2px;background:var(--acc);pointer-events:none;display:none}
+body.coldragging{cursor:grabbing!important;user-select:none}
+/* 지상파 큐시트: 2단 머리글(CM지정 · 예상 효과) · 집행일자 · 비고 표시 · 고정 열 그림자는 넘겼을 때만 */
+table.t.cue.qm td.pg.fx{box-shadow:none}
+table.t.cue.qm.hscrolled td.pg.fx,table.t.cue.qm.hscrolled thead th.fx:last-of-type{box-shadow:inset -1px 0 0 #cfd3dc,4px 0 6px -3px rgba(29,40,51,.22)}
+table.t.cue.qm.cg thead th.grph{border-bottom:1px solid rgba(255,255,255,.25)}
+table.t.cue.qm.cg thead th.h2{font-size:11.5px}
+table.t.cue.qm.cg thead th .rg{display:block;font-size:10px;font-weight:400;opacity:.75}
+table.t.cue.qm.cg td.dl{white-space:nowrap;font-size:11.5px;color:var(--ink2)}
+table.t.cue.qm td.pg .pnote{display:inline-block;margin-left:6px;font-style:normal;font-size:9.5px;font-weight:600;color:#7a6a58;background:#f3eee6;border:1px solid #e3d8c6;border-radius:4px;padding:0 4px;line-height:15px;vertical-align:1px;cursor:help}
+/* 큐시트 캘린더: 제목 없이 필터 줄부터 · 요일 머리글 고정 · 항목 한 줄 */
+.calcard{overflow:visible}
+.calw{overflow:visible}
+table.calt thead th{position:sticky;top:var(--shellh,100px);z-index:5}
+table.calt{font-size:10.5px}
+.cale.one{display:flex;align-items:baseline;gap:4px;white-space:nowrap;padding:1px 3px 1px 5px;line-height:1.45}
+.cale.one .t{flex:none;font-weight:600;color:#1d2833}
+.cale.one .c{flex:none;max-width:64px;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:#3b4652}
+.cale.one .s{flex:none;color:#8a95a0}
+.cale.one .p{flex:1 1 auto;min-width:0;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#2a333d;-webkit-line-clamp:unset;word-break:normal;font-size:inherit}
+.cale.one .p .ptag{font-size:inherit}
+.cale.one .x{flex:none}
+.cale.one .m{flex:none;margin-left:2px;font-size:10px}
+.cafilter .bd .spacer{flex:1}
+.helpw{position:relative;display:inline-flex}
+.helpq{width:24px;height:24px;border-radius:50%;border:1px solid var(--rule);background:var(--surface);color:var(--muted);font-weight:700;font-size:12.5px;cursor:pointer;line-height:1;padding:0}
+.helpq:hover{color:var(--ink2);border-color:var(--acc-mid)}
+.helppop{position:absolute;right:0;top:32px;z-index:40;width:380px;background:var(--surface);border:1px solid var(--rule);border-radius:10px;box-shadow:var(--shadow);padding:12px 14px;font-size:12.5px;line-height:1.6;color:var(--ink2)}
+/* 확인 필요 */
+.rvlist{display:grid;gap:2px;padding:6px 10px 10px}
+.rvi{display:grid;grid-template-columns:18px 8px minmax(0,1fr) auto;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:12.5px;line-height:1.45}
+.rvi:hover{background:var(--surface3)}
+.rvi input{width:15px;height:15px;accent-color:var(--acc);cursor:pointer}
+.rvi .sev{width:7px;height:7px;border-radius:50%;background:#c3ccd4}
+.rvi .sev.err{background:var(--stop)}.rvi .sev.warn{background:#d39a3a}
+.rvi.ok .rvm{color:var(--muted);text-decoration:line-through;text-decoration-color:#c3ccd4}
+.rvrefs{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;max-width:420px}
+.rref{border:1px solid var(--rule);background:var(--surface);color:var(--acc-deep);border-radius:6px;font-size:11px;padding:1px 7px;cursor:pointer;white-space:nowrap}
+.rref:hover{background:var(--acc-soft)}
+/* 상단 아이콘 단추 */
+.btn.ibtn{width:36px;padding:0;display:inline-grid;place-items:center}
+.btn.ibtn svg{display:block}
+.dd.open>.btn.ibtn{background:var(--acc-soft);border-color:var(--acc-mid);color:var(--acc-deep)}
+.dd-menu .dd-h{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;padding:4px 10px 2px}
+#dd-bak .dd-menu{min-width:300px}

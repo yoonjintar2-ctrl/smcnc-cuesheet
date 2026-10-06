@@ -45,12 +45,13 @@ function renderCal(root) {
   const itOpts = items.map(k => ({ v: k, t: k, color: itemColor(k) }));
   const shownItems = items.filter(k => rows.some(s => s.item === k));
   const now = calNow(), isNowMonth = now.y === M.ym.y && now.m === M.ym.m;
-  root.innerHTML = `<div class="viewhead"><div><h2>큐시트 캘린더</h2><div class="sub">${ymLabel()} · 날짜 칸마다 그날 나간 광고를 <b>시작 시간 순</b>으로 — 시간 · 채널 · 초수 · 프로그램 · CM 위치 (왼쪽 색 = 품목)${isNowMonth ? ` · <span class="calnowlg">오늘 ${now.m}/${now.d} · 지금 ${now.hm}</span>` : ''}</div></div><div class="spacer"></div>${isNowMonth ? '<button class="btn sm" id="cal-today">오늘로</button>' : ''}${xlBtn('cal', '캘린더 엑셀')}</div>
-    <section class="card cafilter"><div class="bd">
+  const help = `${ymLabel()} · 날짜 칸마다 그날 나간 광고를 <b>시작 시간 순</b>으로 — 시간 · 채널 · 초수 · 프로그램 · CM 위치 (왼쪽 색 = 품목). 프로그램 이름이 길면 줄여 보여요 — 마우스를 올리면 전체 이름, 엑셀에는 전체 이름이 들어가요.${isNowMonth ? `<br><span class="calnowlg">오늘 ${now.m}/${now.d} · 지금 ${now.hm}</span> — 오늘 칸에 '지금' 줄이 있고, 지금 방송 중인 광고는 강조돼요.` : ''}`;
+  root.innerHTML = `<section class="card cafilter"><div class="bd">
       ${segHtml('calmedia', [['all', '전체'], ['지상파', '지상파'], ['케이블', '케이블']], f.media)}
       ${mselHtml('calch', '채널', chOpts, f.ch)}
       ${mselHtml('calit', '품목', itOpts, f.item)}
       ${f.ch || f.item || f.media !== 'all' ? '<button class="btn sm ghost" id="cal-reset">필터 해제</button>' : ''}
+      <div class="spacer"></div>${isNowMonth ? '<button class="btn sm" id="cal-today">오늘로</button>' : ''}${xlBtn('cal', '캘린더 엑셀')}<span class="helpw"><button class="helpq" id="cal-help" aria-label="캘린더 보는 법" title="캘린더 보는 법">?</button><div class="helppop" hidden>${help}</div></span>
     </div></section>
     <div class="castat"><span>방송사 <b class="tnum">${new Set(rows.map(s => s.ch)).size}</b>개</span><span>횟수 <b class="tnum">${fmt.int(n)}</b>회</span><span>단가 합 <b class="tnum">${fmt.eok(amt, 2)}</b></span>${d0 ? `<span>기간 <b>${M.ym.m}/${d0}~${M.ym.m}/${d1}</b></span>` : ''}<span class="muted">중CM ${fmt.pct(n ? cmN('중CM') / n : 0)} · PIB ${fmt.pct(n ? cmN('PIB') / n : 0)} · 전후CM 등 ${fmt.pct(n ? 1 - (cmN('중CM') + cmN('PIB')) / n : 0)}</span>
       <div class="spacer"></div><span class="qmlegend">${shownItems.map(k => `<span><i style="background:${itemColor(k)}"></i>${esc(k)}</span>`).join('')}</span></div>
@@ -65,7 +66,8 @@ function renderCal(root) {
         const a = timeToMin(e.st), b = e.en ? timeToMin(e.en) : a + 60; const onair = today && a <= now.min && now.min < (b > a ? b : a + 60);
         let pre = '';
         if (!nowDone && a > now.min) { nowDone = true; pre = `<div class="calnow" data-now><span>지금 ${now.hm}</span></div>`; }
-        return pre + `<div class="cale${e.cmCls === '중CM' ? ' mid' : ''}${onair ? ' onair' : ''}" style="--b:${col}" title="${esc(`${e.st}${e.en ? '~' + e.en : ''} · ${e.ch} · ${e.sec || ''}초 · ${e.prog} · ${e.cm || ''} · ${e.item || e.itemRaw || ''}${e.n > 1 ? ` · ${e.n}회` : ''}${onair ? ' · 지금 방송 중' : ''}`)}"><div class="l1"><span class="t tnum">${esc(e.st)}</span><span class="c">${esc(e.ch)}</span><span class="s tnum">${e.sec ? e.sec + '″' : ''}</span>${e.n > 1 ? `<span class="x">×${e.n}</span>` : ''}<span class="m">${esc(e.cm)}</span></div><span class="p">${progHtml(e.prog)}</span></div>`;
+        // 한 줄: 시간 · 채널 · 초수 · 프로그램(길면 …) · ×N · CM — 마우스를 올리면 전체
+        return pre + `<div class="cale one${e.cmCls === '중CM' ? ' mid' : ''}${onair ? ' onair' : ''}" style="--b:${col}" title="${esc(`${e.st}${e.en ? '~' + e.en : ''} · ${e.ch} · ${e.sec || ''}초 · ${e.prog} · ${e.cm || ''} · ${e.item || e.itemRaw || ''}${e.n > 1 ? ` · ${e.n}회` : ''}${onair ? ' · 지금 방송 중' : ''}`)}"><span class="t tnum">${esc(e.st)}</span><span class="c">${esc(e.ch)}</span><span class="s tnum">${e.sec ? e.sec + '″' : ''}</span><span class="p">${progHtml(e.prog)}</span>${e.n > 1 ? `<span class="x">×${e.n}</span>` : ''}${e.cm ? `<span class="m">${esc(e.cm)}</span>` : ''}</div>`;
       };
       const body = c.list.map(line).join('') + (nowDone ? '' : `<div class="calnow" data-now><span>지금 ${now.hm}</span></div>`);
       return `<td class="${cls.trim()}"${today ? ' id="cal-td-today"' : ''}><div class="cald"><b>${c.d}</b>${today ? '<em>오늘</em>' : ''}<span class="tnum">${c.n ? fmt.int(c.n) + '회' : ''}</span></div>${body}</td>`;
@@ -73,10 +75,13 @@ function renderCal(root) {
     </tbody></table></div></section>`;
   const re = () => { const y = window.scrollY; renderCal(root); window.scrollTo(0, y); };
   bindSeg(root, 'calmedia', v => { f.media = v; re(); });
-  const goToday = smooth => { const td = root.querySelector('#cal-td-today'); if (!td) return; const mk = td.querySelector('[data-now]') || td; const top = mk.getBoundingClientRect().top + window.scrollY - (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--shellh'), 10) || 100) - 120; window.scrollTo({ top: Math.max(0, top), behavior: smooth && !reduceMotion() ? 'smooth' : 'auto' }); };
+  // 오늘이 있는 주(행)가 고정된 요일 머리글 바로 아래에 오도록
+  const goToday = smooth => { const td = root.querySelector('#cal-td-today'); if (!td) return; const shellH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--shellh'), 10) || 100; const th = root.querySelector('table.calt thead'); const top = td.closest('tr').getBoundingClientRect().top + window.scrollY - shellH - (th ? th.offsetHeight : 30) - 6; window.scrollTo({ top: Math.max(0, top), behavior: smooth && !reduceMotion() ? 'smooth' : 'auto' }); };
   const tb = root.querySelector('#cal-today'); if (tb) tb.onclick = () => goToday(true);
-  // 처음 열 때는 오늘 칸(지금 줄)으로 · 1분마다 '지금' 줄을 옮김
-  if (isNowMonth && !calUI().seen) { calUI().seen = true; requestAnimationFrame(() => goToday(false)); }
+  // 캘린더를 열 때마다(사이트를 처음 열 때 포함) 오늘이 있는 주로 · 필터를 바꿀 때는 그 자리 그대로
+  if (isNowMonth && f.jump !== false) { f.jump = false; requestAnimationFrame(() => requestAnimationFrame(() => goToday(false))); }
+  const hq = root.querySelector('#cal-help'), hp = hq && hq.nextElementSibling;
+  if (hq) { hq.onclick = e => { e.stopPropagation(); hp.hidden = !hp.hidden; if (!hp.hidden) { const off = ev => { if (!hp.contains(ev.target)) { hp.hidden = true; document.removeEventListener('click', off); } }; setTimeout(() => document.addEventListener('click', off), 0); } }; }
   clearInterval(renderCal.t);
   if (isNowMonth) renderCal.t = setInterval(() => { if (App.tab !== 'cal' || !root.isConnected || root.hidden) return clearInterval(renderCal.t); if (calNow().hm !== now.hm) re(); }, 20000);
   bindMsel(root, 'calch', chOpts, f.ch, v => { f.ch = v; re(); });
@@ -85,28 +90,4 @@ function renderCal(root) {
   root.querySelector('[data-xl="cal"]').onclick = () => exportCal(weeks);
 }
 // 엑셀: 요일 머리글(5칸씩 병합) → 주마다 날짜 줄(병합) + 송출 줄(채널 · 시간 · 초수 · 프로그램 · CM)
-function exportCal(weeks) {
-  const aoa = [], merges = [], kinds = [];
-  aoa.push(CAL_WD.flatMap(w => [w, '', '', '', ''])); kinds.push('h');
-  CAL_WD.forEach((_, i) => merges.push({ s: { r: 0, c: i * 5 }, e: { r: 0, c: i * 5 + 4 } }));
-  const fills = [];
-  for (const wk of weeks) {
-    const r0 = aoa.length;
-    aoa.push(wk.flatMap(c => c ? [`${M.ym.m}월 ${c.d}일${c.n ? ` · ${c.n}회` : ''}`, '', '', '', ''] : ['', '', '', '', ''])); kinds.push('d');
-    wk.forEach((c, i) => merges.push({ s: { r: r0, c: i * 5 }, e: { r: r0, c: i * 5 + 4 } }));
-    const mx = Math.max(1, ...wk.map(c => c ? c.list.length : 0));
-    for (let k = 0; k < mx; k++) {
-      const row = [], fr = [];
-      wk.forEach(c => { const e = c && c.list[k]; if (e) { row.push(e.ch, e.st, e.sec || '', e.prog + (e.n > 1 ? ` ×${e.n}` : ''), e.cm); fr.push(e.item); } else { row.push('', '', '', '', ''); fr.push(null); } });
-      aoa.push(row); kinds.push('e'); fills[aoa.length - 1] = fr;
-    }
-  }
-  downloadBook([{ name: '캘린더', aoa, merges, headerRows: 1, widths: CAL_WD.flatMap(() => [10, 6, 4, 24, 7]),
-    styler: (r, c) => {
-      if (kinds[r] === 'h') return null;
-      if (kinds[r] === 'd') return xsMerge(XS.sub, { alignment: { horizontal: 'left', vertical: 'center' } });
-      const it = fills[r] && fills[r][Math.floor(c / 5)];
-      if (it && c % 5 === 0) return xsMerge(XS.cell, { fill: { fgColor: { rgb: hexRgb(itemLight(it)) } } });
-      return xsMerge(XS.cell, { alignment: { horizontal: c % 5 === 3 ? 'left' : 'center', vertical: 'center' } });
-    } }], `${advName()}TV_${WS.ym.replace('-', '')}_큐시트캘린더.xlsx`);
-}
+function exportCal(weeks) { xrDownload([xrCalSheet(weeks)], null, xrName('큐시트캘린더')); }
