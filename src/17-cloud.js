@@ -32,6 +32,7 @@ const CLOUD = {
     if (!r.ok) {
       const x = new Error((j && (j.message || j.msg || j.error_description || j.error)) || ('HTTP ' + r.status)); x.status = r.status; x.body = j;
       if (r.status === 401 && /session expired/i.test(x.message) && this.admin) { this.logout(true); x.message = '관리자 접속 시간이 끝났어요. 새로고침해서 다시 접속해 주세요'; }
+      if (r.status === 403 && /password change required/i.test(x.message) && this.admin) { x.message = '처음 접속이라 비밀번호를 먼저 바꿔 주세요'; if (typeof App !== 'undefined' && App.forcePwDialog) App.forcePwDialog(); }
       throw x;
     }
     return j;
@@ -41,17 +42,28 @@ const CLOUD = {
   arpc(fn, args) { return this.rpc(fn, Object.assign({ p_tok: this.tok && this.tok.tok }, args)); },
 
   // ---------- 관리자 접속 (비밀번호 → 세션 토큰, 이 탭에서만 유지) ----------
-  async login(pw) {
-    const t = await this.rpc('cue_login', { p_pw: pw });
-    this.tok = { tok: typeof t === 'string' ? t : (t && t.cue_login) }; this.admin = true;
-    try { sessionStorage.setItem('cue.admin', JSON.stringify(this.tok)); } catch (e) { }
+  // 15차: 관리자 개별 계정 — 이메일 아이디 + 비밀번호 (비밀번호는 서버에 bcrypt 해시로만 저장, 운영자도 볼 수 없음)
+  async login(email, pw) {
+    const r = await this.rpc('cue_login2', { p_email: email, p_pw: pw });
+    const x = Array.isArray(r) ? r[0] : r; if (!x || !x.o_tok) throw new Error('bad login');
+    this.tok = { tok: x.o_tok, name: x.o_name, email: x.o_email, must: !!x.o_must }; this.admin = true; this.saveTok();
+    return this.tok;
   },
+  saveTok() { try { sessionStorage.setItem('cue.admin', JSON.stringify(this.tok)); } catch (e) { } },
+  async setPw(oldPw, newPw) { await this.arpc('cue_set_pw', { p_old: oldPw, p_new: newPw }); this.tok.must = false; this.saveTok(); },
+  async users() { return ((await this.arpc('cue_users_list', {})) || []).map(u => ({ email: u.o_email, name: u.o_name, must: u.o_must, created: u.o_created, by: u.o_by, pwAt: u.o_pw_at })); },
+  invite(email, name) { return this.arpc('cue_user_invite', { p_email: email, p_name: name }); },
+  resetPw(email) { return this.arpc('cue_user_reset', { p_email: email }); },
+  removeUser(email) { return this.arpc('cue_user_remove', { p_email: email }); },
   logout(silent) {
     const t = this.tok && this.tok.tok; if (t && !silent) this.rpc('cue_logout', { p_tok: t }).catch(() => { });
     this.tok = null; this.admin = false; try { sessionStorage.removeItem('cue.admin'); } catch (e) { }
     if (!silent) setTimeout(() => location.reload(), 150);
   },
 
+  // ---------- 캠페인 설정 (15차: 운영 누적 메뉴 보이기 등) — 함수가 아직 없으면 기본값 ----------
+  async loadSettings(cid) { try { const r = await this.rpc('cue_view_settings', { p_camp: cid }); SETTINGS.v = (r && typeof r === 'object' && !Array.isArray(r)) ? r : (Array.isArray(r) && r[0] && r[0].cue_view_settings) || {}; } catch (e) { SETTINGS.v = {}; } },
+  async saveSetting(k, v) { await this.arpc('cue_admin_setting', { p_camp: this.camp.id, p_key: k, p_val: v }); SETTINGS.v = Object.assign({}, SETTINGS.v, { [k]: v }); },
   // ---------- 캠페인 · 달 ----------
   async loadCamps() { this.camps = this.admin ? (await this.arpc('cue_admin_camps', {})) || [] : []; return this.camps; },
   async campInfo(id) {
@@ -119,7 +131,7 @@ const CLOUD = {
     finally { this.saving = false; if (this.again) setTimeout(() => App.cloudSave(), 50); }
   },
   // 저장한 사람 표시용 이름 (이 브라우저에 한 번 적어 두면 충돌 알림에 나옴)
-  who() { try { return localStorage.getItem('cue.who') || null; } catch (e) { return null; } },
+  who() { if (this.tok && this.tok.name) return this.tok.name; try { return localStorage.getItem('cue.who') || null; } catch (e) { return null; } },
   async serverStamps(id, ym) {
     const r = await this.rpc('cue_stamps', { p_camp: id, p_ym: ym });
     const o = {}; for (const x of r || []) o[x.part] = x; return o;
@@ -155,9 +167,9 @@ const CLOUD = {
 // 시트를 열면 잠금을 잡고(3분짜리, 30초마다 연장), 다른 사람이 잡고 있으면 그 시트는 보기만. 5분 동안 손대지 않으면 스스로 풀어 줌.
 const LOCK = {
   TABS: ['master', '지상파', '케이블', 'reach', '예산', '소재'],
-  LABEL: { master: '품목·채널 관리', 지상파: '지상파 입력 시트', 케이블: '케이블 입력 시트', reach: '누적리치', 예산: '당월 예산', 소재: '당월 소재' },
-  // 14차: 품목·채널·CM위치·목표 CPRP·매칭 규칙 메뉴는 같은 '마스터' 잠금을 함께 씀
-  key(tab) { return ['mch', 'mcm', 'mcprp', 'mrule'].includes(tab) ? 'master' : tab; },
+  LABEL: { master: '규칙 관리', 지상파: '지상파 입력', 케이블: '케이블 입력', reach: '리치 입력', 예산: '당월 예산', 소재: '당월 소재' },
+  // 14차: 품목·채널·CM위치·목표 CPRP 메뉴는 같은 '마스터' 잠금을 함께 씀
+  key(tab) { return ['mch', 'mcm', 'mcprp'].includes(tab) ? 'master' : tab; },
   IDLE: 5 * 60 * 1000, BEAT: 30 * 1000,
   st: {}, others: {}, cur: null, lastAct: Date.now(), timer: null, on: false,
   holder() {
@@ -233,7 +245,7 @@ const LOCK = {
   // 잠금 상태가 바뀌면 그 시트 화면을 편집/보기로 다시 그림
   applied(key) {
     const ro = this.blocked(key);
-    for (const tab of (key === 'master' ? ['master', 'mch', 'mcm', 'mcprp', 'mrule'] : [key])) {
+    for (const tab of (key === 'master' ? ['master', 'mch', 'mcm', 'mcprp'] : [key])) {
       const g = App.grids[tab]; if (g) { g.setRO(ro); App.gridStat(tab); }
       else if (App.tab === tab) App.renderPane(tab);
       else if (App.panes[tab]) App.panes[tab].dataset.ver = '';

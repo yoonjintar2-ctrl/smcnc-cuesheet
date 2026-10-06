@@ -1245,6 +1245,147 @@ body.rowdragging,body.rowdragging *{cursor:grabbing!important;user-select:none!i
 table.t.cresum td.crit{font-weight:700;background:color-mix(in srgb,var(--c) 10%,#fff)}
 table.t.cresum td.crit .sw{margin-right:6px}
 table.t.cresum td.wrap{min-width:180px}
+
+/* ===== 15차 ===== */
+/* 주차별: 숫자를 막대 끝 오른쪽에 */
+.wkr .t{margin-bottom:5px}
+.wkr .bar{display:flex;align-items:center;gap:8px;height:14px}
+.wkr .bar .fill{flex:none;width:0}
+.wkr .bar em{font-style:normal;font-weight:700;font-size:12px;color:#262626;margin:0;white-space:nowrap}
+.ibr .lbx{font-weight:600}
+/* 요약: 노출수·중CM 정사각형 4칸(왼쪽 2×2) + 중CM·PIB PP별/채널별(오른쪽) */
+.cmrow2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-bottom:16px;align-items:start}
+.sq4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.card.sqcard{aspect-ratio:1/1;display:flex;flex-direction:column;margin:0;min-width:0}
+.sqcard .hd{flex:none;flex-wrap:nowrap}
+.sqcard .hd h3{white-space:nowrap}
+.sqcard .hd .seg button{padding:0 8px;font-size:11.5px}
+.sqcard .bd{flex:1 1 auto;min-height:0;position:relative;padding:0}
+.sqcard .sqd{position:absolute;inset:4px 8px 8px}
+.card.cmcard{margin:0}
+@media (max-width:1100px){.cmrow2{grid-template-columns:1fr}}
+@media (max-width:640px){.sq4{grid-template-columns:1fr}}
+/* ===== 15차: 표 디자인 통일 — 모든 표: 머리글 = 진한 회색·흰 글자 · 소계 = 옅은 회색·굵게 · 합계 = 진한 회색·흰 글자 (당월 예산 표와 같은 규칙) ===== */
+table.t thead th,table.t.ctr thead th{background:#424242;color:#fff;border-right-color:#555558;border-bottom-color:#555558;font-weight:600}
+table.t thead th .rg,table.t.ctr th .rg{color:#cfcfd2}
+table.t thead th.grph,table.t.ctr thead th.grph{background:#333335;color:#fff;border-bottom:1px solid #58585b}
+table.t.grp thead th.gs{border-left:2px solid #8e8e93}
+table.t.grp td.gs{border-left:2px solid #a0a0a5}
+table.t tr.sub td{background:#e6e6e8;font-weight:700;color:#1c1c1e;border-top:1px solid #cfcfd2}
+table.t tr.sub td.z{color:#9a9a9f}
+table.t tr.tot td{background:#575757;color:#fff;font-weight:800;border-color:#575757}
+table.t tr.tot td.z,table.t tr.tot td .muted{color:#c9c9cc}
+table.t td.mg{background:#fff;font-weight:600}
+table.t thead th .colrs:hover,table.t thead th .colrs.on{background:rgba(255,255,255,.35)}
+table.t.form thead th small,table.t.form thead th .muted{color:#cfcfd2}
+table.t.caall th{background:#424242;border-color:#555558}
+/* 운영 요약: 카테고리 병합 칸 · 품목 요약 줄(B~C열) · 합계(A~C열) · 주요 프로그램은 왼쪽 정렬 */
+table.t.ops td.cat{background:#fafafa;font-weight:700;color:var(--acc-deep)}
+table.t.ops td.sumname{font-weight:700}
+table.t.ops.ctr td.prog,table.t.ops.ctr td.wrap,table.t.ops.ctr th.pgh{text-align:left;padding-left:14px}
+/* 큐시트: 머리글은 다른 표와 같은 진한 회색 · 방송사 계 / 3사 계는 진하게(흰 글자) */
+table.t.cue.qm th{background:#424242;border-right-color:#555558;border-bottom-color:#555558}
+table.t.cue.qm tr.sub td{background:#6e6e73;color:#fff;font-weight:700;border-top:2px solid #58585b;border-right-color:#7c7c81;border-bottom-color:#7c7c81}
+table.t.cue.qm tr.tot td{background:#3a3a3c;color:#fff;font-weight:800;border-color:#4a4a4d}
+table.t.cue.qm tr.sub td .muted,table.t.cue.qm tr.tot td .muted{color:#d6d6d9}
+table.t.cue.qm tr.sub:hover td:not(.tsel){background-color:#6e6e73}table.t.cue.qm tr.tot:hover td:not(.tsel){background-color:#3a3a3c}
+.spot.ibox{color:#fff}
+/* 큐시트 열 너비 줄이기: 주차 칸은 글자 길이만큼 · 짧은 열은 여백을 줄임 */
+table.t.cue.qm th.wkh{min-width:0}
+table.t.cue.qm td.wk{min-width:0;padding:3px 4px}
+.spot.ibox{min-width:0;padding:2px 7px;margin:2px 0}
+table.t.cue.qm.cg th,table.t.cue.qm.cg td.info{padding-left:6px;padding-right:6px}
+table.t.cue.qm.cg thead th.h2{white-space:normal;word-break:keep-all;line-height:1.25}
+table.t.cue.qm td.pg{white-space:normal;word-break:keep-all;line-height:1.35}
+table.t.cue.qm th.pgh{width:220px;min-width:180px}
+/* 운영 누적 (월별 광고비) */
+.kpis.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.ychart{margin-bottom:14px}
+.ylg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink2);margin-bottom:8px}
+.ylg span{display:inline-flex;align-items:center;gap:5px}.ylg i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.yplot{position:relative;height:230px;padding-left:44px}
+.yax{position:absolute;left:0;top:0;bottom:22px;width:40px}
+.yax span{position:absolute;right:6px;transform:translateY(50%);font-size:10.5px;color:#a2a2a7;font-variant-numeric:tabular-nums}
+.ycols{position:relative;height:100%;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;padding-bottom:22px;box-sizing:border-box}
+.ycols .ygrid{position:absolute;left:0;right:0;top:0;bottom:22px;pointer-events:none}
+.ycols .ygl{position:absolute;left:0;right:0;height:0;border-top:1px solid #f0f0f1}
+.ycols .ygl:first-child{border-top-color:#d5d5d8}
+.ycol{position:relative;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;cursor:default}
+.ycol .ystk{position:relative;width:min(46px,72%);display:flex;flex-direction:column-reverse;gap:1px;transition:height .7s cubic-bezier(.2,.7,.2,1)}
+.ycol .ystk b{display:block;min-height:1px}
+.ycol .ystk b:last-of-type{border-radius:4px 4px 0 0}
+.ycol .ystk em{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);margin-bottom:3px;font-style:normal;font-weight:700;font-size:11.5px;color:#262626;white-space:nowrap}
+.ycol .ym{position:absolute;bottom:-20px;font-size:11.5px;color:var(--ink2)}
+.ycol.na .ym{color:#c2c2c6}
+.ycol:hover .ystk{filter:brightness(1.06)}
+table.t.yeart td.na{background:#fafafa}
+table.t.yeart td.yt{font-weight:700;background:#efeff1}
+table.t.yeart tr.sub td.yt{background:#dcdce0}table.t.yeart tr.tot td.yt{background:#3a3a3c;color:#fff}
+table.t.yeart td.l,table.t.yeart th.l{text-align:left;padding-left:12px;min-width:120px}
+table.t.yeart tr.grp td{text-align:left}
+/* 관리자 계정 · 내 설정 */
+.minp{width:100%;height:36px;border:1px solid var(--rule);border-radius:8px;padding:0 10px;box-sizing:border-box;font:inherit}
+.minp:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 2px rgba(87,87,87,.15)}
+.modal .kv{display:flex;gap:12px;padding:3px 0;font-size:13px}.modal .kv span{width:56px}
+.invrow{display:flex;gap:8px;align-items:center}
+.warnt{color:#9a5b12;font-weight:600}
+.btn.danger{background:var(--stop-bg);border-color:var(--stop-rule);color:var(--stop)}
+.dd-menu button.tglrow{position:relative;padding-right:56px}
+.mtgl{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:32px;height:18px;border-radius:10px;background:#c7c7cc;transition:background .2s}
+.mtgl i{position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .2s}
+.mtgl.on{background:#2c2c2e}.mtgl.on i{left:16px}
+/* 15차: 온보딩 — 시트 고르기 · 매칭 규칙(창 위쪽) · 짧은 확인 카드 */
+.obpick0{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.obmedia{display:grid;grid-template-columns:repeat(2,minmax(220px,300px));gap:16px}
+.obmd{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:26px 24px;border:1.5px solid var(--rule);border-radius:16px;background:var(--surface);cursor:pointer;text-align:left;font:inherit;transition:border-color .15s,transform .15s,box-shadow .15s}
+.obmd b{font-size:18px;font-weight:700;color:var(--ink)}.obmd small{font-size:12.5px;color:var(--muted)}
+.obmd::before{content:'';position:absolute;left:0;top:18px;bottom:18px;width:4px;border-radius:0 4px 4px 0;background:#3a3a3c}
+.obmd.c::before{background:#8e8e93}
+.obmd:hover:not(:disabled),.obmd:focus-visible{border-color:#2c2c2e;transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.08);outline:none}
+.obmd.cur{border-color:#9b9b9b}
+.obmd:disabled{opacity:.6;cursor:wait}
+.obmd .lk{font-size:12px;color:#9a5b12;font-weight:600;margin-top:2px}
+.obnote{text-align:center}
+.obpend{font-size:12.5px;color:var(--ink2);background:var(--surface);border:1px solid var(--rule2);border-radius:9px;padding:7px 12px}
+.obh h2 .obmdb{font-size:12px;vertical-align:3px;margin-left:6px}
+.obh h2 .lnk{margin-left:4px;font-weight:400;vertical-align:2px}
+details.obrules{border-bottom:1px solid var(--rule2);background:var(--surface)}
+details.obrules>summary{display:flex;align-items:center;gap:10px;padding:8px 24px;cursor:pointer;list-style:none;font-size:13px}
+details.obrules>summary::-webkit-details-marker{display:none}
+details.obrules>summary .obr-tg{font-size:12px;font-weight:600;color:var(--ink);border:1px solid var(--rule);border-radius:7px;padding:3px 10px;background:var(--surface3)}
+details.obrules[open]>summary .obr-tg{background:#2c2c2e;color:#fff;border-color:#2c2c2e}
+details.obrules .obrbody{max-height:38vh;overflow:auto;padding:4px 24px 12px}
+details.obrules .obrbody .fhd{margin-top:0}
+details.obrules details.qmrules{margin-top:10px}
+.oc-row .lnk{margin-left:0}
+.oc-row .lnk+.lnk{margin-left:6px}
+.oc-new{padding:8px 10px;background:var(--surface3);border-radius:9px}
+details.oc-kw{margin-top:8px;font-size:12px;color:var(--muted)}
+details.oc-kw>summary{cursor:pointer;width:max-content}
+details.oc-kw .oc-row.rem{border-top:0;padding-top:0;margin-top:4px}
+/* 15차: 추가·수정한 사람 · 일시 */
+td.stc{white-space:nowrap;font-size:11.5px;color:var(--muted);padding:0 10px}
+.stmp b{font-weight:600;color:var(--ink2)}
+.note .ucx{white-space:nowrap;font-weight:600}.note .ucx .muted{font-weight:400}
+.xg-c.au{color:#8e8e93;font-size:11.5px;background:#fafafa}
+.modal table.bulkt td.manual select{border-color:#9a5b12;font-weight:600;color:#9a5b12}
+/* 15차 b: 지상파 큐시트 더 좁게 — 주차 칸 글자는 필요할 때만 두 줄 · 날짜·CM 순서도 줄바꿈 허용 */
+table.t.cue.qm.cg th.wkh{width:108px}
+table.t.cue.qm.cg td.wk .spot.ibox{white-space:normal;word-break:keep-all;font-size:10.5px;line-height:1.3;padding:2px 5px;text-align:center;letter-spacing:-.15px}
+table.t.cue.qm.cg td.dl{white-space:normal;word-break:keep-all;min-width:52px}
+table.t.cue.qm.cg td.chc{min-width:60px}
+table.t.cue.qm.cg td.kind{min-width:46px}
+table.t.cue.qm.cg th.pgh{width:160px;min-width:140px}
+table.t.cue.qm.cg td.kind.chc{min-width:64px}
+table.t.cue.qm.cg th.cmoh{width:64px}
+table.t.cue.qm.cg td.cmo{white-space:normal;word-break:keep-all;min-width:62px}
+table.t.cue.qm.cg td.cmo .cmtag{white-space:normal}
+table.t.cue.qm.cg th.dsh{width:72px}
+table.t.cue.qm.cg td.wk{min-width:124px}
+.obbg.pick{align-items:center}
+.obm.modal.pick{height:auto;width:min(720px,100%)}
+.obm.pick .obb{flex:none;padding:28px 24px 30px}
+.oc-row[hidden]{display:none}
 </style>
 <script id="lib-chart">/*!
  * Chart.js v4.4.1
@@ -1416,7 +1557,19 @@ const fmt = {
   dec: (v, d = 1) => (v == null || isNaN(v)) ? '-' : (Math.round(v * Math.pow(10, d)) / Math.pow(10, d)).toLocaleString('ko-KR', { minimumFractionDigits: d, maximumFractionDigits: d }),
   time: d => { const x = new Date(d); return `${x.getMonth() + 1}/${x.getDate()} ${pad2(x.getHours())}:${pad2(x.getMinutes())}`; },
   stamp: d => { const x = new Date(d || Date.now()); return `${String(x.getFullYear()).slice(2)}${pad2(x.getMonth() + 1)}${pad2(x.getDate())}_${pad2(x.getHours())}${pad2(x.getMinutes())}`; },
+  at: d => { const x = new Date(d || Date.now()); return `${x.getFullYear()}-${pad2(x.getMonth() + 1)}-${pad2(x.getDate())} ${pad2(x.getHours())}:${pad2(x.getMinutes())}`; },
 };
+// 15차: 누가·언제 추가/수정했는지 (마스터 행 · 지상파/케이블 입력 행)
+function whoNow() { try { return (typeof CLOUD !== 'undefined' && CLOUD.who && CLOUD.who()) || ''; } catch (e) { return ''; } }
+// 마스터 행: by(i) · at(i+1)
+function stampRow(r, i) { if (!r || i < 0) return r; r[i] = whoNow(); r[i + 1] = fmt.at(); return r; }
+// 표에 보일 때: '윤석진 · 10/6 14:53' (올해가 아니면 연도까지)
+function stampHtml(by, at) {
+  by = str(by); at = str(at); if (!by && !at) return '<span class="muted">-</span>';
+  const m = /^(\d{4})-(\d\d)-(\d\d)\s+(\d\d:\d\d)/.exec(at); const y = new Date().getFullYear();
+  const t = m ? `${+m[1] === y ? '' : m[1].slice(2) + '/'}${+m[2]}/${+m[3]} ${m[4]}` : at;
+  return `<span class="stmp" title="${esc([by, at].filter(Boolean).join(' · '))}">${by ? `<b>${esc(by)}</b>` : ''}${by && t ? ' · ' : ''}${esc(t)}</span>`;
+}
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1465,50 +1618,56 @@ for (const r of DEFAULT_MASTER.품목) { ITEM_HINTS0[r[0]] = r[4] || ''; r[4] = 
 
 // ===== 03-schema.js : 시트(입력 표) 정의 =====
 // 각 시트는 '배열의 배열'로 저장한다. 열 순서가 곧 엑셀 붙여넣기 순서다.
+// 15차: 입력 일시는 표에서 짧게 (10/6 14:53) — 저장·엑셀은 2026-10-06 14:53 그대로
+function stampShort(v) { const m = /^\d{4}-(\d\d)-(\d\d) (\d\d:\d\d)/.exec(String(v || '')); return m ? `${+m[1]}/${+m[2]} ${m[3]}` : v; }
 const SHEETS = {
   지상파: {
     label: '지상파', group: 'input', media: '지상파',
     hint: '1행 = 1송출 · 금액 0이면 보너스 · 구분(정기물 등)은 행마다 적어요. 엑셀에서 복사해 바로 붙여넣기(머리글째 OK) · 방송사 원본은 상단 ‘방송사 큐시트 온보딩’ · 행 삭제는 행 번호를 고르고 우클릭',
     cols: [
-      { k: 'ch', t: '채널', w: 62 },
+      { k: 'ch', t: '채널', w: 58 },
       { k: 'kind', t: '구분', w: 56 },
-      { k: 'prog', t: '프로그램', w: 200, left: 1 },
+      { k: 'prog', t: '프로그램', w: 170, left: 1 },
       { k: 'dow', t: '요일', w: 50 },
       { k: 'start', t: '시작', w: 56 },
       { k: 'end', t: '종료', w: 56 },
       { k: 'grade', t: '시급', w: 52 },
       { k: 'sec', t: '초수', w: 52, num: 1 },
-      { k: 'price', t: '단가', w: 96, num: 1, money: 1, sum: 1 },
-      { k: 'amount', t: '금액', w: 96, num: 1, money: 1, sum: 1 },
+      { k: 'price', t: '단가', w: 90, num: 1, money: 1, sum: 1 },
+      { k: 'amount', t: '금액', w: 90, num: 1, money: 1, sum: 1 },
       { k: 'date', t: '날짜', w: 56 },
       { k: 'item', t: '품목', w: 96 },
-      { k: 'cre', t: '소재', w: 92 },
+      { k: 'cre', t: '소재', w: 84 },
       { k: 'cm', t: 'CM지정', w: 78 },
       { k: 'rate', t: '지정율', w: 52, num: 1 },
       { k: 'ar', t: 'A.R(%)', w: 56, num: 1 },
-      { k: 'note', t: '비고', w: 90 },
+      { k: 'note', t: '비고', w: 70 },
+      { k: 'obAt', t: '입력 일시', w: 86, auto: 1, disp: stampShort },
+      { k: 'obBy', t: '입력자', w: 52, auto: 1 },
     ],
   },
   케이블: {
     label: '케이블', group: 'input', media: '케이블',
     hint: '케이블raw A~S열(채널~날짜) 순서. 엑셀에서 복사해 바로 붙여넣기(머리글째면 열 순서 달라도 OK) · 방송사 원본은 상단 ‘방송사 큐시트 온보딩’ · 행 삭제는 행 번호를 고르고 우클릭',
     cols: [
-      { k: 'ch', t: '채널', w: 92 },
+      { k: 'ch', t: '채널', w: 88 },
       { k: 'item', t: '품목', w: 96 },
-      { k: 'prog', t: '프로그램명', w: 200, left: 1 },
+      { k: 'prog', t: '프로그램명', w: 170, left: 1 },
       { k: 'dow', t: '요일', w: 50 },
       { k: 'start', t: '시작', w: 56 },
       { k: 'end', t: '종료', w: 56 },
       { k: 'grade', t: '시급', w: 52 },
       { k: 'sec', t: '초수', w: 52, num: 1 },
-      { k: 'cm', t: '구분', w: 68 },
+      { k: 'cm', t: '구분', w: 62 },
       { k: 'price', t: '단가', w: 92, num: 1, money: 1, sum: 1, sumW: 'cnt' },
       { k: 'cnt', t: '총횟수', w: 60, num: 1, sum: 1 },
       { k: 'd1', t: '월', w: 28, sum: 1 }, { k: 'd2', t: '화', w: 28, sum: 1 }, { k: 'd3', t: '수', w: 28, sum: 1 }, { k: 'd4', t: '목', w: 28, sum: 1 },
       { k: 'd5', t: '금', w: 28, sum: 1 }, { k: 'd6', t: '토', w: 28, sum: 1 }, { k: 'd7', t: '일', w: 28, sum: 1 },
       { k: 'date', t: '날짜', w: 56 },
-      { k: 'cre', t: '소재', w: 96 },
-      { k: 'note', t: '비고', w: 90 },
+      { k: 'cre', t: '소재', w: 88 },
+      { k: 'note', t: '비고', w: 70 },
+      { k: 'obAt', t: '입력 일시', w: 86, auto: 1, disp: stampShort },
+      { k: 'obBy', t: '입력자', w: 52, auto: 1 },
     ],
   },
   예산: {
@@ -1550,6 +1709,8 @@ const SHEETS = {
       { k: 'media', t: '매체', w: 62 },
       { k: 'mpp', t: 'MPP', w: 110 },
       { k: 'group', t: '요약그룹', w: 80 },
+      { k: 'by', t: '수정한 사람', w: 70 },
+      { k: 'at', t: '수정 일시', w: 110 },
     ],
   },
   CM위치: {
@@ -1558,6 +1719,8 @@ const SHEETS = {
     cols: [
       { k: 'expr', t: '표현', w: 120 },
       { k: 'cls', t: '구분', w: 90 },
+      { k: 'by', t: '수정한 사람', w: 70 },
+      { k: 'at', t: '수정 일시', w: 110 },
     ],
   },
   매칭규칙: {
@@ -1577,6 +1740,8 @@ const SHEETS = {
       { k: 'media', t: '매체', w: 70 },
       { k: 'pp', t: 'PP', w: 130 },
       { k: 'cprp', t: 'CPRP(원)', w: 100, num: 1, money: 1 },
+      { k: 'by', t: '수정한 사람', w: 70 },
+      { k: 'at', t: '수정 일시', w: 110 },
     ],
   },
 };
@@ -2067,10 +2232,10 @@ function hnorm(h) { return norm(h).replace(/\(.*$/, ''); }
 const HEADER_MAP = {
   지상파: { ch: ['채널'], kind: ['구분'], prog: ['프로그램', '프로그램명'], dow: ['요일'], start: ['시작', '시작시간', '시작2'], end: ['종료', '종료시간', '종료2'],
     grade: ['시급'], sec: ['초수'], price: ['단가'], amount: ['금액'], date: ['날짜', '집행일자', '일자'], item: ['품목'], cre: ['소재'],
-    cm: ['cm지정', 'cm위치', 'cm순서'], rate: ['지정율', '지정률'], ar: ['a.r', 'ar', 'a.r%'], note: ['비고'] },
+    cm: ['cm지정', 'cm위치', 'cm순서'], rate: ['지정율', '지정률'], ar: ['a.r', 'ar', 'a.r%'], note: ['비고'], obAt: ['입력일시'], obBy: ['입력자'] },
   케이블: { ch: ['채널'], item: ['품목'], prog: ['프로그램명', '프로그램'], dow: ['요일'], start: ['시작2', '시작', '시작시간'], end: ['종료2', '종료', '종료시간'],
     grade: ['시급'], sec: ['초수'], cm: ['구분', 'cm위치', 'cm구분'], price: ['단가'], cnt: ['총횟수', '횟수'],
-    d1: ['월'], d2: ['화'], d3: ['수'], d4: ['목'], d5: ['금'], d6: ['토'], d7: ['일'], date: ['날짜', '일자'], cre: ['소재'], note: ['비고'] },
+    d1: ['월'], d2: ['화'], d3: ['수'], d4: ['목'], d5: ['금'], d6: ['토'], d7: ['일'], date: ['날짜', '일자'], cre: ['소재'], note: ['비고'], obAt: ['입력일시'], obBy: ['입력자'] },
 };
 function mapHeaders(header, sheet) {
   const map = {}; const hm = HEADER_MAP[sheet];
@@ -2670,8 +2835,8 @@ class XGrid {
       for (let c = 0; c < this.nc; c++) {
         const v = row.v[c];
         const x = info ? info(di, c, v, row.v) : null;
-        const txt = x && x.t != null ? x.t : (v == null ? '' : v);
-        const cls = (this.cols[c].left ? ' l' : '') + (x && x.cls ? ' ' + x.cls : '') + (this.hits.has(row.id + ':' + c) ? ' hit' : '') + (this.flashK && this.flashK.has(row.id + ':' + c) ? ' fl' : '');
+        const txt = x && x.t != null ? x.t : (v == null ? '' : this.cols[c].disp && v !== '' ? this.cols[c].disp(v) : v);
+        const cls = (this.cols[c].left ? ' l' : '') + (this.cols[c].auto ? ' au' : '') + (x && x.cls ? ' ' + x.cls : '') + (this.hits.has(row.id + ':' + c) ? ' hit' : '') + (this.flashK && this.flashK.has(row.id + ':' + c) ? ' fl' : '');
         const st2 = x && x.bg ? ` style="width:${this.widths[c]}px;background:${x.bg}"` : ` style="width:${this.widths[c]}px"`;
         html += `<div class="xg-c${cls}"${st2}${x && x.tip ? ` title="${esc(x.tip)}"` : ''}>${esc(txt)}</div>`;
       }
@@ -2909,6 +3074,7 @@ class XGrid {
   startEdit(mode, init) {
     if (this.ro) { this.ed.value = ''; this.roNote(); return; }
     const a = this.act; const row = this.rowAt(a.r); if (!row) return;
+    if (this.cols[a.c] && this.cols[a.c].auto) { this.ed.value = ''; if (this.o.toast) this.o.toast('입력 일시·입력자는 행을 넣을 때 자동으로 적혀요', 2400); return; }
     this.editing = { mode, id: row.id, c: a.c };
     this.placeEd();
     this.ed.classList.add('on'); this.ddEl.style.display = 'none';
@@ -2959,15 +3125,30 @@ class XGrid {
   posMap() { const m = new Map(); this.rows.forEach((r, i) => m.set(r.id, i)); return m; }
   applyCells(changes, label, extraOps) {
     const ch = []; const pos = changes.length > 30 ? this.posMap() : null;
+    const touched = new Map();
     for (const x of changes) {
+      if (this.cols[x.c] && this.cols[x.c].auto) continue;   // 자동 칸(입력 일시·입력자)은 손으로 못 바꿈
       const i = pos ? (pos.has(x.id) ? pos.get(x.id) : -1) : this.idxOf(x.id); if (i < 0) continue;
       const o = this.rows[i].v[x.c];
       if (String(o) === String(x.n)) continue;
-      this.rows[i].v[x.c] = x.n; ch.push({ id: x.id, c: x.c, o, n: x.n });
+      this.rows[i].v[x.c] = x.n; ch.push({ id: x.id, c: x.c, o, n: x.n }); touched.set(x.id, this.rows[i]);
+    }
+    // 15차: 처음 내용이 들어간 행에 입력 일시·입력자 (이미 적힌 행은 그대로 — 처음 넣은 때·사람)
+    for (const row of touched.values()) {
+      for (const x of this.stampOf(row)) { ch.push({ id: row.id, c: x.c, o: row.v[x.c], n: x.n }); row.v[x.c] = x.n; }
+      // 내용을 다 지운 행은 자동 칸도 비움 (빈 행으로)
+      if (this.o.stamp && row.v.every((v, j) => this.cols[j].auto || v === '' || v == null)) this.cols.forEach((c, j) => { if (c.auto && row.v[j] !== '') { ch.push({ id: row.id, c: j, o: row.v[j], n: '' }); row.v[j] = ''; } });
     }
     const ops = (extraOps || []).concat(ch.length ? [{ t: 'cells', ch }] : []);
     if (!ops.length) { this.renderRows(); return; }
     this.pushOp(ops.length === 1 ? ops[0] : { t: 'multi', ops }, label);
+  }
+  // 자동 칸: o.stamp() → { obAt: '…', obBy: '…' } · 행에 다른 내용이 있고 입력 일시가 비어 있을 때만
+  stampOf(row) {
+    if (!this.o.stamp) return [];
+    const ai = this.cols.findIndex(c => c.k === 'obAt'); if (ai < 0 || str(row.v[ai])) return [];
+    if (row.v.every((v, j) => this.cols[j].auto || v === '' || v == null)) return [];
+    const S = this.o.stamp(); return this.cols.map((c, j) => c.auto && S[c.k] != null && row.v[j] === '' ? { c: j, n: S[c.k] } : null).filter(Boolean);
   }
   pushOp(op, label) { op.label = label; this.undoS.push(op); if (this.undoS.length > 200) this.undoS.shift(); this.redoS = []; this.changed(op); }
   changed(op) {
@@ -3009,7 +3190,7 @@ class XGrid {
   clearSel(label) {
     if (this.ro) return this.roNote();
     const s = this.sel; const ch = [];
-    for (const row of this.selRows()) for (let c = s.c1; c <= s.c2; c++) if (row.v[c] !== '') ch.push({ id: row.id, c, n: '' });
+    for (const row of this.selRows()) for (let c = s.c1; c <= s.c2; c++) if (row.v[c] !== '' && !this.cols[c].auto) ch.push({ id: row.id, c, n: '' });
     this.copyR = null; this.applyCells(ch, label || '지우기');
   }
   // 잘라내기: 행 전체를 골랐으면 그 행을 빼기(아래 행이 올라옴), 아니면 칸 비우기
@@ -3031,13 +3212,13 @@ class XGrid {
     while (B.length > 1 && B[B.length - 1].every(v => v == null || String(v).trim() === '')) B.pop();
     const r0 = Math.min(s.r1, this.view.length);
     const at = r0 < this.view.length ? this.view[r0] : this.rows.length;
-    const rows = B.map(br => { const row = this.blankRow(); br.forEach((v, j) => { const c = c0 + j; if (c < this.nc) row.v[c] = this.coerce(c, v); }); return row; });
+    const rows = B.map(br => { const row = this.blankRow(); br.forEach((v, j) => { const c = c0 + j; if (c < this.nc) row.v[c] = this.coerce(c, v); }); for (const x of this.stampOf(row)) row.v[x.c] = x.n; return row; });
     this.rows.splice(at, 0, ...rows); this.mrows = null; this.copyR = null;
     this.pushOp({ t: 'ins', at, rows }, '붙여넣기');
     const vr = this.view.findIndex(di => this.rows[di] === rows[0]);
     const w = pre ? this.nc : Math.min(this.nc - c0, Math.max(...B.map(r => r.length)));
     if (vr >= 0) { this.anchor = { r: vr, c: c0 }; this.select(vr, c0, Math.min(this.view.length - 1, vr + rows.length - 1), Math.min(this.nc - 1, c0 + w - 1), { r: vr, c: c0 }); this.ensureVisible(vr, c0); }
-    this.flash(rows.flatMap(r => r.v.map((v, c) => v === '' ? null : { id: r.id, c }).filter(Boolean)));
+    this.flash(rows.flatMap(r => r.v.map((v, c) => v === '' || this.cols[c].auto ? null : { id: r.id, c }).filter(Boolean)));
     if (this.o.toast) this.o.toast(pre && pre.note ? pre.note + ' · 고른 칸 위에 끼워 넣었어요' : `${rows.length.toLocaleString('ko-KR')}행을 고른 칸 위에 끼워 넣었어요 (기존 행은 아래로)`, pre && pre.note ? 5000 : 2600);
   }
   // 붙여넣기·채우기·바꾸기로 값이 바뀐 칸을 잠깐 반짝
@@ -3255,7 +3436,7 @@ class XGrid {
 }
 
 // ===== 07-views.js : 결과 화면 (요약 · 지상파/케이블 큐시트) =====
-const UI = { cmUnit: 'pp', cmSort: 'mid', tab: 'summary', media: 'all', dnMedia: 'all', metric: 'budget', tcItem: 'all', cabPP: null, cabCh: 'all', gCh: 'all', issueSev: 'all', reachG: '지상파케이블', master: '품목', donutItem: 'all', donutBonus: true, dailyFocus: null };
+const UI = { cmUnit: 'pp', cmSort: 'mid', tab: 'summary', media: 'all', dnMedia: 'all', metric: 'budget', tcItem: 'all', cabPP: null, cabCh: 'all', gCh: 'all', issueSev: 'all', reachG: '지상파케이블', master: '품목', donutItem: 'all', donutBonus: true, dailyFocus: null, mxSec: 'all', mxDow: 'all' };
 const CHARTS = {};
 function killCharts(...keys) { for (const k of (keys.length ? keys : Object.keys(CHARTS))) { try { if (CHARTS[k] && CHARTS[k].destroy) CHARTS[k].destroy(); } catch (e) { } delete CHARTS[k]; } }
 const CHART_INK = { muted: '#929292', grid: '#e9e9e9', ink2: '#616161' };
@@ -3401,34 +3582,40 @@ function tableStyler(T, H = 1) {
 function moneyTxt(v) { return v == null ? '-' : fmt.won(v); }
 
 // ---------- 운영 요약 ----------
+// 15차: 품목 카테고리(정수기·매트리스…)끼리 모아 A열 병합 · 품목 요약 줄은 B~C열 병합(방송사 칸 비움) · 합계는 A~C열
+function opsOrdered() {
+  const cats = []; for (const o of M.ops) if (!cats.includes(o.cat)) cats.push(o.cat);
+  return cats.flatMap(c => M.ops.filter(o => o.cat === c));
+}
 function opsTable() {
   const head = ['품목 카테고리', '품목', '방송사', '예산(억원)', '횟수', 'GRP', 'eq.GRP', 'R1+(%)', 'R3+(%)', '주요 프로그램'];
-  const rows = [];
-  for (const o of M.ops) {
-    o.rows.forEach((r, i) => rows.push({ t: 'row', item: o.item, group: r.group, manual: r.manual, src: r, span: i === 0 ? o.rows.length : 0, vals: [o.cat, o.full, r.group, r.budget / 1e8, r.cnt, r.grp, r.eq, r.r1, r.r3, r.progs] }));
-    rows.push({ t: 'sub', item: o.item, src: o.total, vals: ['', o.full + ' 요약', o.total.group, o.total.budget / 1e8, o.total.cnt, o.total.grp, o.total.eq, o.total.r1, o.total.r3, ''] });
-  }
+  const rows = []; const ops = opsOrdered();
+  ops.forEach((o, k) => {
+    const first = k === 0 || ops[k - 1].cat !== o.cat;
+    const catSpan = first ? ops.filter(x => x.cat === o.cat).reduce((a, x) => a + x.rows.length + 1, 0) : 0;
+    o.rows.forEach((r, i) => rows.push({ t: 'row', item: o.item, group: r.group, manual: r.manual, src: r, span: i === 0 ? o.rows.length : 0, catSpan: i === 0 ? catSpan : 0, vals: [o.cat, o.full, r.group, r.budget / 1e8, r.cnt, r.grp, r.eq, r.r1, r.r3, r.progs] }));
+    rows.push({ t: 'sub', item: o.item, src: o.total, vals: [o.cat, o.full + ' 요약', '', o.total.budget / 1e8, o.total.cnt, o.total.grp, o.total.eq, o.total.r1, o.total.r3, ''] });
+  });
   const T = { budget: sum(M.ops, o => o.total.budget), cnt: sum(M.ops, o => o.total.cnt), grp: sum(M.ops, o => o.total.grp), eq: sum(M.ops, o => o.total.eq) };
-  rows.push({ t: 'tot', vals: ['', '합계', '', T.budget / 1e8, T.cnt, T.grp, T.eq, null, null, ''] });
+  rows.push({ t: 'tot', vals: ['합계', '', '', T.budget / 1e8, T.cnt, T.grp, T.eq, null, null, ''] });
   return { head, rows };
 }
 function opsHtml() {
   const T = opsTable();
   return `<div class="tw free"><table class="t ops ctr"><thead><tr>${T.head.map((h, i) => `<th${i === 9 ? ' class="pgh"' : ''}>${h}</th>`).join('')}</tr></thead><tbody>
   ${T.rows.map(r => `<tr class="${r.t === 'row' ? '' : r.t}">${r.vals.map((v, j) => {
-    if (j < 2 && r.t === 'row') return r.span ? `<td class="mg" rowspan="${r.span}">${j === 1 ? `<span class="sw" style="background:${itemColor(r.item)};margin-right:6px"></span>` : ''}${esc(v)}</td>` : '';
-    if (j === 2 && r.t === 'sub' && r.src && r.src.autoCurve) {
-      // 품목 요약 R1·R3에 쓰는 리치 곡선 — 엑셀 운영 요약의 '수동 입력: 지상파케이블 or 케이블'과 같음 (처음엔 지상파 송출이 있으면 지상파케이블)
-      const x = r.src, tip = `품목 요약 R1+·R3+를 찾을 누적리치 곡선이에요. 자동: ${x.autoCurve}${x.curveManual ? ' · 지금은 직접 고른 값' : ''}`;
-      if (readOnly()) return `<td title="${esc(tip)}">${esc(v)}</td>`;
-      return `<td class="curve${x.curveManual ? ' manual' : ''}" title="${esc(tip)}"><select data-curve="${esc(r.item)}" data-auto="${esc(x.autoCurve)}">${['지상파케이블', '케이블'].map(o => `<option${o === v ? ' selected' : ''}>${o}</option>`).join('')}</select></td>`;
+    if (j < 3) {
+      if (r.t === 'tot') return j === 0 ? `<td class="sumname" colspan="3">${esc(v)}</td>` : '';
+      if (r.t === 'sub') return j === 1 ? `<td class="sumname" colspan="2">${esc(v)}</td>` : '';   // A열은 카테고리 병합 칸이 덮음
+      if (j === 0) return r.catSpan ? `<td class="mg cat" rowspan="${r.catSpan}">${esc(v)}</td>` : '';
+      if (j === 1) return r.span ? `<td class="mg" rowspan="${r.span}"><span class="sw" style="background:${itemColor(r.item)};margin-right:6px"></span>${esc(v)}</td>` : '';
+      return `<td>${esc(v)}</td>`;
     }
-    if (j < 3) return `<td>${esc(v)}</td>`;
     if (j === 9) {
       // 자동 값은 칸 너비에 맞춰 나중에 채움(fitProgs) — 단가 낮은 프로그램부터 빼고 끝에 ' 등'
       const auto = r.t === 'row' && !r.manual && r.src && r.src.autoList && r.src.autoList.length ? ` data-list="${esc(JSON.stringify(r.src.autoList))}"` : '';
       const txt = auto ? '' : esc(v);
-      return r.t === 'row' && !readOnly() ? `<td class="wrap prog${r.manual ? ' manual' : ''}" contenteditable="plaintext-only" spellcheck="false" data-k="${esc(r.item + '|' + r.group)}"${auto} title="처음엔 이 품목·방송사의 본방 중CM 프로그램(3개 이하면 본방 전후CM도 단가 높은 순)이 칸 너비만큼 들어가요. 직접 고치면 그 글이 우선하고, 비우면 다시 자동으로 돌아가요.">${txt}</td>` : `<td class="wrap"${auto}>${txt}</td>`;
+      return r.t === 'row' && !readOnly() ? `<td class="wrap prog${r.manual ? ' manual' : ''}" contenteditable="plaintext-only" spellcheck="false" data-k="${esc(r.item + '|' + r.group)}"${auto} title="처음엔 이 품목·방송사의 본방 중CM 프로그램(3개 이하면 본방 전후CM도 단가 높은 순)이 칸 너비만큼 들어가요. 직접 고치면 그 글이 우선하고, 비우면 다시 자동으로 돌아가요.">${txt}</td>` : `<td class="wrap prog"${auto}>${txt}</td>`;
     }
     const ck = ` data-ck="${esc(`ops|${r.item || ''}|${r.t === 'row' ? r.group : r.t}|${j}`)}"`;
     if (j === 3) return `<td${ck}>${v ? fmt.dec(v, 2) : '-'}</td>`;
@@ -3442,18 +3629,39 @@ function opsHtml() {
     return `<td${ck}>${v == null ? '<span class="muted">-</span>' : fmt.dec(v, 1)}</td>`;
   }).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
+// 품목 요약 R1·R3에 쓰는 누적리치 곡선(엑셀 '수동 입력: 지상파케이블 or 케이블') — 15차: 표에서 빼고 이 창에서 고름
+function opsCurveDialog() {
+  const list = opsOrdered();
+  App.modal(`<div class="hd"><h3>품목 요약 리치 곡선</h3><div class="small muted">운영 요약의 품목 요약 줄 R1+·R3+를 어느 누적리치 곡선에서 찾을지 골라요. 처음엔 지상파 송출이 있으면 '지상파케이블', 없으면 '케이블'.</div></div>
+    <div class="bd"><table class="bulkt"><thead><tr><th class="l">품목</th><th class="l">자동</th><th class="l">쓸 곡선</th></tr></thead><tbody>
+    ${list.map(o => `<tr><td class="l"><span class="sw" style="background:${itemColor(o.item)};margin-right:6px"></span>${esc(o.item)}</td><td class="l muted">${esc(o.total.autoCurve)}</td><td class="l${o.total.curveManual ? ' manual' : ''}"><select data-curve="${esc(o.item)}" data-auto="${esc(o.total.autoCurve)}">${['지상파케이블', '케이블'].map(c => `<option value="${c}"${c === o.total.group ? ' selected' : ''}>${c}${c === o.total.autoCurve ? ' (자동)' : ''}</option>`).join('')}</select></td></tr>`).join('')}
+    </tbody></table></div><div class="ft"><button class="btn pri" data-x>닫기</button></div>`, box => {
+    box.querySelectorAll('select[data-curve]').forEach(sel => sel.addEventListener('change', () => {
+      const k = sel.dataset.curve, v = sel.value.replace(/\s*\(자동\)$/, ''); WS.opsCurve = WS.opsCurve || {};
+      if (v === sel.dataset.auto) delete WS.opsCurve[k]; else WS.opsCurve[k] = v;
+      sel.closest('td').classList.toggle('manual', v !== sel.dataset.auto);
+      App.changed('ops'); App.toast(`${esc(k)} 요약 리치를 ${esc(v)} 곡선에서 찾아요${v === sel.dataset.auto ? ' (자동)' : ''}`);
+    }));
+  });
+}
 function opsSheet() {
   const T = opsTable();
   const aoa = [T.head].concat(T.rows.map(r => r.vals.map(v => v == null ? '' : v)));
   const merges = [];
-  T.rows.forEach((r, i) => { if (r.span > 1) { merges.push({ s: { r: i + 1, c: 0 }, e: { r: i + r.span, c: 0 } }); merges.push({ s: { r: i + 1, c: 1 }, e: { r: i + r.span, c: 1 } }); } });
+  T.rows.forEach((r, i) => {
+    const R0 = i + 1;
+    if (r.catSpan > 1) merges.push({ s: { r: R0, c: 0 }, e: { r: R0 + r.catSpan - 1, c: 0 } });
+    if (r.span > 1) merges.push({ s: { r: R0, c: 1 }, e: { r: R0 + r.span - 1, c: 1 } });
+    if (r.t === 'sub') merges.push({ s: { r: R0, c: 1 }, e: { r: R0, c: 2 } });
+    if (r.t === 'tot') merges.push({ s: { r: R0, c: 0 }, e: { r: R0, c: 2 } });
+  });
   return { name: '운영 요약', aoa, merges, widths: [12, 18, 14, 10, 8, 9, 9, 9, 9, 70],
     numFmt: (r, c) => c === 3 ? '0.00' : (c >= 5 && c <= 8) ? '0.0' : '#,##0',
     styler: (r, c) => { if (r === 0) return null; const row = T.rows[r - 1]; if (!row) return null;
+      if (c === 0 && row.t !== 'tot') return xsMerge(XS.cell, { alignment: { vertical: 'center' } });
       if (row.t === 'sub') return XS.total; if (row.t === 'tot') return xsMerge(XS.total, { fill: { fgColor: { rgb: 'ECECEC' } } });
       if (c === 1 && row.item) return xsMerge(XS.cell, { fill: { fgColor: { rgb: hexRgb(itemLight(row.item)) } }, alignment: { vertical: 'center' } });
-      if (c === 0) return xsMerge(XS.cell, { alignment: { vertical: 'center' } });
-      return c === 9 ? xsMerge(XS.cell, { alignment: { wrapText: true, vertical: 'center' } }) : null; } };
+      return c === 9 ? xsMerge(XS.cell, { alignment: { wrapText: true, vertical: 'center', horizontal: 'left' } }) : null; } };
 }
 // ---------- 요약 (통합 요약 + 운영 요약) ----------
 const ANIM = { seen: false, kpi: null };
@@ -3484,6 +3692,8 @@ function renderSummary(root) {
     <div class="kpi"><div class="l">송출</div><div class="v tnum" data-ck="kpi|${UI.media}|cnt"><span data-kv="cnt">${fmt.int(A.cnt)}회</span></div><div class="s">${cntSub}</div></div>
     <div class="kpi"><div class="l">eq.GRP (15초 환산)</div><div class="v tnum" data-ck="kpi|${UI.media}|eq"><span data-kv="eq">${fmt.int(A.eq)}</span></div><div class="s">GRP ${fmt.int(A.grp)} · 목표 CPRP 기준 추정</div></div>
   </div>
+  <section class="card" style="margin-bottom:16px"><div class="hd"><h3>운영 요약</h3><span class="sub">주요 프로그램 = 그 방송사의 본방 중CM 프로그램${readOnly() ? '' : ' · 칸을 눌러 직접 고칠 수 있어요'}</span><div class="spacer"></div>${readOnly() || !M.ops.length ? '' : '<button class="btn sm ghost" data-curvecfg title="품목 요약 R1+·R3+를 찾을 누적리치 곡선">요약 리치 곡선</button>'} ${xlBtn('ops', '운영 요약 엑셀')}</div><div class="bd" style="padding:0">${opsHtml()}</div>
+    <div class="foot" style="padding:0 16px 14px">GRP = 예산 ÷ 목표 CPRP(15초 기준) × 초수 환산 · eq.GRP = 15초 환산 GRP · 리치 기준 ${esc(meta.target || '아리아나 누적리치')} ${meta.period ? '(' + esc(meta.period) + ')' : ''}${Object.keys(M.reach || {}).length ? '' : ' — <b>누적리치가 없어 R1·R3를 계산하지 못했어요</b>'}</div></section>
   <div class="grid2">
     <section class="card ibcard"><div class="hd"><h3>품목별 예산·보너스</h3><span class="sub">진한 막대 = 예산 · 옅은 막대 = 보너스 · 품목 아래 = 예산 비중</span></div><div class="bd">
       <div class="lg"><span><span class="sw" style="background:#757575"></span>예산</span><span><span class="sw" style="background:#757575;opacity:.32"></span>보너스</span><span class="muted">막대 끝 숫자 = 예산+보너스 (밸류)</span></div>
@@ -3492,26 +3702,25 @@ function renderSummary(root) {
       ${chipsHtml('data-dn', [['all', '전체 품목']].concat(dItems.map(k => [k, k, itemColor(k)])), UI.donutItem)}
       <div class="donutwrap"><div id="donut"></div><div id="donutlg"></div></div></div></section>
   </div>
-  <section class="card" style="margin-bottom:16px"><div class="hd"><h3>주차별 송출 수</h3><span class="sub" id="dailysub"></span><div class="spacer"></div><span class="dcount tnum" id="dcount"></span>
-    ${chipsHtml('data-df', [['', '전체 품목']].concat(items.map(k => [k, `${k} ${fmt.int(sum(cells.filter(c => c.item === k), c => c.cnt))}`, itemColor(k)])), UI.dailyFocus || '')}</div><div class="bd"><div id="daily"></div></div></section>
-  <div class="grid2 cmrow">
-    <div class="mixcol">
-      <section class="card mixcard"><div class="hd"><h3>초수별 노출수</h3><span class="sub">소재 길이별 송출 횟수</span></div><div class="bd" id="mixsec"></div></section>
-      <section class="card mixcard"><div class="hd"><h3>요일별 노출수</h3><span class="sub">주중 · 주말 송출 횟수</span></div><div class="bd" id="mixdow"></div></section>
+  <section class="card" style="margin-bottom:16px"><div class="hd"><h3>예산 및 보너스</h3><span class="sub">원, VAT 별도</span><div class="spacer"></div>
+    ${segHtml('metric', [['budget', '예산'], ['bonus', '보너스'], ['value', '예산+보너스'], ['rate', '보너스율']], UI.metric)} ${xlBtn('t1')}</div><div class="bd" id="t1"></div></section>
+  <div class="cmrow2">
+    <div class="sq4">
+      <section class="card sqcard"><div class="hd"><h3>초수별 노출수</h3><div class="spacer"></div>${UI.media === 'all' ? segHtml('mxsec', [['all', '전체'], ['지상파', '지상파'], ['케이블', '케이블']], UI.mxSec) : ''}</div><div class="bd"><div class="sqd" id="sq-sec"></div></div></section>
+      <section class="card sqcard"><div class="hd"><h3>요일별 노출수</h3><div class="spacer"></div>${UI.media === 'all' ? segHtml('mxdow', [['all', '전체'], ['지상파', '지상파'], ['케이블', '케이블']], UI.mxDow) : ''}</div><div class="bd"><div class="sqd" id="sq-dow"></div></div></section>
+      <section class="card sqcard"><div class="hd"><h3>지상파 중CM 비중</h3><span class="sub" id="sq-g-n"></span></div><div class="bd"><div class="sqd" id="sq-cmg"></div></div></section>
+      <section class="card sqcard"><div class="hd"><h3>케이블 중CM 비중</h3><span class="sub" id="sq-c-n"></span></div><div class="bd"><div class="sqd" id="sq-cmc"></div></div></section>
     </div>
-    <section class="card"><div class="hd"><h3>중CM · PIB 비중</h3><span class="sub">송출 횟수 기준</span></div><div class="bd">
-      <div class="cmdonuts" id="cmdonuts"></div>
+    <section class="card cmcard"><div class="hd"><h3>중CM · PIB 비중</h3><span class="sub">송출 횟수 기준 · PP별 / 채널별</span></div><div class="bd">
       <div class="cmctl"><div class="cmlg"><span><span class="sw" style="background:${CMC.mid}"></span>중CM</span><span><span class="sw" style="background:${CMC.pib}"></span>PIB</span><span><span class="sw" style="background:${CMC.fb}"></span>전후CM 등</span></div><div class="spacer"></div>
         ${segHtml('cmunit', [['pp', 'PP별'], ['ch', '채널별']], UI.cmUnit)} ${segHtml('cmsort', [['mid', '중CM 순'], ['prem', '중CM+PIB 순'], ['n', '송출 순']], UI.cmSort)}</div>
       <div id="cmshare"></div></div></section>
   </div>
-  <section class="card" style="margin-bottom:16px"><div class="hd"><h3>운영 요약</h3><span class="sub">주요 프로그램 = 그 방송사의 본방 중CM 프로그램${readOnly() ? '' : ' · 칸을 눌러 직접 고칠 수 있어요'}</span><div class="spacer"></div>${xlBtn('ops', '운영 요약 엑셀')}</div><div class="bd" style="padding:0">${opsHtml()}</div>
-    <div class="foot" style="padding:0 16px 14px">GRP = 예산 ÷ 목표 CPRP(15초 기준) × 초수 환산 · eq.GRP = 15초 환산 GRP · 리치 기준 ${esc(meta.target || '아리아나 누적리치')} ${meta.period ? '(' + esc(meta.period) + ')' : ''}${Object.keys(M.reach || {}).length ? '' : ' — <b>누적리치가 없어 R1·R3를 계산하지 못했어요</b>'}</div></section>
-  <section class="card" style="margin-bottom:16px"><div class="hd"><h3>예산 및 보너스</h3><span class="sub">원, VAT 별도</span><div class="spacer"></div>
-    ${segHtml('metric', [['budget', '예산'], ['bonus', '보너스'], ['value', '예산+보너스'], ['rate', '보너스율']], UI.metric)} ${xlBtn('t1')}</div><div class="bd" id="t1"></div></section>
-  <section class="card"><div class="hd"><h3>송출 횟수</h3><span class="sub">주차별 송출수 · 소재 길이 · 주말 여부 · CM 위치별 비중</span><div class="spacer"></div>${xlBtn('tc')}</div><div class="bd">
+  <section class="card" style="margin-bottom:16px"><div class="hd"><h3>송출 횟수</h3><span class="sub">주차별 송출수 · 소재 길이 · 주말 여부 · CM 위치별 비중</span><div class="spacer"></div>${xlBtn('tc')}</div><div class="bd">
     ${chipsHtml('data-tc', [['all', '전체 품목']].concat(items.map(k => [k, k, itemColor(k)])), UI.tcItem)}<div id="tc" style="margin-top:10px"></div></div></section>
-  <section class="card" style="margin-top:16px"><div class="hd"><h3>당월 소재</h3><span class="sub">품목별 운영 소재 · 금액/횟수 비중 · 지상파 실제 = 지상파 송출 중 그 소재로 나간 비율</span><div class="spacer"></div>${xlBtn('cre', '당월 소재 엑셀')}</div><div class="bd" style="padding:0">${creSummaryHtml()}</div></section>`;
+  <section class="card" style="margin-bottom:16px"><div class="hd"><h3>주차별 송출 수</h3><span class="sub" id="dailysub"></span><div class="spacer"></div><span class="dcount tnum" id="dcount"></span>
+    ${chipsHtml('data-df', [['', '전체 품목']].concat(items.map(k => [k, `${k} ${fmt.int(sum(cells.filter(c => c.item === k), c => c.cnt))}`, itemColor(k)])), UI.dailyFocus || '')}</div><div class="bd"><div id="daily"></div></div></section>
+  <section class="card"><div class="hd"><h3>당월 소재</h3><span class="sub">품목별 운영 소재 · 금액/횟수 비중 · 지상파 실제 = 지상파 송출 중 그 소재로 나간 비율</span><div class="spacer"></div>${xlBtn('cre', '당월 소재 엑셀')}</div><div class="bd" style="padding:0">${creSummaryHtml()}</div></section>`;
   const rerender = () => { const y = window.scrollY; renderSummary(root); window.scrollTo(0, y); };
   bindSeg(root, 'media', v => { UI.media = v; rerender(); });
   bindSeg(root, 'metric', v => { UI.metric = v; root.querySelector('#t1').innerHTML = tableHtml(table1(cells, UI.metric), v2 => UI.metric === 'rate' ? fmt.pct(v2) : moneyTxt(v2)); root.querySelectorAll('[data-seg="metric"] button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); });
@@ -3554,7 +3763,7 @@ function renderSummary(root) {
     const meds = ['지상파', '케이블'].filter(md => shown.some(x => x.grp === md));
     const body = meds.map(md => {
       const rs = shown.filter(x => x.grp === md); const mb = sum(rs, x => x.value), mx2 = sum(rs, x => x.extra);
-      return rs.map((x, i) => `<tr>${i ? '' : `<td class="mg" rowspan="${rs.length + 1}">${md}</td>`}<td class="l"><span class="sw" style="background:${x.color};margin-right:6px"></span>${esc(x.label)}</td><td ${ck(md, x.label, 0)}>${fmt.eok(x.value, 2)}</td><td ${ck(md, x.label, 1)}>${fmt.eok(x.extra, 2)}</td><td ${ck(md, x.label, 2)}>${fmt.pct(x.rate)}</td></tr>`).join('')
+      return rs.map((x, i) => `<tr>${i ? '' : `<td class="mg" rowspan="${rs.length + 1}">${md}</td>`}<td>${esc(x.label)}</td><td ${ck(md, x.label, 0)}>${fmt.eok(x.value, 2)}</td><td ${ck(md, x.label, 1)}>${fmt.eok(x.extra, 2)}</td><td ${ck(md, x.label, 2)}>${fmt.pct(x.rate)}</td></tr>`).join('')
         + `<tr class="sub"><td class="l">소계</td><td ${ck(md, '소계', 0)}>${fmt.eok(mb, 2)}</td><td ${ck(md, '소계', 1)}>${fmt.eok(mx2, 2)}</td><td ${ck(md, '소계', 2)}>${fmt.pct(mb ? mx2 / mb : null)}</td></tr>`;
     }).join('');
     root.querySelector('#donutlg').innerHTML = `<table class="t sm dlg"><thead><tr><th>매체</th><th class="l">방송사</th><th>예산</th><th>보너스</th><th>보너스율</th></tr></thead><tbody>${body}<tr class="tot"><td colspan="2">합계</td><td ${ck('', '계', 0)}>${fmt.eok(B, 2)}</td><td ${ck('', '계', 1)}>${fmt.eok(X, 2)}</td><td ${ck('', '계', 2)}>${fmt.pct(B ? X / B : null)}</td></tr></tbody></table>`;
@@ -3571,12 +3780,29 @@ function renderSummary(root) {
   drawCm();
   bindSeg(root, 'cmunit', v => { UI.cmUnit = v; root.querySelectorAll('[data-seg="cmunit"] button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); drawCm(); });
   bindSeg(root, 'cmsort', v => { UI.cmSort = v; root.querySelectorAll('[data-seg="cmsort"] button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); drawCm(); });
-  // 초수별 · 요일별 노출수 (도넛 + 막대 범례) · 중CM·PIB 매체 합계 도넛 (지상파 / 케이블)
-  const secs = Object.keys(A.sec).map(Number).filter(x => x > 0 && A.sec[x] > 0).sort((a, b) => a - b);
-  root.querySelector('#mixsec').innerHTML = mixSection('초수', '', secs.map(x => [`${x}초`, A.sec[x], secColor(x)]));
-  root.querySelector('#mixdow').innerHTML = mixSection('요일', '', [['주중', A.wd, MIXC.wd], ['주말', A.we, MIXC.we]]);
-  root.querySelector('#cmdonuts').innerHTML = cmDonutsHtml(cells);
-  root.querySelectorAll('#mixsec,#mixdow,#cmdonuts').forEach(mixDonutBind);
+  // 15차: 초수별 · 요일별 노출수 · 지상파/케이블 중CM 비중 = 정사각형 4칸 3D 도넛 (펼치는 애니메이션, 표 없음)
+  if (UI.media !== 'all') { UI.mxSec = 'all'; UI.mxDow = 'all'; }
+  const sub = m => m === 'all' ? cells : cells.filter(c => c.media === m);
+  const drawSec = first => { const a = aggCells(sub(UI.mxSec || 'all')); const secs = Object.keys(a.sec).map(Number).filter(x => x > 0 && a.sec[x] > 0).sort((p, q) => p - q);
+    sqDonut(root.querySelector('#sq-sec'), secs.map(x => ({ label: `${x}초`, value: a.sec[x], color: secColor(x) })), { intro: first && intro, unit: '송출' }); };
+  const drawDow = first => { const a = aggCells(sub(UI.mxDow || 'all'));
+    sqDonut(root.querySelector('#sq-dow'), [{ label: '주중', value: a.wd, color: MIXC.wd }, { label: '주말', value: a.we, color: MIXC.we }], { intro: first && intro, unit: '송출' }); };
+  const drawCmD = (md, el, nEl) => { const a = aggCells(cells.filter(c => c.media === md)); const n = a.cnt || 0, mid = a.cmc.중CM || 0, pib = a.cmc.PIB || 0;
+    root.querySelector(nEl).textContent = n ? `${fmt.int(n)}회` : '';
+    sqDonut(root.querySelector(el), [{ label: '중CM', value: mid, color: CMC.mid }, { label: 'PIB', value: pib, color: CMC.pib }, { label: '전후CM 등', value: Math.max(0, n - mid - pib), color: '#cfcfd2' }], { intro, unit: '송출', center: () => [n ? fmt.pct((mid + pib) / n) : '-', '중CM+PIB'] }); };
+  drawSec(true); drawDow(true); drawCmD('지상파', '#sq-cmg', '#sq-g-n'); drawCmD('케이블', '#sq-cmc', '#sq-c-n');
+  bindSeg(root, 'mxsec', v => { UI.mxSec = v; root.querySelectorAll('[data-seg="mxsec"] button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); drawSec(false); });
+  bindSeg(root, 'mxdow', v => { UI.mxDow = v; root.querySelectorAll('[data-seg="mxdow"] button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); drawDow(false); });
+}
+// 정사각형 칸 3D 도넛 — 방송사별 예산·보너스와 같은 그림(기둥 없음) · 바깥 레이블 = 이름 %·횟수 · 가운데 = 가장 큰 조각 비중
+function sqDonut(host, parts, o) {
+  const H = Math.max(200, host.clientHeight || 300);
+  const tot = sum(parts, p => p.value);
+  const top = parts.slice().sort((a, b) => b.value - a.value)[0];
+  donut3D(host, parts.map(p => ({ label: p.label, value: p.value, extra: 0, rate: 0, color: p.color })), { bonus: false, own: true, height: H, intro: o.intro, rScale: 0.3, rMax: 120, hole: 0.5, h0: 13, cyR: 0.58,
+    valFmt: v => `${fmt.int(v)}회`,
+    center: o.center || (() => [tot && top ? fmt.pct(top.value / tot) : '-', top ? top.label : '']),
+    tip: (s, t) => `<b>${esc(s.label)}</b><div>${fmt.int(s.value)}회 <span class="m">(${fmt.pct(t ? s.value / t : 0)})</span></div>` });
 }
 // 주요 프로그램 자동 값: 칸 너비(한 줄)에 맞게 단가 높은 순으로 넣고 끝에 ' 등'
 function fitProgs(root) {
@@ -3593,11 +3819,7 @@ function fitProgs(root) {
 }
 function bindOpsEdit(root) {
   fitProgs(root);
-  root.querySelectorAll('select[data-curve]').forEach(sel => sel.addEventListener('change', () => {
-    const k = sel.dataset.curve; WS.opsCurve = WS.opsCurve || {};
-    if (sel.value === sel.dataset.auto) delete WS.opsCurve[k]; else WS.opsCurve[k] = sel.value;
-    App.changed('ops'); App.toast(`${esc(k)} 요약 리치를 ${esc(sel.value)} 곡선에서 찾아요${sel.value === sel.dataset.auto ? ' (자동)' : ''}`);
-  }));
+  const cb = root.querySelector('[data-curvecfg]'); if (cb) cb.onclick = () => opsCurveDialog();
   root.querySelectorAll('td.rv[data-rk]').forEach(td => {
     td.addEventListener('focus', () => { const r = document.createRange(); r.selectNodeContents(td); const s = getSelection(); s.removeAllRanges(); s.addRange(r); });
     td.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); td.blur(); } if (e.key === 'Escape') { td.dataset.esc = '1'; td.blur(); } });
@@ -3689,26 +3911,26 @@ function exportSummary(which, cells, items) {
 // ---------- 큐시트 공통 (Q-Mate 편성표 디자인: 진한 머리글 · 품목 색 상자 · 본방 강조) ----------
 // 상자 안 글자: 고를 수 있음 (품목 · 소재 · 초수 · CM위치 · 날짜)
 const CHIP_F = [['item', '품목'], ['cre', '소재'], ['sec', '초수'], ['cm', 'CM위치'], ['day', '날짜']];
-function chipOpts(mode) { const k = mode === 'g' ? 'chipG' : 'chipC'; const V = WS.view = WS.view || {}; if (!V[k]) V[k] = mode === 'g' ? { item: 1, cre: 1, sec: 1, cm: 0, day: 1 } : { item: 1, cre: 0, sec: 1, cm: 1, day: 1 }; return V[k]; }
-function inkOn(hex) { const c = hexToRgb(hex) || [111, 118, 128]; const L = (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255; return L > 0.62; }
+// 15차: 주차 칸 한 송출 = 지상파 '[품목] 소재 초수' · 케이블 '[품목] 초수 CM위치' (초수는 숫자만) — 값 항목 고르기는 없앰(고정 양식)
+function isLight(hex) { const c = hexToRgb(hex) || [111, 118, 128]; const L = (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255; return L > 0.62; }
+function spotText(s, mode) {
+  const it = `[${s.item || s.itemRaw || '?'}]`;
+  if (mode === 'g') return [it, s.cre, s.sec || ''].filter(x => x !== '' && x != null).join(' ');
+  const cm = s.cmCls && s.cmCls !== '일반' ? s.cmCls : (s.cmRaw || '');
+  return [it, s.sec || '', cm].filter(x => x !== '' && x != null).join(' ');
+}
 function spotChip(s, mode) {
-  const b = itemColor(s.item), o = chipOpts(mode);
+  const c = itemColor(s.item), b = isLight(c) ? shade(c, -0.32) : c;   // 글자는 늘 흰색 → 밝은 품목 색은 바탕을 조금 진하게
   const day = s.day ? `${M.ym.m}/${s.day}` : '';
-  const parts = [];
-  if (o.item) parts.push(s.item || s.itemRaw);
-  if (o.cre && s.cre && mode === 'g') parts.push(s.cre);   // 케이블 큐시트는 소재를 쓰지 않음
-  if (o.sec && s.sec) parts.push(s.sec + '초');
-  if (o.cm && (s.cmCls || s.cmRaw)) parts.push(mode === 'g' ? (s.cmRaw || s.cmCls) : s.cmCls);
-  return `<span class="spot ibox${inkOn(b) ? ' lt' : ''}" style="--b:${b}" title="${esc(`${s.prog} · ${s.item || s.itemRaw || ''} ${s.cre || ''} ${s.sec || ''}초 · ${s.cmRaw || s.cmCls || ''} · ${day}`)}">${esc(parts.join(' / ') || '·')}${o.day && day ? `<i>${day}</i>` : ''}</span>`;
+  return `<span class="spot ibox" style="--b:${b}" title="${esc(`${s.prog} · ${s.item || s.itemRaw || ''} ${s.cre || ''} ${s.sec || ''}초 · ${s.cmRaw || s.cmCls || ''} · ${day}`)}">${esc(spotText(s, mode))}</span>`;
 }
 // 프로그램명의 <본방> <생방> <특집> 표시를 색 글자로 (Q-Mate와 같은 색)
 const PTAG = { 본방: 'bon', 생방: 'live', 특집: 'sp' };
 function progHtml(name) { return esc(name).replace(/&lt;(본방|생방|특집)&gt;|[<＜\[【(（]\s*(본방|생방|특집)\s*[>＞\]】)）]/g, (m, a, b) => `<b class="ptag ${PTAG[a || b]}">&lt;${a || b}&gt;</b>`); }
 function chipBar(mode, items) {
-  const o = chipOpts(mode);
-  return `<div class="qmbar">${readOnly() ? '' : `<span class="lb">값 항목</span><span class="qmchecks" title="여기서 고른 항목이 뷰어 화면에도 그대로 보여요">${CHIP_F.filter(([k]) => !(mode === 'c' && k === 'cre')).map(([k, t]) => `<label class="${o[k] ? 'checked' : ''}"><input type="checkbox" data-chipf="${k}" ${o[k] ? 'checked' : ''}>${t}</label>`).join('')}</span><span class="lb" style="margin-left:14px">`}${readOnly() ? '<span class="lb">' : ''}품목 색상</span><span class="qmlegend">${items.map(k => `<span><i style="background:${itemColor(k)}"></i>${esc(k)}</span>`).join('')}</span></div>`;
+  return `<div class="qmbar"><span class="lb">품목 색상</span><span class="qmlegend">${items.map(k => `<span><i style="background:${itemColor(k)}"></i>${esc(k)}</span>`).join('')}</span><span class="lb" style="margin-left:14px">칸 = ${mode === 'g' ? '[품목] 소재 초수' : '[품목] 초수 CM위치'}</span></div>`;
 }
-function bindChipBar(root, mode, rerender) { if (readOnly()) return; root.querySelectorAll('[data-chipf]').forEach(i => i.onchange = () => { chipOpts(mode)[i.dataset.chipf] = i.checked ? 1 : 0; App.changed('meta', true); rerender(); }); }
+function bindChipBar() { }
 function groupCue(list, keyFn) {
   const m = new Map();
   for (const s of list) { const k = keyFn(s); if (!m.has(k)) m.set(k, { k, first: s, spots: [] }); m.get(k).spots.push(s); }
@@ -3749,15 +3971,15 @@ function renderCueG(root) {
       const paid = list.filter(s => !s.bonus);
       const meta = `${list.length}회 (유상 ${paid.length} · 보너스 ${list.length - paid.length}) · 예산 ${fmt.eok(sum(cc, c => c.budget), 2)} · 보너스 ${fmt.eok(sum(cc, c => c.bonus), 2)}\n` + cc.map(c => `${c.item} ${c.cnt}회 · ${fmt.eok(c.budget, 2)}`).join('\n');
       body += rows.map((r, i) => { const s = r.first; const same = i && rows[i - 1].first.prog === s.prog; return `<tr class="${r.live || r.cmg === '중CM' ? 'bon' : ''}${same ? ' same' : ''}${i ? '' : ' chfirst'}">${i ? '' : `<td class="info kind chc fx" data-fx="0" rowspan="${rows.length + 1}" title="${esc(meta)}"><span class="kl"><b>${esc(ch)}</b><small>${list.length}회</small><small>예산 ${fmt.eok(sum(cc, c => c.budget), 1)}</small></span></td>`}${r.kspan ? `<td class="info kind fx" data-fx="1" rowspan="${r.kspan}"><span class="kl">${esc(r.kind)}</span></td>` : ''}<td class="info pg fx" data-fx="2"><span>${progHtml(s.prog)}</span>${s.note ? `<i class="pnote" title="${esc('비고: ' + s.note)}">비고</i>` : ''}</td><td class="info">${esc(s.dowRaw || s.dow)}</td><td class="info">${esc(s.start)}</td><td class="info">${esc(s.end)}</td><td class="info">${esc(s.grade)}</td><td class="info">${s.sec || ''}</td><td class="info r">${fmt.won(s.price)}</td><td class="info" data-ck="${esc(`cg|${ch}|${r.k}|n`)}">${r.spots.length}</td>
-        <td class="info ${s.bonus ? 'c' : 'r'}">${s.bonus ? '<span class="tagb bon">보너스</span>' : `<span class="tagb paid">${fmt.won(r.paid)}</span>`}</td><td class="info">${r.cmg === '중CM' ? `<b class="cmtag">${esc(s.cmRaw || '중CM')}</b>` : esc(s.cmRaw)}</td><td class="info r">${s.rate ? fmt.pct(s.rate) : ''}</td><td class="info r">${r.desig ? fmt.won(r.desig) : '<span class="muted">-</span>'}</td><td class="info dl">${esc(r.dates)}</td>
+        <td class="info ${s.bonus ? 'c' : 'r'}">${s.bonus ? '<span class="tagb bon">보너스</span>' : `<span class="tagb paid">${fmt.won(r.paid)}</span>`}</td><td class="info cmo">${r.cmg === '중CM' ? `<b class="cmtag">${esc(s.cmRaw || '중CM')}</b>` : esc(s.cmRaw)}</td><td class="info r">${s.rate ? fmt.pct(s.rate) : ''}</td><td class="info r">${r.desig ? fmt.won(r.desig) : '<span class="muted">-</span>'}</td><td class="info dl">${esc(r.dates)}</td>
         ${W.map(w => `<td class="wk" data-ck="${esc(`cg|${ch}|${r.k}|${w.n}`)}">${r.spots.filter(x => x.week === w.n).map(x => spotChip(x, 'g')).join('')}</td>`).join('')}
         <td class="info r">${r.ar == null ? '' : fmt.dec(r.ar, 1)}</td><td class="info r">${r.eq ? fmt.dec(r.eq, 1) : ''}</td><td class="info r">${r.cprp ? fmt.won(r.cprp) : '<span class="muted">-</span>'}</td></tr>`; }).join('');
       body += totRow('sub', `${esc(ch)} 계`, gCueTotal(rows), wkN(rows), 1, 2);
     }
     if (show.length > 1) body += totRow('tot', '3사 계', gCueTotal(all), wkN(all), 0, 3);
     html += `<div class="card" style="margin-top:14px"><div class="tw cgw" style="border:0"><table class="t cue qm cg one"><thead><tr>
-      <th class="fx" rowspan="2">방송사</th><th class="fx" rowspan="2">구분</th><th class="fx" rowspan="2">프로그램</th><th rowspan="2">요일</th><th rowspan="2">시작</th><th rowspan="2">종료</th><th rowspan="2">시급</th><th rowspan="2">초수</th><th rowspan="2">단가</th><th rowspan="2">횟수</th><th rowspan="2">금액</th><th colspan="3" class="grph">CM지정</th><th rowspan="2">집행일자</th>${W.map(w => `<th class="wkh" rowspan="2">${w.label}차<span class="rg">${w.range}</span></th>`).join('')}<th rowspan="2">A.R(%)</th><th colspan="2" class="grph">예상 효과</th></tr>
-      <tr><th class="h2">CM 순서</th><th class="h2">지정율</th><th class="h2">지정금액<span class="rg">(원, VAT 별도)</span></th><th class="h2">Eq GRP</th><th class="h2">CPRP (원)</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
+      <th class="fx" rowspan="2">방송사</th><th class="fx" rowspan="2">구분</th><th class="fx pgh" rowspan="2">프로그램</th><th rowspan="2">요일</th><th rowspan="2">시작</th><th rowspan="2">종료</th><th rowspan="2">시급</th><th rowspan="2">초수</th><th rowspan="2">단가</th><th rowspan="2">횟수</th><th rowspan="2">금액</th><th colspan="3" class="grph">CM지정</th><th rowspan="2">집행일자</th>${W.map(w => `<th class="wkh" rowspan="2">${w.label}차<span class="rg">${w.range}</span></th>`).join('')}<th rowspan="2">A.R(%)</th><th colspan="2" class="grph">예상 효과</th></tr>
+      <tr><th class="h2 cmoh">CM 순서</th><th class="h2">지정율</th><th class="h2 dsh">지정금액<span class="rg">(원)</span></th><th class="h2">Eq GRP</th><th class="h2">CPRP (원)</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
   }
   root.innerHTML = html;
   keepMergedVisible(root); cueHpager(root);
@@ -3839,7 +4061,7 @@ function renderCueC(root) {
       ${cc.map(c => { const cs = M.creatives.filter(x => x.item === c.item); const k = j => `data-ck="${esc(`cc|${ch}|${c.item}|${j}`)}"`; return `<tr><td class="l"><span class="sw" style="background:${itemColor(c.item)};margin-right:6px"></span>${esc(c.item)}</td><td ${k(0)}>${fmt.won(c.budget)}</td><td ${k(1)}>${fmt.int(c.cnt)}</td><td ${k(2)}>${fmt.won(c.bonus)}</td><td ${k(3)}>${fmt.pct(c.rate)}</td><td class="l">${esc([...new Set(cs.map(x => x.period))].join(', '))}</td><td class="l">${esc(cs.map(x => x.cre + (x.cshare ? ` ${fmt.pct(x.cshare)}` : '')).join(' : '))}</td></tr>`; }).join('')}
       <tr class="sub"><td class="l">계</td><td>${fmt.won(sum(cc, c => c.budget))}</td><td>${fmt.int(sum(cc, c => c.cnt))}</td><td>${fmt.won(sum(cc, c => c.bonus))}</td><td>${fmt.pct(sum(cc, c => c.budget) ? sum(cc, c => c.bonus) / sum(cc, c => c.budget) : null)}</td><td></td><td></td></tr>
       </tbody></table></div></div>
-      <div class="tw" style="border:0;border-top:1px solid var(--rule2);border-radius:0 0 12px 12px;max-height:none"><table class="t cue qm" data-ch="${esc(ch)}"><thead><tr>${readOnly() ? '' : '<th class="fx"></th>'}<th class="fx">프로그램명</th><th>요일</th><th>시작</th><th>종료</th><th>시급</th><th>횟수</th>${W.map(w => `<th class="wkh">${w.label}차<span class="rg">${w.range}</span></th>`).join('')}</tr></thead><tbody>
+      <div class="tw" style="border:0;border-top:1px solid var(--rule2);border-radius:0 0 12px 12px;max-height:none"><table class="t cue qm" data-ch="${esc(ch)}"><thead><tr>${readOnly() ? '' : '<th class="fx"></th>'}<th class="fx pgh">프로그램명</th><th>요일</th><th>시작</th><th>종료</th><th>시급</th><th>횟수</th>${W.map(w => `<th class="wkh">${w.label}차<span class="rg">${w.range}</span></th>`).join('')}</tr></thead><tbody>
       ${rows.map((r, i) => { const s = r.first; const same = i && rows[i - 1].first.prog === s.prog; return `<tr data-k="${esc(r.k)}" class="${r.live ? 'bon' : ''}${same ? ' same' : ''}">${readOnly() ? '' : '<td class="grip info fx" data-fx="0" title="끌어서 순서 바꾸기">⋮⋮</td>'}<td class="info pg fx" data-fx="${readOnly() ? 0 : 1}"><span>${progHtml(s.prog)}</span></td><td class="info">${esc(s.dowRaw || s.dow)}</td><td class="info">${esc(s.start)}</td><td class="info">${esc(s.end)}</td><td class="info">${esc(s.grade)}</td><td class="info" data-ck="${esc(`cq|${ch}|${r.k}|n`)}">${sum(r.spots, x => x.cnt)}</td>
         ${W.map(w => `<td class="wk" data-ck="${esc(`cq|${ch}|${r.k}|${w.n}`)}">${r.spots.filter(x => x.week === w.n).map(x => spotChip(x, 'c')).join('')}</td>`).join('')}</tr>`; }).join('')}
       </tbody></table></div></section>`;
@@ -3907,10 +4129,11 @@ function creSummaryHtml() {
 let WS = null, M = null, MVER = 0;
 const REPORT = (typeof window !== 'undefined' && window.__REPORT__) || null;
 const GRID_SHEETS = ['지상파', '케이블'];
-// 14차: 마스터를 메뉴별로 나눔 — 품목 관리(master) · 채널 관리(mch) · CM위치 보정 규칙(mcm) · 목표 CPRP(mcprp) · 매칭 규칙(mrule)
-const MST_TAB = { master: '품목', mch: '채널', mcm: 'CM위치', mcprp: '목표CPRP', mrule: '매칭규칙' };
+// 14차: 마스터를 메뉴별로 나눔 — 품목 관리(master) · 채널 관리(mch) · CM위치 보정 규칙(mcm) · 목표 CPRP(mcprp)
+// 15차: 매칭 규칙 메뉴는 없앰 → 방송사 큐시트 온보딩 창 위쪽에서 고치고 추가
+const MST_TAB = { master: '품목', mch: '채널', mcm: 'CM위치', mcprp: '목표CPRP' };
 const MST_OF = Object.fromEntries(Object.entries(MST_TAB).map(([t, s]) => [s, t]));
-const FORM_TABS = { master: el => renderMasterForm(el, '품목'), mch: el => renderMasterForm(el, '채널'), mcm: el => renderMasterForm(el, 'CM위치'), mcprp: el => renderMasterForm(el, '목표CPRP'), mrule: el => renderMasterForm(el, '매칭규칙'), 예산: el => renderBudgetForm(el), 소재: el => renderCreForm(el) };
+const FORM_TABS = { master: el => renderMasterForm(el, '품목'), mch: el => renderMasterForm(el, '채널'), mcm: el => renderMasterForm(el, 'CM위치'), mcprp: el => renderMasterForm(el, '목표CPRP'), 예산: el => renderBudgetForm(el), 소재: el => renderCreForm(el) };
 function fixWS(w) {
   w.sheets = w.sheets || {};
   for (const k of ALL_SHEETS) if (!w.sheets[k]) w.sheets[k] = k === '예산' ? [['채널']] : (DEFAULT_MASTER[k] ? DEFAULT_MASTER[k].map(r => r.slice()) : []);
@@ -3987,13 +4210,21 @@ const App = {
   // 메뉴: 평소엔 분류(입력 · 당월 운영 · 큐시트 · 점검)만 한 줄 → 누르면 전체 메뉴가 한 판에 펼쳐짐 (미디어 대시보드와 같은 방식)
   // 14차: 입력 = 품목·채널·CM위치·목표 CPRP·매칭 규칙(관리자 전용) · 당월 운영 = 예산·소재·지상파·케이블·누적리치(관리자 전용) · 뷰어는 큐시트만
   TABS: [
-    { id: 'input', g: '입력', note: '관리자 전용', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M3.2 14.2 12.6 4.8l2.6 2.6-9.4 9.4H3.2z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M11 6.4l2.6 2.6"/>', items: [['master', '품목 관리'], ['mch', '채널 관리'], ['mcm', 'CM위치 보정 규칙'], ['mcprp', '목표 CPRP'], ['mrule', '매칭 규칙']] },
-    { id: 'plan', g: '당월 운영', note: '관리자 전용', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 3.4h11.2v13.4H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 7.4h5.6M7.2 10.4h5.6M7.2 13.4h3.4"/>', items: [['예산', '당월 예산'], ['소재', '당월 소재'], ['지상파', '지상파'], ['케이블', '케이블'], ['reach', '누적리치']] },
+    // 15차: 맨 왼쪽 'YYYY년 운영 누적'(월별 PP·품목 광고비) — 기본 숨김, 관리자 메뉴에서 뷰어에게 보이기 켜고 끔. 매칭 규칙은 온보딩 창 안으로
+    { id: 'year', g: '운영 누적', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3.4 16.4h13.2M5.6 13.6V9.8M9 13.6V6.4M12.4 13.6V8.4M15.8 13.6V4.2"/>', items: [['year', '월별 광고비']] },
+    { id: 'input', g: '규칙 관리', note: '관리자 전용', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M3.2 14.2 12.6 4.8l2.6 2.6-9.4 9.4H3.2z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M11 6.4l2.6 2.6"/>', items: [['master', '품목 관리'], ['mch', '채널 관리'], ['mcm', 'CM위치 보정 규칙'], ['mcprp', '목표 CPRP']] },
+    { id: 'plan', g: '당월 입력', note: '관리자 전용', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 3.4h11.2v13.4H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 7.4h5.6M7.2 10.4h5.6M7.2 13.4h3.4"/>', items: [['예산', '당월 예산'], ['소재', '당월 소재'], ['지상파', '지상파 입력'], ['케이블', '케이블 입력'], ['reach', '리치 입력']] },
     { id: 'cue', g: '큐시트', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.8 3.6h14.4v12.8H2.8z"/><path fill="none" stroke="currentColor" stroke-width="1.7" d="M2.8 7.6h14.4M7.6 7.6v8.8"/>', items: [['summary', '요약'], ['cueall', '전체 큐시트'], ['cueg', '지상파 큐시트'], ['cuec', '케이블 큐시트'], ['cal', '큐시트 캘린더']] },
     { id: 'chk', g: '점검', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 10.4l3.6 3.6L16 5.6"/>', items: [['issues', '확인 필요'], ['history', '변경 이력']] },
   ],
   // 지금 보여 줄 분류 (뷰어: 큐시트만)
-  areas() { return readOnly() && !REPORT ? this.TABS.filter(a => a.id === 'cue') : this.TABS; },
+  areas() {
+    const yr = this.selYear || (typeof WS !== 'undefined' && WS && parseYM(WS.ym) ? parseYM(WS.ym).y : new Date().getFullYear());
+    const show = yearMenuOn();
+    const T = this.TABS.map(a => a.id !== 'year' ? a : Object.assign({}, a, { g: `${yr}년 운영 누적`, note: show ? '' : '숨김' }));
+    if (REPORT) return T.filter(a => a.id !== 'year');
+    return readOnly() ? T.filter(a => a.id === 'cue' || (a.id === 'year' && show)) : T;
+  },
   tabAllowed(tab) { return this.areas().some(a => a.items.some(x => x[0] === tab)); },
 
   async init() {
@@ -4032,6 +4263,8 @@ const App = {
     this.bindKeys(); this.bindCloudTop();
     if (CLOUD.admin) { this.bindTop(); this.bindDrop(); }
     this.gate('<div class="spin"></div><div>불러오는 중…</div>');
+    // 15차: 첫 비밀번호를 아직 안 바꾼 계정이면 바꾸기부터 (서버가 다른 관리자 기능을 막음)
+    if (CLOUD.admin && CLOUD.tok && CLOUD.tok.must) { this.gate('<h2>비밀번호를 먼저 바꿔 주세요</h2><p class="muted">처음 접속이라 사용할 비밀번호로 바꾸면 편집 화면이 열려요.</p>'); setTimeout(() => this.forcePwDialog(), 50); return; }
     try {
       if (CLOUD.admin) await CLOUD.loadCamps();
       // 코웨이 전용: 캠페인은 config.js 의 camp 로 고정 (예전 링크의 ?c= 도 그대로 열림)
@@ -4041,6 +4274,7 @@ const App = {
       const camp = await CLOUD.campInfo(cid);
       if (!camp) return this.gate(`<h2>큐시트를 찾을 수 없어요</h2><p class="muted">링크가 바뀌었을 수 있어요. 담당자에게 새 링크를 받아 주세요.</p>`);
       CLOUD.camp = camp; CLOUD.setQs({ c: cid === CLOUD.cfg.camp ? null : cid });
+      await CLOUD.loadSettings(cid);
       const adv = document.getElementById('advchip'); if (adv) adv.textContent = camp.name;
       this.months = await CLOUD.months(cid);
       let ym = CLOUD.qs('m'); if (!this.months.includes(ym)) ym = this.months[0];
@@ -4130,10 +4364,12 @@ const App = {
         <button data-bak="master">마스터만</button>
         <hr><button data-bak="restore">백업 파일 다시 넣기…<small>이 도구에서 받은 엑셀을 골라 그대로 넣어요</small></button></div></div>
       <button class="btn ibtn" id="b-onboard" title="방송사 큐시트 온보딩 — 방송사에서 받은 원본 큐시트 엑셀을 자동 매칭해서 지상파·케이블 시트에 넣기" aria-label="방송사 큐시트 온보딩"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 4v12M4 10h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-      ${CLOUD.on ? `<div class="dd" id="dd-admin"><button class="btn" id="b-adm">관리자 ▾</button><div class="dd-menu">
+      ${CLOUD.on ? `<div class="dd" id="dd-admin"><button class="btn" id="b-adm">${esc((CLOUD.tok && CLOUD.tok.name) || '관리자')} ▾</button><div class="dd-menu">
         <button data-adm="link">뷰어 링크 복사<small>보기만 하는 링크 (광고주·내부 공유용)</small></button>
         <button data-adm="view">뷰어 화면으로 보기<small>새 탭에서 뷰어가 보는 화면</small></button>
-        <button data-adm="who">내 이름 바꾸기<small>다른 관리자에게 '작업 중'으로 보이는 이름</small></button>
+        <button data-adm="me">내 설정<small>내 계정 · 비밀번호 바꾸기</small></button>
+        <button data-adm="users">관리자 계정<small>관리자 목록 · 새 관리자 초대 · 비밀번호 초기화</small></button>
+        <button data-adm="yearmenu" class="tglrow">운영 누적 메뉴 뷰어에게 보이기<small>맨 왼쪽 'YYYY년 운영 누적' 메뉴</small><span class="mtgl${yearMenuOn() ? ' on' : ''}" id="ym-tgl"><i></i></span></button>
         <button data-adm="report">보고서 HTML 내보내기<small>오프라인으로 보낼 때</small></button>
         <button data-adm="out">관리자 모드 종료</button></div></div>` : '<button class="btn" id="b-report">보고서 내보내기</button>'}
       <input type="file" id="filein" accept=".xlsx,.xlsm,.xls" multiple hidden>
@@ -4233,6 +4469,7 @@ const App = {
     if (GRID_SHEETS.includes(tab)) { window.scrollTo(0, 0); this.showGrid(tab); return; }
     if (tab === 'cal' && prev !== tab) calUI().jump = true;   // 캘린더는 열 때마다 오늘이 있는 주로
     if (force || tab === 'cal' || el.dataset.ver !== String(M.ver) || !el.firstChild) this.renderPane(tab);   // 캘린더는 '지금' 줄 때문에 열 때마다 새로
+    syncStickyHeads(el);
     if (prev !== tab) window.scrollTo(0, this.scrollMem[tab] || 0);
   },
   renderPane(tab) {
@@ -4250,11 +4487,13 @@ const App = {
       else if (tab === 'history') this.renderHistory(el);
       else if (tab === 'reach') this.renderReach(el);
       else if (tab === 'cal') renderCal(el);
+      else if (tab === 'year') renderYear(el);
       else if (FORM_TABS[tab]) FORM_TABS[tab](el);
       if (!readOnly() && LOCK.blocked(tab)) lockForm(el);
       el.classList.toggle('lockdim', !readOnly() && LOCK.blocked(tab));   // 다른 관리자가 편집 중이면 탭 전체를 옅은 회색으로
     } catch (e) { console.error(e); el.innerHTML = `<div class="card"><div class="empty">화면을 그리다 오류가 났어요: ${esc(e.message)}</div></div>`; }
     el.dataset.ver = M.ver;
+    syncStickyHeads(el); requestAnimationFrame(() => syncStickyHeads(el));
     if (prev && prev.size) { let n = 0; const now = ckSnapshot(el); for (const [k, v] of now) if (prev.has(k) && prev.get(k) !== v) n++; if (n && n <= 300) ckFlash(el, prev); }
   },
   rerender() {
@@ -4347,26 +4586,118 @@ const App = {
       dd.classList.remove('open'); const a = x.dataset.adm;
       if (a === 'link') { try { await navigator.clipboard.writeText(link()); this.toast(`뷰어 링크를 복사했어요<br><small>${esc(link())}</small>`, 6000); } catch (e) { this.promptText('뷰어 링크', '이 주소를 복사해서 보내세요', link(), () => { }); } }
       else if (a === 'view') { await this.flushSave(); window.open(link() + sep() + 'm=' + encodeURIComponent(WS.ym) + '&viewer=1', '_blank'); }
-      else if (a === 'who') this.promptText('내 이름', '다른 관리자에게 “○○님이 작업 중”으로 보여요', CLOUD.who() || '', n => { try { localStorage.setItem('cue.who', n); } catch (e) { } LOCK.renew(); this.toast(`이름을 '${esc(n)}'(으)로 바꿨어요`); });
+      else if (a === 'me') this.meDialog();
+      else if (a === 'users') this.usersDialog();
+      else if (a === 'yearmenu') {
+        const on = !yearMenuOn();
+        try { await CLOUD.saveSetting('yearMenu', on); const t = document.getElementById('ym-tgl'); if (t) t.classList.toggle('on', on); this.renderNav(); if (this.tab === 'year') this.renderPane('year'); this.toast(on ? '운영 누적 메뉴를 뷰어에게도 보여요' : '운영 누적 메뉴를 숨겼어요 (관리자에게만 보여요)'); }
+        catch (e) { this.toast('바꾸지 못했어요: ' + esc(e.message), 5000); }
+      }
       else if (a === 'report') this.exportReport();
       else if (a === 'out') { await this.flushSave(); CLOUD.logout(); }
     });
   },
   loginDialog() {
-    this.modal(`<div class="hd"><h3>관리자 모드 접속</h3></div><div class="bd"><p class="small muted" style="margin-top:0">비밀번호를 넣으면 편집 화면이 열려요. 고친 내용은 바로 온라인에 저장돼요.</p>
-      <input type="password" id="admpw" autocomplete="current-password" placeholder="비밀번호" style="width:100%;height:36px;border:1px solid var(--rule);border-radius:8px;padding:0 10px">
-      <input id="admwho" placeholder="내 이름 (작업 중 표시용 · 이 브라우저에 기억)" value="${esc(CLOUD.who() || '')}" style="width:100%;height:34px;border:1px solid var(--rule);border-radius:8px;padding:0 10px;margin-top:8px">
+    let saved = ''; try { saved = localStorage.getItem('cue.email') || ''; } catch (e) { }
+    this.modal(`<div class="hd"><h3>관리자 모드 접속</h3></div><div class="bd"><p class="small muted" style="margin-top:0">관리자 계정(회사 이메일)으로 들어오면 편집 화면이 열려요.</p>
+      <input type="email" id="admid" autocomplete="username" placeholder="이메일 (예: name@smtown.com)" value="${esc(saved)}" class="minp">
+      <input type="password" id="admpw" autocomplete="current-password" placeholder="비밀번호" class="minp" style="margin-top:8px">
       <div id="admerr" class="small" style="color:#8f3d35;margin-top:6px;min-height:18px"></div></div>
       <div class="ft"><button class="btn" data-x>취소</button><button class="btn pri" id="adm-ok">접속</button></div>`, (box, close) => {
-      const inp = box.querySelector('#admpw'), er = box.querySelector('#admerr'), ok = box.querySelector('#adm-ok');
+      const id = box.querySelector('#admid'), inp = box.querySelector('#admpw'), er = box.querySelector('#admerr'), ok = box.querySelector('#adm-ok');
       const go = async () => {
-        if (!inp.value) return; ok.disabled = true; er.textContent = '확인 중…';
-        const nm = box.querySelector('#admwho').value.trim(); if (nm) { try { localStorage.setItem('cue.who', nm); } catch (e) { } }
-        try { await CLOUD.login(inp.value); close(true); CLOUD.setQs({ viewer: null, t: this.tab }); location.reload(); }
-        catch (e) { ok.disabled = false; er.textContent = e.net ? e.message : '비밀번호가 맞지 않아요'; inp.select(); }
+        if (!id.value.trim() || !inp.value) { er.textContent = '이메일과 비밀번호를 넣어 주세요'; return; }
+        ok.disabled = true; er.textContent = '확인 중…';
+        try {
+          const t = await CLOUD.login(id.value.trim(), inp.value);
+          try { localStorage.setItem('cue.email', t.email); } catch (e) { }
+          close(true);
+          if (t.must) return this.forcePwDialog(inp.value);
+          CLOUD.setQs({ viewer: null, t: this.tab }); location.reload();
+        } catch (e) { ok.disabled = false; er.textContent = e.net ? e.message : '이메일 또는 비밀번호가 맞지 않아요'; inp.select(); }
       };
-      ok.onclick = go; inp.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) go(); };
-      setTimeout(() => inp.focus(), 50);
+      ok.onclick = go; [id, inp].forEach(x => x.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) go(); });
+      setTimeout(() => (id.value ? inp : id).focus(), 50);
+    });
+  },
+  // 첫 접속(초기 비밀번호) → 사용할 비밀번호를 두 번 넣어 바꿔야 편집할 수 있음
+  forcePwDialog(oldPw) {
+    if (document.querySelector('.modal-bg.pwforce')) return;
+    this.modal(`<div class="hd"><h3>비밀번호를 바꿔 주세요</h3><div class="small muted">${esc((CLOUD.tok && CLOUD.tok.name) || '')} · ${esc((CLOUD.tok && CLOUD.tok.email) || '')}</div></div><div class="bd">
+      <p class="small" style="margin-top:0">처음 접속이라 초기 비밀번호를 사용할 비밀번호로 바꿔야 해요.</p>
+      ${oldPw ? '' : '<input type="password" id="pw0" autocomplete="current-password" placeholder="지금(초기) 비밀번호" class="minp" style="margin-bottom:8px">'}
+      <input type="password" id="pw1" autocomplete="new-password" placeholder="새 비밀번호 (6자 이상)" class="minp">
+      <input type="password" id="pw2" autocomplete="new-password" placeholder="새 비밀번호 한 번 더" class="minp" style="margin-top:8px">
+      <div class="note" style="margin-top:10px">🔒 비밀번호는 암호화(해시)해서 저장돼요. 운영자를 포함해 누구도 볼 수 없어요.</div>
+      <div id="pwerr" class="small" style="color:#8f3d35;margin-top:6px;min-height:18px"></div></div>
+      <div class="ft"><button class="btn" id="pw-out">로그아웃</button><button class="btn pri" id="pw-ok">바꾸고 시작하기</button></div>`, (box) => {
+      box.closest('.modal-bg').classList.add('pwforce');
+      const er = box.querySelector('#pwerr'), ok = box.querySelector('#pw-ok');
+      const go = async () => {
+        const o = oldPw || (box.querySelector('#pw0') || {}).value || '', a = box.querySelector('#pw1').value, b = box.querySelector('#pw2').value;
+        if (a.length < 6) { er.textContent = '6자 이상으로 정해 주세요'; return; }
+        if (a !== b) { er.textContent = '두 번 넣은 비밀번호가 달라요'; return; }
+        ok.disabled = true; er.textContent = '바꾸는 중…';
+        try { await CLOUD.setPw(o, a); er.textContent = ''; CLOUD.setQs({ viewer: null }); location.reload(); }
+        catch (e) { ok.disabled = false; er.textContent = /same|initial/i.test(e.message) ? '초기 비밀번호와 다른 것으로 정해 주세요' : /too short/i.test(e.message) ? '6자 이상으로 정해 주세요' : /bad password/i.test(e.message) ? '지금 비밀번호가 맞지 않아요' : '바꾸지 못했어요: ' + e.message; }
+      };
+      ok.onclick = go; box.querySelectorAll('input').forEach(x => x.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) go(); });
+      box.querySelector('#pw-out').onclick = () => CLOUD.logout();
+      setTimeout(() => box.querySelector('input').focus(), 50);
+    }, () => { if (CLOUD.tok && CLOUD.tok.must) setTimeout(() => this.forcePwDialog(oldPw), 0); });
+  },
+  // 내 설정: 계정 정보 · 비밀번호 바꾸기
+  meDialog() {
+    const t = CLOUD.tok || {};
+    this.modal(`<div class="hd"><h3>내 설정</h3></div><div class="bd">
+      <div class="kv"><span class="muted">이름</span><b>${esc(t.name || '-')}</b></div><div class="kv"><span class="muted">아이디</span><b>${esc(t.email || '-')}</b></div>
+      <h4 style="margin:14px 0 6px">비밀번호 바꾸기</h4>
+      <input type="password" id="pw0" autocomplete="current-password" placeholder="지금 비밀번호" class="minp">
+      <input type="password" id="pw1" autocomplete="new-password" placeholder="새 비밀번호 (6자 이상)" class="minp" style="margin-top:8px">
+      <input type="password" id="pw2" autocomplete="new-password" placeholder="새 비밀번호 한 번 더" class="minp" style="margin-top:8px">
+      <div class="small muted" style="margin-top:8px">🔒 비밀번호는 암호화(해시)해서 저장돼 운영자를 포함해 누구도 볼 수 없어요.</div>
+      <div id="pwerr" class="small" style="color:#8f3d35;margin-top:6px;min-height:18px"></div></div>
+      <div class="ft"><button class="btn" data-x>닫기</button><button class="btn pri" id="pw-ok">비밀번호 바꾸기</button></div>`, (box, close) => {
+      const er = box.querySelector('#pwerr'), ok = box.querySelector('#pw-ok');
+      ok.onclick = async () => {
+        const o = box.querySelector('#pw0').value, a = box.querySelector('#pw1').value, b = box.querySelector('#pw2').value;
+        if (!o) { er.textContent = '지금 비밀번호를 넣어 주세요'; return; }
+        if (a.length < 6) { er.textContent = '새 비밀번호는 6자 이상으로 정해 주세요'; return; }
+        if (a !== b) { er.textContent = '두 번 넣은 새 비밀번호가 달라요'; return; }
+        ok.disabled = true; er.textContent = '바꾸는 중…';
+        try { await CLOUD.setPw(o, a); close(true); this.toast('비밀번호를 바꿨어요'); }
+        catch (e) { ok.disabled = false; er.textContent = /bad password/i.test(e.message) ? '지금 비밀번호가 맞지 않아요' : /same|initial/i.test(e.message) ? '지금·초기 비밀번호와 다른 것으로 정해 주세요' : '바꾸지 못했어요: ' + e.message; }
+      };
+    });
+  },
+  // 관리자 계정: 목록 · 초대(초기 비밀번호로 계정 생성) · 비밀번호 초기화 · 빼기
+  async usersDialog() {
+    let list = [];
+    try { list = await CLOUD.users(); } catch (e) { return this.toast('관리자 목록을 불러오지 못했어요: ' + esc(e.message), 5000); }
+    const me = (CLOUD.tok || {}).email;
+    const dt = v => v ? fmt.time(new Date(v).getTime()) : '';
+    this.modal(`<div class="hd"><h3>관리자 계정</h3><div class="small muted">관리자는 누구나 새 관리자를 초대할 수 있어요. 초대하면 바로 계정이 생기고, 초기 비밀번호로 처음 접속하면 비밀번호를 바꾸게 돼요.</div></div>
+      <div class="bd"><table class="bulkt"><thead><tr><th class="l">이름</th><th class="l">아이디(이메일)</th><th class="l">상태</th><th class="l">초대한 사람</th><th></th></tr></thead><tbody>
+      ${list.map(u => `<tr><td class="l"><b>${esc(u.name)}</b>${u.email === me ? ' <span class="muted small">(나)</span>' : ''}</td><td class="l">${esc(u.email)}</td><td class="l small">${u.must ? '<span class="warnt">첫 접속 전</span>' : `<span class="muted">비밀번호 설정 ${esc(dt(u.pwAt).split(' ')[0] || '')}</span>`}</td><td class="l small muted">${esc(u.by || '')}</td>
+        <td class="r">${u.email === me ? '' : `<button class="btn sm ghost" data-reset="${esc(u.email)}">비밀번호 초기화</button><button class="btn sm ghost" data-rm="${esc(u.email)}">빼기</button>`}</td></tr>`).join('')}
+      </tbody></table>
+      <h4 style="margin:16px 0 6px">새 관리자 초대</h4>
+      <div class="invrow"><input id="iv-name" placeholder="이름" class="minp" style="width:120px"><input id="iv-email" type="email" placeholder="이메일 아이디 (name@smtown.com)" class="minp" style="flex:1"><button class="btn pri" id="iv-ok">초대</button></div>
+      <div class="small muted" style="margin-top:6px">초대 메일은 보내지 않아요. 사이트 주소와 아이디를 알려 주고, 초기 비밀번호로 처음 접속하라고 전해 주세요.</div>
+      <div id="iverr" class="small" style="color:#8f3d35;margin-top:6px;min-height:18px"></div></div>
+      <div class="ft"><button class="btn" data-x>닫기</button></div>`, (box, close) => {
+      const er = box.querySelector('#iverr');
+      box.querySelector('#iv-ok').onclick = async () => {
+        const n = box.querySelector('#iv-name').value.trim(), e = box.querySelector('#iv-email').value.trim().toLowerCase();
+        if (!n || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) { er.textContent = '이름과 이메일을 바르게 넣어 주세요'; return; }
+        try { await CLOUD.invite(e, n); close(true); this.toast(`${esc(n)}(${esc(e)})님을 관리자로 초대했어요 — 초기 비밀번호로 처음 접속하면 비밀번호를 바꾸게 돼요`, 7000); this.usersDialog(); }
+        catch (x) { er.textContent = /already/i.test(x.message) ? '이미 있는 계정이에요' : '초대하지 못했어요: ' + x.message; }
+      };
+      box.querySelectorAll('[data-reset]').forEach(b => b.onclick = async () => { const e = b.dataset.reset; try { await CLOUD.resetPw(e); this.toast(`${esc(e)}의 비밀번호를 초기 비밀번호로 되돌렸어요 — 다음 접속 때 새로 정하게 돼요`, 6000); close(true); this.usersDialog(); } catch (x) { er.textContent = '초기화하지 못했어요: ' + x.message; } });
+      box.querySelectorAll('[data-rm]').forEach(b => b.onclick = async () => {
+        const e = b.dataset.rm; if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = '정말 빼기'; b.classList.add('danger'); return; }
+        try { await CLOUD.removeUser(e); close(true); this.toast(`${esc(e)}을(를) 관리자에서 뺐어요`); this.usersDialog(); } catch (x) { er.textContent = '빼지 못했어요: ' + x.message; }
+      });
     });
   },
   promptText(title, label, val, onOk) {
@@ -4409,10 +4740,15 @@ const App = {
   },
   bindDrop() {
     const drop = document.getElementById('drop'); let n = 0;
-    window.addEventListener('dragenter', e => { if ([...(e.dataTransfer.types || [])].includes('Files')) { n++; drop.classList.add('on'); } });
+    // 15차: 온보딩 창 등 다른 창이 열려 있으면 전체 덮개를 띄우지 않음 · 놓기/끌기 끝/마우스 움직임에서 늘 덮개를 걷음
+    //       (창 안에 놓으면 drop 이 창에서 멈춰 window 까지 안 와서 '엑셀 파일을 놓으세요'가 계속 남던 문제)
+    const off = () => { n = 0; drop.classList.remove('on'); };
+    window.addEventListener('dragenter', e => { if (document.querySelector('.modal-bg')) return; if ([...(e.dataTransfer.types || [])].includes('Files')) { n++; drop.classList.add('on'); } });
     window.addEventListener('dragleave', () => { n = Math.max(0, n - 1); if (!n) drop.classList.remove('on'); });
     window.addEventListener('dragover', e => e.preventDefault());
-    window.addEventListener('drop', e => { e.preventDefault(); n = 0; drop.classList.remove('on'); if (readOnly()) return; const f = [...(e.dataTransfer.files || [])].filter(x => /\.xls[xm]?$/i.test(x.name)); if (f.length) this.handleFiles(f); });
+    window.addEventListener('drop', off, true); window.addEventListener('dragend', off, true);
+    window.addEventListener('mousemove', () => { if (drop.classList.contains('on')) off(); });
+    window.addEventListener('drop', e => { e.preventDefault(); off(); if (readOnly()) return; const f = [...(e.dataTransfer.files || [])].filter(x => /\.xls[xm]?$/i.test(x.name)); if (f.length) this.handleFiles(f); });
   },
   bindKeys() {
     // 표 칸을 고르지 않은 채 Ctrl+V 해도 지금 보고 있는 지상파·케이블 표에 붙여넣기
@@ -4520,6 +4856,7 @@ const App = {
       normalize: (col, v) => (col.k === 'start' || col.k === 'end') ? normTime(v) : v,
       onRo: () => this.toast(LOCK.blockedMsg(name), 3000),
       onCommit: (row, c, v) => this.checkChannel(name, row, c, v),
+      stamp: () => ({ obAt: fmt.at(), obBy: whoNow() }),
     });
     this.grids[name] = g;
     g.setRO(!readOnly() && LOCK.blocked(name));
@@ -4548,7 +4885,7 @@ const App = {
         const pp = media === '케이블' ? ((box.querySelector('#nc-pp') || {}).value || '').trim() : '';
         if (media === '케이블' && !pp) { this.toast('PP를 적어 주세요 (예: CJ ENM)'); return; }
         const rows = WS.sheets.채널; const isG = r => /지상파/.test(str(r[2]));
-        const nr = [nm, '', media, pp, box.querySelector('#nc-grp').value];
+        const nr = stampRow([nm, '', media, pp, box.querySelector('#nc-grp').value], 5);
         const at = media === '지상파' ? rows.reduce((a2, r, i) => isG(r) ? i + 1 : a2, 0) : (() => { let k = -1; rows.forEach((r, i) => { if (!isG(r) && str(r[3]) === pp) k = i; }); return k >= 0 ? k + 1 : rows.length; })();
         rows.splice(at, 0, nr); close(true);
         if (nm !== raw) g.applyCells([{ id: row.id, c, n: nm }], '채널 고치기');
@@ -4898,6 +5235,7 @@ const App = {
       ev.preventDefault(); ev.stopPropagation();
       const s = d.dataset.s, r = +d.dataset.r, col = d.dataset.c || null;
       if (GRID_SHEETS.includes(s)) { this.go(s); if (r >= 0) this.grids[s].gotoData(r, col ? Math.max(0, colIndex(s, col)) : 0); }
+      else if (s === '매칭규칙') OBUI.open(null, { rules: true });
       else if (MST_OF[s]) this.go(MST_OF[s], true);
       else if (FORM_TABS[s]) this.go(s);
     });
@@ -5033,13 +5371,13 @@ const App = {
       WS.sheets.품목.push(def ? def.slice() : [str(r[0]), str(r[1]) || str(r[0]), str(r[2]) || '기타', /^#?[0-9a-f]{6}$/i.test(str(r[3])) ? str(r[3]) : nextColor(), str(r[4])]);
       added++;
     }
-    for (const r of pm.채널 || []) { if (!str(r[0]) || resolveCh(MS, r[0])) continue; WS.sheets.채널.push(r.slice(0, 5)); added++; }
+    for (const r of pm.채널 || []) { if (!str(r[0]) || resolveCh(MS, r[0])) continue; WS.sheets.채널.push(r.slice(0, 7)); added++; }
     const rk = new Set((WS.sheets.매칭규칙 = WS.sheets.매칭규칙 || []).map(r => [r[0], r[1], r[2]].map(norm).join('|')));
     for (const r of pm.매칭규칙 || []) { const k = [r[0], r[1], r[2]].map(norm).join('|'); if (!str(r[0]) || rk.has(k)) continue; WS.sheets.매칭규칙.push(r.slice(0, 4).map(str)); rk.add(k); added++; }
     const cmk = new Set(WS.sheets.CM위치.map(r => norm(r[0])));
-    for (const r of pm.CM위치 || []) { if (!str(r[0]) || cmk.has(norm(r[0]))) continue; WS.sheets.CM위치.push([str(r[0]), str(r[1])]); cmk.add(norm(r[0])); added++; }
+    for (const r of pm.CM위치 || []) { if (!str(r[0]) || cmk.has(norm(r[0]))) continue; WS.sheets.CM위치.push(r.slice(0, 4).map(str)); cmk.add(norm(r[0])); added++; }
     const cpk = new Set(WS.sheets.목표CPRP.map(r => (/지상파/.test(str(r[0])) ? '지상파' : '케이블') + '|' + norm(r[1])));
-    for (const r of pm.목표CPRP || []) { const k = (/지상파/.test(str(r[0])) ? '지상파' : '케이블') + '|' + norm(r[1]); if (cpk.has(k)) continue; WS.sheets.목표CPRP.push(r.slice(0, 3)); cpk.add(k); added++; }
+    for (const r of pm.목표CPRP || []) { const k = (/지상파/.test(str(r[0])) ? '지상파' : '케이블') + '|' + norm(r[1]); if (cpk.has(k)) continue; WS.sheets.목표CPRP.push(r.slice(0, 5)); cpk.add(k); added++; }
     if (added) this.toast(`마스터에 새 항목 ${added}개를 추가했어요`);
   },
 
@@ -5262,6 +5600,8 @@ function mstMove(sheet, i, d, sameFn) {
   if (j < 0 || j >= rows.length) return false;
   [rows[i], rows[j]] = [rows[j], rows[i]]; return true;
 }
+// 수정한 칸 옆 '추가·수정' 칸만 바로 고침 (표 전체를 다시 그리지 않음)
+function mstStampCell(tr, r, i) { const td = tr && tr.querySelector('td.stc'); if (td) td.innerHTML = stampHtml(r[i], r[i + 1]); }
 function mstFocusLast(el, f) { const ins = el.querySelectorAll(`#mbody tr[data-i] input[data-f="${f}"]`); const x = ins[ins.length - 1]; if (x) { x.focus(); x.scrollIntoView({ block: 'center' }); } }
 function mstDelete(el, sheet, i, label, used) {
   const go = () => { WS.sheets[sheet].splice(i, 1); App.changed('master'); };
@@ -5326,11 +5666,11 @@ function mRename(kind, sheet, i, v, inp, el) {
   if (rows.some((x, j) => j !== i && norm(x[0]) === norm(v))) { inp.value = old; return App.toast(`'${esc(v)}'은(는) 이미 있는 ${what}이에요`); }
   const owner = kind === 'item' ? resolveItem(M.MS, v) : (resolveCh(M.MS, v) || {}).name;
   if (owner && owner !== old) { inp.value = old; return App.toast(kind === 'item' ? `'${esc(v)}'은(는) 이미 있는 약칭이에요.` : `'${esc(v)}'은(는) 이미 '${esc(owner)}'의 별칭이에요. 그 ${what}의 별칭에서 먼저 빼 주세요.`, 5000); }
-  if (!old) { r[0] = v; if (kind === 'item' && !str(r[1])) { r[1] = v; const f1 = inp.closest('tr').querySelector('[data-f="1"]'); if (f1) f1.value = v; } inp.classList.remove('need'); App.changed('master', true); return; }
+  if (!old) { r[0] = v; if (kind === 'ch') { stampRow(r, 5); mstStampCell(inp.closest('tr'), r, 5); } if (kind === 'item' && !str(r[1])) { r[1] = v; const f1 = inp.closest('tr').querySelector('[data-f="1"]'); if (f1) f1.value = v; } inp.classList.remove('need'); App.changed('master', true); return; }
   const n = renameEverywhere(kind, old, v, true);
   const syncFull = () => { if (kind === 'item' && str(r[1]) === old) r[1] = v; };
   // 품목: 별칭 없이 이름만 바꿈 (옛 이름은 '잘못 적힌 이름' 알림용으로만 기억) · 채널: 옛 이름을 별칭으로 남김
-  const keepOld = () => { if (kind === 'item') { WS.itemLegacy = WS.itemLegacy || {}; WS.itemLegacy[v] = addAlias(WS.itemLegacy[old] || '', old); delete WS.itemLegacy[old]; } else r[1] = addAlias(dropAlias(r[1], v), old); };
+  const keepOld = () => { if (kind === 'ch') { stampRow(r, 5); mstStampCell(inp.closest('tr'), r, 5); } if (kind === 'item') { WS.itemLegacy = WS.itemLegacy || {}; WS.itemLegacy[v] = addAlias(WS.itemLegacy[old] || '', old); delete WS.itemLegacy[old]; } else r[1] = addAlias(dropAlias(r[1], v), old); };
   const apply = () => { syncFull(); r[0] = v; keepOld(); renameEverywhere(kind, old, v); App.dataReplaced(); App.toast(`${what} 이름을 '${esc(old)}' → '${esc(v)}'로 바꿨어요${n.total ? ` (${renameTxt(n)})` : ''}.${kind === 'item' ? '' : ' 옛 이름은 별칭으로 남겼어요.'}`, 6000); };
   if (!n.total) { syncFull(); r[0] = v; keepOld(); App.changed('master', true); const tr = inp.closest('tr'); const al = kind === 'ch' && tr.querySelector('[data-f="1"]'); if (al) al.value = r[1]; const f1 = kind === 'item' && tr.querySelector('[data-f="1"]'); if (f1) f1.value = r[1]; return; }
   App.confirm(`${what} 이름 바꾸기: ${old} → ${v}`, `<p>이번 달 <b>${renameTxt(n)}</b>에 '${esc(old)}'로 적혀 있어요. 모두 '${esc(v)}'로 바꿀게요.${kind === 'item' ? ' 나중에 옛 이름으로 들어오면 고치라고 알려 드려요.' : ` 담당자가 옛 이름으로 보내도 알아보도록 '${esc(old)}'는 별칭으로 남겨 둘게요.`}</p><p class="small muted">입력 표의 되돌리기(Ctrl+Z) 기록은 초기화돼요.</p>`, '모두 바꾸기', apply, () => { inp.value = old; });
@@ -5344,14 +5684,14 @@ function mChannels(body, el) {
   const isG = r => /지상파/.test(str(r[2]));
   // 14차: 매체 → PP → 채널. 케이블은 PP마다 묶음 줄(채널 수 · ＋ 이 PP에 채널), 끌어서 순서는 같은 PP 안에서만
   const rowHtml = (i, media, pp) => {
-    const r = rows[i]; const name = str(r[0]); const n = U.ch.get(name) || 0, b = U.budCh.get(name) || 0;
+    const r = rows[i]; const name = str(r[0]);
     return `<tr data-i="${i}" data-sec="${media}" data-pp="${esc(pp)}"><td class="dh" title="끌어서 순서 바꾸기 (같은 PP 안에서)">⋮⋮</td>
       <td class="in"><input data-f="0" value="${esc(name)}" placeholder="채널명" class="${name ? '' : 'need'}"></td>
       <td class="in"><select data-f="2">${optHtml(['지상파', '케이블'], isG(r) ? '지상파' : '케이블')}</select></td>
       <td class="in"><input data-f="3" value="${esc(str(r[3]))}" list="dl-mpp" placeholder="${isG(r) ? '' : 'PP'}"></td>
       <td class="in"><select data-f="4">${optHtml(groups, str(r[4]) || (isG(r) ? name : '기타'))}</select></td>
       <td class="in wide"><input data-f="1" value="${esc(str(r[1]))}" placeholder="${name ? '' : '다르게 적히는 이름 (쉼표로 구분)'}"></td>
-      <td class="use">${n || b ? [n ? fmt.int(n) + '회' : '', b ? fmt.eok(b, 2) : ''].filter(Boolean).join(' · ') : '<span class="muted">-</span>'}</td>
+      <td class="stc">${stampHtml(r[5], r[6])}</td>
       <td><button class="x" data-del title="삭제">✕</button></td></tr>`;
   };
   const sec = (media) => {
@@ -5367,8 +5707,8 @@ function mChannels(body, el) {
   };
   body.innerHTML = `<div class="fhd"><div class="muted small">지상파는 채널, 케이블은 <b>PP → 채널</b>로 관리해요. 여기 있는 채널만 지상파·케이블 입력에서 골라 쓸 수 있어요(없는 이름을 쓰면 비슷한 채널을 추천하거나 추가하라고 알려 줘요). 순서는 표·큐시트의 채널 순서 — 왼쪽 ⋮⋮를 끌어 바꿔요.</div><div class="spacer"></div><button class="btn sm" data-add="지상파">＋ 지상파 채널</button><button class="btn sm" data-newpp>＋ 새 PP</button><button class="btn sm pri" data-add="케이블">＋ 케이블 채널</button></div>
   <datalist id="dl-mpp">${mpps.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
-  <div class="tw free"><table class="t form mch"><thead><tr><th></th><th class="l">채널</th><th class="l">매체</th><th class="l">PP</th><th class="l">요약그룹</th><th class="l">별칭</th><th>이번 달</th><th></th></tr></thead><tbody>${sec('지상파')}${sec('케이블')}</tbody></table></div>`;
-  const addAt = (at, media, pp) => { rows.splice(at, 0, ['', '', media, pp || '', media === '지상파' ? '' : '기타']); App.changed('master', true); renderMasterForm(el); const tr = el.querySelector(`#mbody tr[data-i="${at}"] input[data-f="0"]`); if (tr) { tr.focus(); tr.scrollIntoView({ block: 'center' }); } };
+  <div class="tw free"><table class="t form mch"><thead><tr><th></th><th class="l">채널</th><th class="l">매체</th><th class="l">PP</th><th class="l">요약그룹</th><th class="l">별칭</th><th class="l">추가·수정</th><th></th></tr></thead><tbody>${sec('지상파')}${sec('케이블')}</tbody></table></div>`;
+  const addAt = (at, media, pp) => { rows.splice(at, 0, stampRow(['', '', media, pp || '', media === '지상파' ? '' : '기타'], 5)); App.changed('master', true); renderMasterForm(el); const tr = el.querySelector(`#mbody tr[data-i="${at}"] input[data-f="0"]`); if (tr) { tr.focus(); tr.scrollIntoView({ block: 'center' }); } };
   body.querySelectorAll('[data-addpp]').forEach(b => b.onclick = () => { const pp = b.dataset.addpp; let k = -1; rows.forEach((r, i) => { if (!isG(r) && str(r[3]) === pp) k = i; }); addAt(k >= 0 ? k + 1 : rows.length, '케이블', pp); });
   body.querySelector('[data-newpp]').onclick = () => App.promptText('새 PP', '케이블 PP 이름 (예: CJ ENM)', '', pp => { pp = str(pp); if (!pp) return; if (mpps.some(x => norm(x) === norm(pp))) return App.toast(`'${esc(pp)}'은(는) 이미 있는 PP예요`); addAt(rows.length, '케이블', pp); });
   body.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { const g = b.dataset.add === '지상파'; addAt(g ? rows.reduce((a2, r, i) => isG(r) ? i + 1 : a2, 0) : rows.length, b.dataset.add, ''); });
@@ -5380,7 +5720,8 @@ function mChannels(body, el) {
       const f = +inp.dataset.f; let v = inp.value.trim();
       if (f === 0) return mRename('ch', '채널', i, v, inp, el);
       if (f === 1) { v = v.split(/[,;/]/).map(x => x.trim()).filter(Boolean).join(', '); inp.value = v; }
-      r[f] = v;
+      if (str(r[f]) === v) return;
+      r[f] = v; stampRow(r, 5); mstStampCell(tr, r, 5);
       if (f === 2) { if (v === '지상파' && (!str(r[4]) || str(r[4]) === '기타')) r[4] = str(r[0]); App.changed('master', true); renderMasterForm(el); return; }
       if (f === 3) { App.changed('master', true); renderMasterForm(el); return; }   // PP를 바꾸면 그 PP 묶음으로
       App.changed('master', true);
@@ -5390,32 +5731,30 @@ function mChannels(body, el) {
 
 // ---- CM 위치 ----
 function mCm(body, el) {
-  const rows = WS.sheets.CM위치; const U = usageMaps();
+  const rows = WS.sheets.CM위치;
   const classes = [...new Set(CM_CLASSES.concat(rows.map(r => str(r[1])).filter(Boolean)))];
   const unk = new Map();
-  for (const s of M.spots) if (s.cmRaw && !M.MS.cm.has(norm(s.cmRaw))) { const k = s.cmRaw; const x = unk.get(k) || { n: 0, cls: s.cmCls, media: s.media }; x.n += s.cnt; unk.set(k, x); }
+  for (const s of M.spots) if (s.cmRaw && !M.MS.cm.has(norm(s.cmRaw))) { const k = s.cmRaw; unk.set(k, (unk.get(k) || 0) + s.cnt); }
   const q = UI.cmQ || '';
-  body.innerHTML = `${unk.size ? `<div class="note warn" style="margin-top:0"><b>마스터에 없는 표현 ${unk.size}개</b> — 지금은 규칙으로 추정해서 집계하고 있어요. 맞으면 추가만 누르세요.
-      <div class="unkcm">${[...unk].sort((a, b) => b[1].n - a[1].n).map(([k, x]) => `<span class="uc"><b>${esc(k)}</b> <span class="muted">${fmt.int(x.n)}회</span> → <select data-ucls="${esc(k)}">${optHtml(classes, x.cls)}</select><button class="btn sm" data-uadd="${esc(k)}">추가</button></span>`).join('')}</div>
-      <button class="btn sm pri" data-uall style="margin-top:6px">추정대로 모두 추가</button></div>` : ''}
-    <div class="fhd"><input class="search" id="cmq" placeholder="표현 검색" value="${esc(q)}"><span class="muted small">${rows.length}개 · 앞 글자가 '중'이면 중CM, TOP·END·PIB면 PIB로 추정해요</span><div class="spacer"></div><button class="btn sm pri" data-add>＋ 표현 추가</button></div>
+  // 15차: 마스터에 없는 표현은 목록만 (추천·추가 단추 없음)
+  body.innerHTML = `${unk.size ? `<div class="note warn" style="margin-top:0"><b>마스터에 없는 표현 ${unk.size}개</b> — ${[...unk].sort((a, b) => b[1] - a[1]).map(([k, n]) => `<span class="ucx">${esc(k)} <span class="muted">${fmt.int(n)}회</span></span>`).join(', ')}</div>` : ''}
+    <div class="fhd"><input class="search" id="cmq" placeholder="표현 검색" value="${esc(q)}"><span class="muted small">${rows.length}개</span><div class="spacer"></div><button class="btn sm pri" data-add>＋ 표현 추가</button></div>
     <datalist id="dl-cmcls">${classes.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
-    <div class="tw free fit"><table class="t form narrow"><thead><tr><th class="l">큐시트 표현</th><th class="l">구분</th><th>이번 달</th><th></th></tr></thead><tbody>
-    ${rows.map((r, i) => { if (q && !norm(r[0]).includes(norm(q)) && !norm(r[1]).includes(norm(q))) return ''; const n = U.cm.get(norm(r[0])) || 0;
-      return `<tr data-i="${i}"><td class="in"><input data-f="0" value="${esc(str(r[0]))}" class="${str(r[0]) ? '' : 'need'}"></td><td class="in"><input data-f="1" value="${esc(str(r[1]))}" list="dl-cmcls"></td><td class="use">${n ? fmt.int(n) + '회' : '<span class="muted">-</span>'}</td><td><button class="x" data-del title="삭제">✕</button></td></tr>`; }).join('')}
+    <div class="tw free fit"><table class="t form narrow"><thead><tr><th class="l">큐시트 표현</th><th class="l">구분</th><th class="l">추가·수정</th><th></th></tr></thead><tbody>
+    ${rows.map((r, i) => { if (q && !norm(r[0]).includes(norm(q)) && !norm(r[1]).includes(norm(q))) return '';
+      return `<tr data-i="${i}"><td class="in"><input data-f="0" value="${esc(str(r[0]))}" class="${str(r[0]) ? '' : 'need'}"></td><td class="in"><input data-f="1" value="${esc(str(r[1]))}" list="dl-cmcls"></td><td class="stc">${stampHtml(r[2], r[3])}</td><td><button class="x" data-del title="삭제">✕</button></td></tr>`; }).join('')}
     </tbody></table></div>`;
   const qi = body.querySelector('#cmq');
   qi.oninput = debounce(() => { UI.cmQ = qi.value; const pos = qi.selectionStart; renderMasterForm(el); const n = el.querySelector('#cmq'); n.focus(); n.setSelectionRange(pos, pos); }, 200);
-  body.querySelector('[data-add]').onclick = () => { UI.cmQ = ''; rows.push(['', '중CM']); App.changed('master', true); renderMasterForm(el); mstFocusLast(el, 0); };
-  body.querySelectorAll('[data-uadd]').forEach(b => b.onclick = () => { const k = b.dataset.uadd; rows.push([k, body.querySelector(`[data-ucls="${CSS.escape(k)}"]`).value]); App.changed('master'); });
-  const ua = body.querySelector('[data-uall]'); if (ua) ua.onclick = () => { body.querySelectorAll('[data-ucls]').forEach(s => rows.push([s.dataset.ucls, s.value])); App.changed('master'); App.toast(`CM 위치 ${unk.size}개를 추가했어요`); };
+  body.querySelector('[data-add]').onclick = () => { UI.cmQ = ''; rows.push(stampRow(['', '중CM'], 2)); App.changed('master', true); renderMasterForm(el); mstFocusLast(el, 0); };
   body.querySelectorAll('tr[data-i]').forEach(tr => {
     const i = +tr.dataset.i, r = rows[i];
     tr.querySelector('[data-del]').onclick = () => { rows.splice(i, 1); App.changed('master'); };
     tr.querySelectorAll('[data-f]').forEach(inp => inp.addEventListener('change', () => {
       const f = +inp.dataset.f, v = inp.value.trim();
       if (f === 0 && v && rows.some((x, j) => j !== i && norm(x[0]) === norm(v))) { inp.value = str(r[0]); return App.toast(`'${esc(v)}'은(는) 이미 있어요`); }
-      r[f] = v; inp.classList.toggle('need', f === 0 && !v); App.changed('master', true);
+      if (str(r[f]) === v) return;
+      r[f] = v; stampRow(r, 2); mstStampCell(tr, r, 2); inp.classList.toggle('need', f === 0 && !v); App.changed('master', true);
     }));
   });
 }
@@ -5427,18 +5766,17 @@ function mCprp(body, el) {
   const gch = M.MS.chList.filter(c => c.media === '지상파').map(c => c.name);
   const miss = new Map();
   for (const c of M.cells) if (c.budget > 0 && !c.cprp) { const pp = c.media === '지상파' ? c.ch : c.mpp; miss.set(c.media + '|' + pp, { media: c.media, pp, b: (miss.get(c.media + '|' + pp) || { b: 0 }).b + c.budget }); }
-  const used = r => { const media = /지상파/.test(str(r[0])) ? '지상파' : '케이블'; return M.cells.filter(c => c.budget > 0 && c.cprpKey === media + '|' + norm(r[1])); };
   body.innerHTML = `${miss.size ? `<div class="note warn" style="margin-top:0"><b>목표 CPRP가 없는 예산</b> — GRP가 0으로 잡혀요.<div class="unkcm">${[...miss.values()].map(x => `<span class="uc"><b>${esc(x.media)} · ${esc(x.pp)}</b> <span class="muted">예산 ${fmt.eok(x.b, 2)}</span><button class="btn sm" data-madd="${esc(x.media + '|' + x.pp)}">행 추가</button></span>`).join('')}</div></div>` : ''}
     <div class="fhd"><div class="muted small">15초 기준 CPRP(원). '150만'처럼 써도 돼요. 케이블은 PP로 적되, 같은 PP 안에서 채널마다 다르면 채널 이름으로 따로 적으면 그 채널은 그 값을 써요.</div><div class="spacer"></div><button class="btn sm pri" data-add>＋ CPRP 추가</button></div>
     <datalist id="dl-pp-케이블">${pps.concat(M.MS.chList.filter(c => c.media === '케이블' && !pps.includes(c.name)).map(c => c.name)).map(c => `<option value="${esc(c)}">`).join('')}</datalist><datalist id="dl-pp-지상파">${gch.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
-    <div class="tw free fit"><table class="t form narrow"><thead><tr><th class="l">매체</th><th class="l">PP · 채널</th><th>CPRP (원)</th><th>이번 달 적용</th><th></th></tr></thead><tbody>
-    ${rows.map((r, i) => { const media = /지상파/.test(str(r[0])) ? '지상파' : '케이블'; const u = used(r);
+    <div class="tw free fit"><table class="t form narrow"><thead><tr><th class="l">매체</th><th class="l">PP · 채널</th><th>CPRP (원)</th><th class="l">추가·수정</th><th></th></tr></thead><tbody>
+    ${rows.map((r, i) => { const media = /지상파/.test(str(r[0])) ? '지상파' : '케이블';
       return `<tr data-i="${i}"><td class="in"><select data-f="0">${optHtml(['지상파', '케이블'], media)}</select></td><td class="in"><input data-f="1" value="${esc(str(r[1]))}" list="dl-pp-${media}" class="${str(r[1]) ? '' : 'need'}"></td>
       <td class="in"><input data-f="2" class="r" inputmode="numeric" value="${esc(amtTxt(num(r[2]) == null ? r[2] : num(r[2])))}"></td>
-      <td class="use">${u.length ? `${u.length}개 채널×품목 · 예산 ${fmt.eok(sum(u, c => c.budget), 2)}` : '<span class="muted">-</span>'}</td><td><button class="x" data-del title="삭제">✕</button></td></tr>`; }).join('')}
+      <td class="stc">${stampHtml(r[3], r[4])}</td><td><button class="x" data-del title="삭제">✕</button></td></tr>`; }).join('')}
     </tbody></table></div>`;
-  body.querySelector('[data-add]').onclick = () => { rows.push(['케이블', '', '']); App.changed('master', true); renderMasterForm(el); mstFocusLast(el, 1); };
-  body.querySelectorAll('[data-madd]').forEach(b => b.onclick = () => { const [media, pp] = b.dataset.madd.split('|'); rows.push([media, pp, '']); App.changed('master', true); renderMasterForm(el); mstFocusLast(el, 2); });
+  body.querySelector('[data-add]').onclick = () => { rows.push(stampRow(['케이블', '', ''], 3)); App.changed('master', true); renderMasterForm(el); mstFocusLast(el, 1); };
+  body.querySelectorAll('[data-madd]').forEach(b => b.onclick = () => { const [media, pp] = b.dataset.madd.split('|'); rows.push(stampRow([media, pp, ''], 3)); App.changed('master', true); renderMasterForm(el); mstFocusLast(el, 2); });
   body.querySelectorAll('tr[data-i]').forEach(tr => {
     const i = +tr.dataset.i, r = rows[i];
     tr.querySelector('[data-del]').onclick = () => { rows.splice(i, 1); App.changed('master'); };
@@ -5446,8 +5784,9 @@ function mCprp(body, el) {
       if (+inp.dataset.f === 2) inp.addEventListener('focus', () => { inp.value = num(r[2]) == null ? str(r[2]) : String(num(r[2])); inp.select(); });
       inp.addEventListener('change', () => {
         const f = +inp.dataset.f; let v = inp.value.trim();
-        if (f === 2) { const n = parseAmount(v); if (n === null) { inp.classList.add('bad'); return App.toast('숫자로 읽을 수 없어요'); } inp.classList.remove('bad'); r[2] = n; inp.value = amtTxt(n); }
-        else r[f] = v;
+        if (f === 2) { const n = parseAmount(v); if (n === null) { inp.classList.add('bad'); return App.toast('숫자로 읽을 수 없어요'); } inp.classList.remove('bad'); if (num(r[2]) === n) { inp.value = amtTxt(n); return; } r[2] = n; inp.value = amtTxt(n); }
+        else { if (str(r[f]) === v) return; r[f] = v; }
+        stampRow(r, 3); mstStampCell(tr, r, 3);
         App.changed('master', f !== 0); if (f === 0) renderMasterForm(el);
       });
       if (+inp.dataset.f === 2) inp.addEventListener('blur', () => { if (!inp.classList.contains('bad')) inp.value = amtTxt(num(r[2]) == null ? r[2] : num(r[2])); });
@@ -5519,7 +5858,7 @@ function openAddChannel(anchor, media, present, onPick) {
       const ex = resolveCh(M.MS, name); if (ex) { closePops(); return onPick(ex.name); }
       if (media === '케이블' && !ppv) return App.toast('PP를 적거나 골라 주세요');
       const rows = WS.sheets.채널; const at = media === '지상파' ? rows.reduce((a, r, i) => /지상파/.test(str(r[2])) ? i + 1 : a, 0) : rows.length;
-      rows.splice(at, 0, [name, '', media, ppv, media === '지상파' ? name : '기타']);
+      rows.splice(at, 0, stampRow([name, '', media, ppv, media === '지상파' ? name : '기타'], 5));
       setM(compute(WS)); App.toast(`마스터 채널에 '${esc(name)}'${media === '케이블' ? ` (PP ${esc(ppv)})` : ''}을(를) 추가했어요`);
       closePops(); onPick(name);
     }
@@ -5898,11 +6237,14 @@ function renderCreForm(el) {
 }
 
 // ---- 매칭 규칙 (방송사 원본 가져오기) ----
-function mRules(body, el) {
+function mRules(body, el, opt) {
+  opt = opt || {};
+  // 온보딩 창 안: 바꾸면 매칭을 다시 해서 창 전체를 다시 그림(포커스가 다음 칸으로 옮겨 간 뒤에)
+  const rr = opt.rerender ? () => setTimeout(opt.rerender, 0) : (() => renderMasterForm(el));
   const rows = WS.sheets.매칭규칙 = WS.sheets.매칭규칙 || [];
   const MS = M.MS;
   const vals = kind => kind === '품목' ? MS.itemOrder : kind === '채널' ? MS.chList.map(c => c.name) : [];
-  body.innerHTML = `<div class="fhd"><div class="muted small">예: 파일명에 ‘KBS조이’ → 채널 KBS Joy · 파일명에 ‘비렉스’ → 품목 안마매트리스 · 시트명에 ‘일자별’ → 제외(같은 내용 중복 시트)</div><div class="spacer"></div><button class="btn sm" data-ob>방송사 큐시트 온보딩 열기</button><button class="btn sm pri" data-add>＋ 규칙 추가</button></div>
+  body.innerHTML = `<div class="fhd"><div class="muted small">파일명·시트명에 이 글자가 있으면 그 채널/품목으로 맞춰요 (위에서부터 먼저). 예: 파일명 ‘KBS조이’ → KBS Joy</div><div class="spacer"></div>${opt.inOb ? '' : '<button class="btn sm" data-ob>방송사 큐시트 온보딩 열기</button>'}<button class="btn sm pri" data-add>＋ 규칙 추가</button></div>
     <datalist id="dl-rch">${MS.chList.map(c => `<option value="${esc(c.name)}">`).join('')}</datalist><datalist id="dl-rit">${MS.itemOrder.map(k => `<option value="${esc(k)}">`).join('')}</datalist>
     <div class="tw free fit"><table class="t form"><thead><tr><th></th><th class="l">종류</th><th class="l">파일명에 포함</th><th class="l">시트명에 포함</th><th class="l">→ 채널 / 품목</th><th></th></tr></thead><tbody>
     ${rows.length ? rows.map((r, i) => { const k = str(r[0]) || '채널'; const bad = k !== '제외' && str(r[3]) && !(k === '품목' ? resolveItem(MS, r[3]) : resolveCh(MS, r[3]));
@@ -5913,16 +6255,16 @@ function mRules(body, el) {
       <div class="small muted" style="margin:6px 0">판정은 Q-Mate와 똑같아요. 채널: 직접 만든 규칙 → 기본 규칙 순으로 ① 파일명(+시트명 조건) ② 시트명 키워드를 시트명·파일명 어디서든 ③ 파일명 키워드를 시트명에서. 품목: 기본 규칙 → 직접 만든 규칙 순으로 파일명 키워드. 찾은 이름은 마스터 약칭(채널은 이름·별칭)으로 맞춰요.</div>
       <table class="t sm"><thead><tr><th class="l">파일명에 포함</th><th class="l">시트명에 포함</th><th class="l">채널</th></tr></thead><tbody>${QM_CH_RULES.map(([f, sh, pp, ch]) => `<tr><td class="l"><code>${esc(f)}</code></td><td class="l">${esc(sh)}</td><td class="l">${ch ? esc(ch) : pp ? `<span class="muted">${esc(pp)} (시트에서 찾기)</span>` : '<span class="muted">빼기</span>'}</td></tr>`).join('')}</tbody></table>
       <table class="t sm" style="margin-top:8px"><thead><tr><th class="l">파일명 키워드</th><th class="l">품목</th></tr></thead><tbody>${QM_ITEM_RULES.map(([k, v]) => `<tr><td class="l"><code>${esc(k)}</code></td><td class="l">${esc(resolveItemLoose(MS, v) || v)}</td></tr>`).join('')}</tbody></table></details>`;
-  body.querySelector('[data-ob]').onclick = () => OBUI.open();
-  body.querySelector('[data-add]').onclick = () => { rows.push(['채널', '', '', '']); App.changed('master', true); renderMasterForm(el); mstFocusLast(el, 1); };
-  dragRows(body.querySelector('tbody'), order => { reorderBy(rows, order); App.changed('master', true); renderMasterForm(el); });
+  const ob = body.querySelector('[data-ob]'); if (ob) ob.onclick = () => OBUI.open();
+  body.querySelector('[data-add]').onclick = () => { rows.push(['채널', '', '', '']); App.changed('master', true); if (el) { rr(); mstFocusLast(el, 1); } else { mRules(body, el, opt); const ins = body.querySelectorAll('tr[data-i] input[data-f="1"]'); if (ins.length) ins[ins.length - 1].focus(); } };
+  dragRows(body.querySelector('tbody'), order => { reorderBy(rows, order); App.changed('master', true); rr(); });
   body.querySelectorAll('tr[data-i]').forEach(tr => {
     const i = +tr.dataset.i, r = rows[i];
-    tr.querySelector('[data-del]').onclick = () => { rows.splice(i, 1); App.changed('master'); };
+    tr.querySelector('[data-del]').onclick = () => { rows.splice(i, 1); App.changed('master'); if (opt.inOb) rr(); };
     tr.querySelectorAll('[data-f]').forEach(inp => inp.addEventListener('change', () => {
       const f = +inp.dataset.f; let v = inp.value.trim();
       if (f === 3 && v) { const k = str(r[0]); const x = k === '품목' ? resolveItemLoose(MS, v) : resolveCh(MS, v); if (x) v = typeof x === 'string' ? x : x.name; }
-      r[f] = v; App.changed('master', true); if (f === 0 || f === 3) renderMasterForm(el);
+      r[f] = v; App.changed('master', true); if (f === 0 || f === 3 || opt.inOb) rr();
     }));
   });
 }
@@ -5987,14 +6329,15 @@ function donut3D(host, slices, opts = {}) {
   }
   const W = host.clientWidth || 460, H = opts.height || 340;
   st.W = W; st.H = H; st.ctx = setupCanvas(st.cv, W, H);
-  const R = Math.min(W * 0.27, 150);
-  st.g = { R, r: R * 0.55, t: 0.5, H0: 16, cx: W / 2, cy: H * 0.66 };
+  const R = Math.min(W * (opts.rScale || 0.27), opts.rMax || 150);
+  st.g = { R, r: R * (opts.hole || 0.55), t: 0.5, H0: opts.h0 || 16, cx: W / 2, cy: H * (opts.cyR || 0.66) };
+  st.opts = opts;
   const HMAX = Math.min(120, H * 0.36);
   const metric = s => Math.max(0, s.extra || 0);
   const mx = Math.max(1e-9, ...slices.map(metric));
   const tgt = slices.map(s => ({ ...s, h: opts.bonus === false ? 0 : HMAX * metric(s) / mx }));
   if (st.stop) st.stop();
-  const from = opts.intro ? null : (st.cur || DN.last);
+  const from = opts.intro ? null : (st.cur || (opts.own ? null : DN.last));   // own: 다른 도넛 모양에서 바뀌어 오지 않음
   if (!from || from.length !== tgt.length) {
     st.cur = tgt; st.sweep = 0; st.rise = 0; dnDraw(st);
     st.stop = tween(620, q => { st.sweep = q; dnDraw(st); }, () => { st.stop = tween(560, q => { st.rise = q; dnDraw(st); }); });
@@ -6005,7 +6348,7 @@ function donut3D(host, slices, opts = {}) {
       dnDraw(st);
     });
   }
-  DN.last = tgt;
+  if (!opts.own) DN.last = tgt;
 }
 function dnGeo(st) {
   const { R, r, t, cx, cy } = st.g; const O0 = { x: 0, y: 0 };
@@ -6064,7 +6407,7 @@ function dnDraw(st) {
     ctx.strokeStyle = shade(s.color, -0.3); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.lineTo(ex, p1[1]); ctx.stroke();
     ctx.fillStyle = shade(s.color, -0.3); ctx.beginPath(); ctx.arc(p0[0], p0[1], 2, 0, Math.PI * 2); ctx.fill();
     ctx.textAlign = side > 0 ? 'left' : side < 0 ? 'right' : 'center';
-    const l1 = `${s.label} ${Math.round(share * 100)}%`, l2 = fmt.eok(s.value, 1);
+    const l1 = `${s.label} ${Math.round(share * 100)}%`, l2 = (st.opts && st.opts.valFmt) ? st.opts.valFmt(s.value) : fmt.eok(s.value, 1);
     ctx.font = '600 12px ' + ff; const tw = ctx.measureText(l1).width;
     let tx = side ? ex + side * 3 : p1[0]; const ty1 = front ? ey + 9 : ey - 12, ty2 = ty1 + 14;
     if (side < 0) tx = Math.max(tw + 4, tx); else if (side > 0) tx = Math.min(W - tw - 4, tx);
@@ -6072,8 +6415,28 @@ function dnDraw(st) {
     ctx.strokeText(l1, tx, ty1); ctx.fillStyle = '#262626'; ctx.fillText(l1, tx, ty1);
     ctx.font = '11px ' + ff; ctx.strokeText(l2, tx, ty2); ctx.fillStyle = '#616161'; ctx.fillText(l2, tx, ty2);
   }
+  // 15차: 매체 묶음(지상파/케이블)이 있으면 묶음 바깥을 따라 옅은 점선 호 + 매체 이름(방송사 레이블과 가장 먼 자리)
+  if (nb && st.sweep > 0.98) {
+    const mids = S.filter(s => s.value / total >= 0.035).map(s => s.mid);
+    const angD = (x, y) => { let d = Math.abs(x - y) % (Math.PI * 2); return d > Math.PI ? Math.PI * 2 - d : d; };
+    for (const g of vg) {
+      const ss = S.filter(s => (s.grp || '') === g && s.value > 0); if (!ss.length || !g) continue;
+      const a0 = Math.min(...ss.map(s => s.a0)), a1 = Math.max(...ss.map(s => s.a1)), o = ss[0].o;
+      ctx.strokeStyle = 'rgba(120,120,126,.38)'; ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); G.arc(a0 + 0.03, a1 - 0.03, R + 9, 0, o).forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.stroke(); ctx.setLineDash([]);
+      if (a1 - a0 < 0.35) continue;
+      let best = null, bs = -1;
+      for (let t = a0 + 0.14; t <= a1 - 0.14; t += 0.02) { const sc = mids.length ? Math.min(...mids.map(m => angD(t, m))) : 1; if (sc > bs) { bs = sc; best = t; } }
+      if (best == null) best = (a0 + a1) / 2;
+      const cs = Math.cos(best), sn = Math.sin(best), p = G.P(best, R + 16, 0, o);
+      ctx.textAlign = cs > 0.25 ? 'left' : cs < -0.25 ? 'right' : 'center'; ctx.font = '600 11px ' + ff;
+      const ty = p[1] + (sn > 0 ? 10 : -3);
+      ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.strokeText(g, p[0], ty); ctx.fillStyle = '#8e8e93'; ctx.fillText(g, p[0], ty);
+    }
+  }
   // 가운데 글자 (지금 그려지는 값 기준)
-  const c1 = fmt.eok(total, 1), c2 = `보너스 ${fmt.eok(sum(st.cur, s => s.extra), 1)}`;
+  const cc = st.opts && st.opts.center ? st.opts.center(st.cur, total) : null;
+  const c1 = cc ? cc[0] : fmt.eok(total, 1), c2 = cc ? cc[1] : `보너스 ${fmt.eok(sum(st.cur, s => s.extra), 1)}`;
   ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,.92)';
   ctx.font = '700 15px ' + ff; ctx.strokeText(c1, cx, cy - H0 - 4); ctx.fillStyle = '#262626'; ctx.fillText(c1, cx, cy - H0 - 4);
   ctx.font = '12px ' + ff; ctx.strokeText(c2, cx, cy - H0 + 13); ctx.fillStyle = '#616161'; ctx.fillText(c2, cx, cy - H0 + 13);
@@ -6087,7 +6450,8 @@ function dnMove(st, e) {
   for (const i of order) if (hp[i] && st.ctx.isPointInPath(hp[i], x * sx, y * sy)) { h = i; break; }
   if (h < 0) for (const i of order) { if (st.ctx.isPointInPath(G.top(S[i], st.g.H0), x * sx, y * sy)) { h = i; break; } }
   if (h !== st.hover) { st.hover = h; dnDraw(st); }
-  if (h >= 0) { const s = S[h]; const total = sum(S, z => z.value); tipShow(st.tip, st.host, x, y, `<b>${s.grp ? esc(s.grp) + ' · ' : ''}${esc(s.label)}</b><div>예산 ${fmt.eok(s.value, 2)} <span class="m">(${fmt.pct(s.value / total)})</span></div><div>보너스 ${fmt.eok(s.extra, 2)} · 보너스율 ${fmt.pct(s.value ? s.extra / s.value : null)}</div><div class="m">예산+보너스 ${fmt.eok(s.value + s.extra, 2)}</div>`); }
+  if (h >= 0 && st.opts && st.opts.tip) { const s = S[h]; tipShow(st.tip, st.host, x, y, st.opts.tip(s, sum(S, z => z.value))); }
+  else if (h >= 0) { const s = S[h]; const total = sum(S, z => z.value); tipShow(st.tip, st.host, x, y, `<b>${s.grp ? esc(s.grp) + ' · ' : ''}${esc(s.label)}</b><div>예산 ${fmt.eok(s.value, 2)} <span class="m">(${fmt.pct(s.value / total)})</span></div><div>보너스 ${fmt.eok(s.extra, 2)} · 보너스율 ${fmt.pct(s.value ? s.extra / s.value : null)}</div><div class="m">예산+보너스 ${fmt.eok(s.value + s.extra, 2)}</div>`); }
   else st.tip.style.display = 'none';
 }
 
@@ -6111,6 +6475,8 @@ function itemBars(host, rows, opts = {}) {
     rows.forEach((x, i) => {
       const e = els[i], v = vals[i]; const wb = v.b / mx * 100, wx = Math.max(0, v.x) / mx * 100;
       e.bb.style.width = wb + '%'; e.bx.style.left = wb + '%'; e.bx.style.width = wx + '%';
+      // 15차: 예산·보너스가 맞닿는 쪽은 각지게 → 한 막대처럼
+      e.bb.style.borderRadius = wx > 0.05 ? '4px 0 0 4px' : '4px'; e.bx.style.borderRadius = wb > 0.05 ? '0 4px 4px 0' : '4px';
       const TW = e.trk.clientWidth || 1, pb = TW * wb / 100, px = TW * wx / 100;
       e.lbb.textContent = v.b > 0 ? fmt.eok(v.b, 1) : '';
       const bw = e.lbb.offsetWidth; const inB = bw + 12 <= pb;
@@ -6119,7 +6485,7 @@ function itemBars(host, rows, opts = {}) {
       e.lbx.textContent = v.x > 0.5e6 ? '+' + fmt.eok(v.x, 1) : '';
       const xw = e.lbx.offsetWidth, used = inB ? pb : pb + 6 + bw;
       const okX = xw && pb + px - xw - 8 > used + 6;
-      e.lbx.style.visibility = okX ? '' : 'hidden'; e.lbx.style.left = (pb + px - xw - 7) + 'px'; e.lbx.style.color = shade(x.color, -0.45);
+      e.lbx.style.visibility = okX ? '' : 'hidden'; e.lbx.style.left = (pb + px - xw - 7) + 'px'; e.lbx.style.color = shade(x.color, isLight(x.color) ? -0.34 : -0.14);   // 다른 레이블처럼 품목 색 계열
       e.lbv.textContent = v.b + v.x > 0 ? fmt.eok(v.b + Math.max(0, v.x), 1) : '';
       e.lbv.style.left = (pb + px + 7) + 'px';
     });
@@ -6160,7 +6526,7 @@ function dailyStack(host, spots, opts) {
   const wmax = Math.max(1, ...weeks.map(w => wkTot(w)));
   // 13차: 왼쪽 = 주차별(먼저 읽는 쪽), 오른쪽 = 일별 막대
   host.innerHTML = `<div class="dstk"><div class="dstk-r"><div class="dstk-h">주차별 <span>누르면 그 주를 강조</span></div>
-    ${weeks.map((w, i) => `<button type="button" class="wkr" data-w="${i}"><span class="t"><b>${w.label}</b><span class="rg">${esc(w.range)}</span><em class="tnum" data-wt="${i}">${fmt.int(wkTot(w))}</em></span><span class="bar" data-wb="${i}"></span></button>`).join('')}</div>
+    ${weeks.map((w, i) => `<button type="button" class="wkr" data-w="${i}"><span class="t"><b>${w.label}</b><span class="rg">${esc(w.range)}</span></span><span class="bar"><span class="fill" data-wb="${i}"></span><em class="tnum" data-wt="${i}">${fmt.int(wkTot(w))}</em></span></button>`).join('')}</div>
     <div class="dstk-l chost"><div class="dstk-h">일별 <span>막대 = 하루 · 품목 색으로 쌓음</span></div><canvas></canvas><div class="ctip"></div></div></div>`;
   const pane = host.querySelector('.dstk-l'), cv = pane.querySelector('canvas'), tip = pane.querySelector('.ctip');
   const ffam = getComputedStyle(document.body).fontFamily;
@@ -6216,7 +6582,9 @@ function dailyStack(host, spots, opts) {
       const bar = host.querySelector(`[data-wb="${i}"]`), t = host.querySelector(`[data-wt="${i}"]`); if (!bar) return;
       const wt = wkTot(w, upto);
       t.textContent = fmt.int(wt);
-      bar.innerHTML = `<span class="fill" style="width:${(wt / wmax * 100).toFixed(2)}%">${order.map(k => { const v = wkItem(w, k, upto); return v ? `<i style="flex:${v};background:${focus && k !== focus ? tint(itemColor(k), 0.74) : itemColor(k)}"></i>` : ''; }).join('')}</span>`;
+      // 15차: 숫자는 막대 끝 오른쪽 (막대 길이 = 숫자 자리를 뺀 너비 기준)
+      bar.style.width = `calc((100% - 52px) * ${(wt / wmax).toFixed(4)})`;
+      bar.innerHTML = order.map(k => { const v = wkItem(w, k, upto); return v ? `<i style="flex:${v};background:${focus && k !== focus ? tint(itemColor(k), 0.74) : itemColor(k)}"></i>` : ''; }).join('');
     });
     host.querySelectorAll('.wkr').forEach(b => b.classList.toggle('on', selW === +b.dataset.w));
     if (opts.onTick) { const dd = Math.max(1, Math.min(days, Math.floor(prog))); opts.onTick(prog > days ? `${ym.m}/1~${days} · ${fmt.int(total)}회` : `${ym.m}/${dd} (${dowOf(ym.y, ym.m, dd)}) · 누적 ${fmt.int(sum(tot.slice(0, dd + 1), x => x))}회`, prog <= days); }
@@ -7980,8 +8348,9 @@ function obKwFromName(fn, names) {
 
 // ---- 세션 ----
 const OB = {
-  files: [], seq: 1, cm: {}, mode: 'replace',
-  reset() { this.files = []; this.cm = {}; this.mode = 'replace'; },
+  files: [], seq: 1, cm: {}, mode: 'replace', media: null,   // 15차 media: 넣을 시트(지상파|케이블) — 다른 매체 행은 넣지 않음
+  reset() { this.files = []; this.cm = {}; this.mode = 'replace'; this.media = null; },
+  tgtOf(media) { return media === '지상파' ? '지상파' : '케이블'; },
   async addFiles(list) {
     const arr = [...list].filter(f => /\.(xlsx|xlsm|xls|csv)$/i.test(f.name));
     for (const file of arr) {
@@ -8039,7 +8408,7 @@ const OB = {
       let rows = [];
       try { rows = QME.buildRows([entry]).slice(1); } catch (e) { console.error(e); F.err = e.message; }
       const item = this.itemOf(F);
-      const st = { n: 0, price: 0, d1: 99, d2: 0, ym: {}, sheets: new Map() };
+      const st = { n: 0, price: 0, d1: 99, d2: 0, ym: {}, sheets: new Map(), other: new Map() };
       for (const r of rows) {
         const shName = r[57], S = F.sheets.find(x => x.name === shName), sh = S && S.sh;
         const chR = S ? this.chOf(S) : {}; const ch = chR && chR.ch || '';
@@ -8049,6 +8418,7 @@ const OB = {
         const [mo, dd] = String(r[18] || '').split('/').map(Number);
         const terr = c && c.media === '지상파';   // Q-Mate: 지상파 3사는 품목 '미지정'
         const o = { file: F.name, sheet: shName, ch, media: c ? c.media : '', item: terr ? '' : item, prog: str(r[2]), dow: str(r[3]), start: str(r[4]), end: str(r[5]), grade: str(r[6]), sec: r[7] === '' ? '' : +r[7], cm: str(r[8]), cmRaw: str(r[56]), price: r[9] === '' ? '' : +r[9], date: mo ? `${mo}/${dd}` : '', mo, dd, cre: '', note: '', amount: terr ? extra.amount : '' };
+        if (this.media && c && this.tgtOf(c.media) !== this.media) { st.other.set(shName, (st.other.get(shName) || 0) + 1); continue; }   // 고른 시트가 아닌 매체
         out.rows.push(o);
         st.n++; st.price += +o.price || 0; if (dd) { st.d1 = Math.min(st.d1, dd); st.d2 = Math.max(st.d2, dd); st.ym[mo] = (st.ym[mo] || 0) + 1; }
         st.sheets.set(shName, (st.sheets.get(shName) || 0) + 1);
@@ -8065,7 +8435,7 @@ const OB = {
     for (const F of this.files) {
       if (F.status !== 'ok') continue;
       for (const S of F.sheets) { const r = this.chOf(S); if (!r.skip && !r.ch) { const n = (this.out && this.out.byFile.get(F.id) || { sheets: new Map() }).sheets.get(S.name) || 0; if (n || !S.sh.dataRows || S.sh.dataRows.length) t.ch.push({ F, S, n }); } }
-      const cabSheet = F.sheets.some(S => { const r = this.chOf(S); if (r.skip) return false; const c = r.ch && MS.chByName.get(r.ch); return !c || c.media !== '지상파'; });
+      const cabSheet = this.media !== '지상파' && F.sheets.some(S => { const r = this.chOf(S); if (r.skip) return false; const c = r.ch && MS.chByName.get(r.ch); return !c || c.media !== '지상파'; });
       if (cabSheet && F.itemSel === undefined && !(F.item && F.item.item)) t.item.push({ F });
     }
     if (this.out) for (const [raw, x] of this.out.cm) if (!this.cm[raw]) t.cm.push({ raw, ...x });
@@ -8100,12 +8470,15 @@ function obToSheetRows(rows) {
 const DAYS_KO = ['월', '화', '수', '목', '금', '토', '일'];
 
 // ===== 14-onboard-ui.js : '방송사 큐시트 온보딩' 창 — 방송사 원본 엑셀 → 자동 매칭 → 확인 → 시트에 넣기 =====
-// 흐름: ① 파일 올리기(머리글·열 자동 감지) ② 못 맞춘 것만 확인 — 마스터에서 고르기 → 없으면 마스터에 추가 ③ 미리보기 후 넣기
+// 흐름: ⓪ 넣을 시트 고르기(지상파 입력 / 케이블 입력 — 그 시트를 잠가서 다른 관리자와 겹치지 않게)
+//       ① 파일 올리기(머리글·열 자동 감지) ② 못 맞춘 것만 확인 ③ 미리보기 후 넣기
+// 15차: 매칭 규칙은 창 위쪽에서 바로 고치고 추가 · 안내 문구 최소화
 const OBUI = {
-  bg: null,
-  open(files) {
-    if (this.bg) { if (files && files.length) this.add(files); return; }
-    OB.reset();
+  bg: null, media: null, pending: [], rulesOpen: false, locking: null,
+  open(files, o) {
+    o = o || {};
+    if (this.bg) { if (o.rules) { this.rulesOpen = true; this.render(); } if (files && files.length) this.add(files); return; }
+    OB.reset(); this.media = null; this.pending = []; this.locking = null; this.rulesOpen = !!o.rules;
     const bg = document.createElement('div'); bg.className = 'modal-bg obbg';
     bg.innerHTML = '<div class="modal obm" role="dialog" aria-label="방송사 큐시트 온보딩"></div>';
     document.body.appendChild(bg); this.bg = bg; this.box = bg.querySelector('.obm');
@@ -8114,14 +8487,36 @@ const OBUI = {
     bg.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); const z = bg.querySelector('.obdrop'); if (z) z.classList.add('on'); });
     bg.addEventListener('dragleave', e => { if (e.target === bg) { const z = bg.querySelector('.obdrop'); if (z) z.classList.remove('on'); } });
     bg.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); const z = bg.querySelector('.obdrop'); if (z) z.classList.remove('on'); this.add(e.dataTransfer.files); });
-    this.render();
-    if (files && files.length) this.add(files);
+    if (files && files.length) this.pending = [...files];
+    if (o.media) this.pickMedia(o.media); else this.render();
   },
-  close() { if (!this.bg) return; this.bg.remove(); this.bg = null; OB.reset(); },
+  close() {
+    if (!this.bg) return;
+    this.bg.remove(); this.bg = null; OB.reset(); this.media = null; this.pending = [];
+    if (typeof LOCK !== 'undefined' && LOCK.active()) LOCK.enter(App.tab);   // 온보딩에서 잡은 시트 잠금 → 지금 보고 있는 메뉴로 되돌림
+  },
+  // ⓪ 넣을 시트 고르기 → 그 시트 편집 잠금
+  async pickMedia(m) {
+    if (this.locking) return;
+    if (typeof LOCK !== 'undefined' && LOCK.active()) {
+      this.locking = m; this.render();
+      const t = LOCK.key(m);
+      if (LOCK.cur && LOCK.cur !== t) LOCK.release(LOCK.cur);
+      LOCK.cur = t; LOCK.lastAct = Date.now();
+      await LOCK.acquire(t, true);
+      this.locking = null;
+      if (!this.bg) return;
+      if (LOCK.blocked(m)) { this.media = null; OB.media = null; this.render(); App.toast(`<b>${esc(LOCK.other(m) || (LOCK.st[t] || {}).who || '다른 관리자')}</b>님이 ${m} 입력을 작업 중이에요. 끝나면 넣을 수 있어요`, 5000); return; }
+    }
+    this.media = m; OB.media = m;
+    const p = this.pending; this.pending = [];
+    if (p.length) await this.add(p); else this.refresh();
+  },
   async add(list) {
     const arr = [...(list || [])];
     if (!arr.length) return;
-    this.busy = `파일 ${arr.length}개를 읽는 중…`; this.render();
+    if (!this.media) { this.pending = this.pending.concat(arr); this.render(); return; }
+    this.busy = `파일 ${arr.length}개 읽는 중…`; this.render();
     await new Promise(r => setTimeout(r, 20));
     const n = await OB.addFiles(arr);
     this.busy = null;
@@ -8133,109 +8528,147 @@ const OBUI = {
 
   render() {
     if (!this.bg) return;
+    // 다시 그려도 커서 자리 유지 (매칭 규칙 칸)
+    const ae = document.activeElement, aeTr = ae && ae.closest && ae.closest('.obrules tr[data-i]');
+    const keepF = aeTr ? { i: aeTr.dataset.i, f: ae.dataset.f } : null;
     const body = this.box.querySelector('.obb'); const st = body ? body.scrollTop : 0;
+    this.box.classList.toggle('pick', !this.media); this.bg.classList.toggle('pick', !this.media);
+    if (!this.media) { this.renderPick(); return; }
     const MS = buildMaster(WS);
     const files = OB.files, out = OB.out || { rows: [], byFile: new Map(), cm: new Map() };
     const td = OB.todo();
     const need = td.ch.length + td.item.length;
     const okRows = out.rows.filter(o => o.ch);
     const step = !files.length ? 1 : need ? 2 : 3;
+    const nRule = (WS.sheets.매칭규칙 || []).length;
     this.box.innerHTML = `
-    <div class="obh"><div><h2>방송사 큐시트 온보딩</h2><div class="sub">방송사에서 받은 원본 엑셀을 끌어다 놓으면 머리글·열을 자동으로 읽고, 채널·품목·CM위치를 마스터와 맞춰서 지상파/케이블 시트에 넣어요.</div></div><button class="btn ghost obx" title="닫기 (Esc)">✕</button></div>
+    <div class="obh"><div><h2>방송사 큐시트 온보딩 <span class="md ${this.media === '지상파' ? 'g' : 'c'} obmdb">${this.media} 입력</span> <button class="lnk obchg" title="넣을 시트 바꾸기">바꾸기</button></h2><div class="sub">원본 엑셀을 놓으면 채널·품목·CM위치를 맞춰서 ${this.media} 입력에 넣어요.</div></div><button class="btn ghost obx" title="닫기 (Esc)">✕</button></div>
+    <details class="obrules"${this.rulesOpen ? ' open' : ''}><summary><b>매칭 규칙</b><span class="muted small">${nRule ? `직접 만든 규칙 ${nRule}개` : '파일명·시트명으로 채널·품목 맞추기'}</span><span class="spacer"></span><span class="obr-tg">＋ 추가·수정</span></summary><div class="obrbody"></div></details>
     <div class="obsteps">${[['파일 올리기', files.length ? `${files.length}개` : ''], ['매칭 확인', need ? `${need}건 남음` : (files.length ? '완료' : '')], ['시트에 넣기', okRows.length ? `${fmt.int(okRows.length)}회` : '']].map(([t, s], i) => `<div class="obst ${step === i + 1 ? 'on' : step > i + 1 ? 'done' : ''}"><i>${step > i + 1 ? '✓' : i + 1}</i><span>${t}</span>${s ? `<small>${s}</small>` : ''}</div>`).join('<span class="obsep"></span>')}</div>
     <div class="obb">
-      <div class="obdrop${files.length ? ' sm' : ''}" tabindex="0"><div class="ic">📊</div><div><div class="t">${files.length ? '파일 더 추가하기' : '여기에 엑셀 파일을 끌어다 놓으세요'}</div><div class="s">.xlsx · .xls · .csv — 여러 파일, 여러 시트 모두 · 머리글 행 자동 감지 · 숨김 시트는 읽지 않음</div></div><button class="btn pri obpick">파일 선택</button><input type="file" class="obfile" accept=".xlsx,.xlsm,.xls,.csv" multiple hidden></div>
+      <div class="obdrop${files.length ? ' sm' : ''}" tabindex="0"><div class="ic">📊</div><div><div class="t">${files.length ? '파일 더 넣기' : '엑셀 파일을 끌어다 놓으세요'}</div><div class="s">.xlsx · .xls · .csv · 여러 개 가능</div></div><button class="btn pri obpick">파일 선택</button><input type="file" class="obfile" accept=".xlsx,.xlsm,.xls,.csv" multiple hidden></div>
       ${this.busy ? `<div class="obbusy">${esc(this.busy)}</div>` : ''}
       ${td.ch.length || td.item.length || td.cm.length ? this.todoHtml(MS, td, out) : ''}
       ${files.length ? this.filesHtml(MS, out) : ''}
       ${okRows.length && !need ? this.previewHtml(MS, okRows) : ''}
     </div>
-    <div class="obf"><div class="msg">${!files.length ? '파일을 올리면 자동으로 매칭해요' : need ? `<b class="w">확인이 필요한 ${need}건</b>을 고르면 넣을 수 있어요` : `<b>${fmt.int(okRows.length)}회</b> 넣을 준비가 됐어요 · 넣기 전 상태는 변경 이력에 버전으로 남아요`}</div>
-      <button class="btn" data-ob="close">취소</button><button class="btn pri" data-ob="go" ${!okRows.length || need ? 'disabled' : ''}>${okRows.length ? `${fmt.int(okRows.length)}회 시트에 넣기` : '시트에 넣기'}</button></div>`;
+    <div class="obf"><div class="msg">${!files.length ? '' : need ? `<b class="w">확인 ${need}건</b>을 고르면 넣을 수 있어요` : okRows.length ? `<b>${fmt.int(okRows.length)}회</b> 넣을 준비 완료` : `${this.media} 송출이 없어요`}</div>
+      <button class="btn" data-ob="close">취소</button><button class="btn pri" data-ob="go" ${!okRows.length || need ? 'disabled' : ''}>${okRows.length ? `${fmt.int(okRows.length)}회 넣기` : '넣기'}</button></div>`;
     const nb = this.box.querySelector('.obb'); nb.scrollTop = st;
+    this.bindRules();
     this.bind();
+    if (keepF) { const x = this.box.querySelector(`.obrules tr[data-i="${keepF.i}"] [data-f="${keepF.f}"]`); if (x) x.focus(); }
+  },
+  // ⓪ 넣을 시트 고르기
+  renderPick() {
+    const on = typeof LOCK !== 'undefined' && LOCK.active();
+    const btn = (m, sub) => {
+      const who = on && LOCK.others[m] ? LOCK.others[m].who || '다른 관리자' : '';
+      return `<button class="obmd ${m === '지상파' ? 'g' : 'c'}${App.tab === m ? ' cur' : ''}" data-md="${m}" ${this.locking ? 'disabled' : ''}><b>${m} 입력</b><small>${sub}</small>${this.locking === m ? '<span class="lk">잠그는 중…</span>' : who ? `<span class="lk">🔒 ${esc(who)}님 작업 중</span>` : ''}</button>`;
+    };
+    this.box.innerHTML = `
+    <div class="obh"><div><h2>방송사 큐시트 온보딩</h2><div class="sub">어느 시트에 넣을까요?</div></div><button class="btn ghost obx" title="닫기 (Esc)">✕</button></div>
+    <div class="obb obpick0">
+      <div class="obmedia">${btn('지상파', 'KBS · MBC · SBS 원본')}${btn('케이블', 'PP · 종편 원본')}</div>
+      ${on ? '<div class="muted small obnote">고른 시트는 넣는 동안 다른 관리자가 고칠 수 없어요.</div>' : ''}
+      ${this.pending.length ? `<div class="obpend">📄 파일 ${this.pending.length}개 대기 중 — 시트를 고르면 바로 읽어요</div>` : ''}
+    </div>
+    <div class="obf"><div class="msg"></div><button class="btn" data-ob="close">취소</button></div>`;
+    this.box.querySelector('.obx').onclick = () => this.close();
+    this.box.querySelector('[data-ob="close"]').onclick = () => this.close();
+    this.box.querySelectorAll('[data-md]').forEach(b => b.onclick = () => this.pickMedia(b.dataset.md));
+    const cur = this.box.querySelector('.obmd.cur') || this.box.querySelector('.obmd'); if (cur && !this.locking) cur.focus();
+  },
+  // 매칭 규칙 (창 위쪽 · 펼쳤을 때만 그림)
+  bindRules() {
+    const d = this.box.querySelector('.obrules'); if (!d) return;
+    const draw = () => { const b = d.querySelector('.obrbody'); if (b && typeof mRules === 'function') mRules(b, null, { inOb: true, rerender: () => this.refresh(true) }); };
+    if (d.open) draw();
+    d.addEventListener('toggle', () => { this.rulesOpen = d.open; if (d.open && !d.querySelector('.obrbody').children.length) draw(); });
   },
 
   filesHtml(MS, out) {
-    const chOpts = sel => `<option value="">채널 고르기…</option>${['지상파', '케이블'].map(m => `<optgroup label="${m}">${MS.chList.filter(c => c.media === m).map(c => `<option value="${esc(c.name)}" ${c.name === sel ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</optgroup>`).join('')}<option value="__skip" ${sel === '__skip' ? 'selected' : ''}>— 이 시트 빼기 —</option>`;
+    const mine = MS.chList.filter(c => OB.tgtOf(c.media) === this.media);
+    const chOpts = sel => `<option value="">채널 고르기…</option>${mine.map(c => `<option value="${esc(c.name)}" ${c.name === sel ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}<option value="__skip" ${sel === '__skip' ? 'selected' : ''}>— 이 시트 빼기 —</option>`;
     const itOpts = sel => `<option value="">품목 고르기…</option>${MS.itemOrder.map(k => `<option value="${esc(k)}" ${k === sel ? 'selected' : ''}>${esc(k)}</option>`).join('')}<option value="__none" ${sel === '__none' ? 'selected' : ''}>— 품목 없이 —</option>`;
-    let h = `<section class="obsec"><div class="obsh"><h3>올린 파일</h3><span class="muted">자동으로 맞춘 채널·품목을 바꾸려면 옆 목록에서 고르세요</span></div><div class="tw"><table class="t obtab"><thead><tr><th class="l">파일</th><th class="l">시트</th><th class="l">채널</th><th class="l">품목</th><th>송출</th><th>단가 합</th><th>기간</th><th></th></tr></thead><tbody>`;
+    let h = `<section class="obsec"><div class="obsh"><h3>올린 파일</h3></div><div class="tw"><table class="t obtab"><thead><tr><th class="l">파일</th><th class="l">시트</th><th class="l">채널</th>${this.media === '케이블' ? '<th class="l">품목</th>' : ''}<th>송출</th><th>단가 합</th><th>기간</th><th></th></tr></thead><tbody>`;
+    const cab = this.media === '케이블';
     for (const F of OB.files) {
-      const fst = out.byFile.get(F.id) || { n: 0, price: 0, d1: 99, d2: 0, sheets: new Map(), ym: {} };
-      if (F.status !== 'ok') { h += `<tr class="bad"><td class="l fn" title="${esc(F.name)}">📄 ${esc(F.name)}</td><td class="l" colspan="6">${F.status === 'locked' ? '🔒 암호가 걸린 파일이라 열 수 없어요' : F.status === 'loading' ? '읽는 중…' : '읽지 못했어요: ' + esc(F.err || '')}</td><td><button class="x" data-rm="${F.id}" title="빼기">✕</button></td></tr>`; continue; }
+      const fst = out.byFile.get(F.id) || { n: 0, price: 0, d1: 99, d2: 0, sheets: new Map(), other: new Map(), ym: {} };
+      if (F.status !== 'ok') { h += `<tr class="bad"><td class="l fn" title="${esc(F.name)}">📄 ${esc(F.name)}</td><td class="l" colspan="${cab ? 6 : 5}">${F.status === 'locked' ? '🔒 암호가 걸린 파일이라 열 수 없어요' : F.status === 'loading' ? '읽는 중…' : '읽지 못했어요: ' + esc(F.err || '')}</td><td><button class="x" data-rm="${F.id}" title="빼기">✕</button></td></tr>`; continue; }
       const sheets = F.sheets.length ? F.sheets : [{ name: '(빈 파일)', auto: {}, sh: { dataRows: [] } }];
       const itemSel = F.itemSel !== undefined ? (F.itemSel || '__none') : (F.item && F.item.item) || '';
-      const terrOnly = F.sheets.length && F.sheets.every(S => { const r = OB.chOf(S); const c = r.ch && MS.chByName.get(r.ch); return r.skip || (c && c.media === '지상파'); });
-      const itemCell = terrOnly ? '<span class="muted small" title="Q-Mate와 같이 지상파 3사 원본은 품목을 미지정으로 넣어요">지상파 · 품목 미지정</span>'
-        : `<div class="obsel ${itemSel ? (F.itemSel !== undefined ? 'man' : 'auto') : 'need'}"><select data-fi="${F.id}">${itOpts(itemSel)}</select>${F.itemSel === undefined && F.item && F.item.label ? `<small title="${esc(F.item.label)}">${esc(F.item.label)}</small>` : ''}</div>`;
+      const itemCell = `<div class="obsel ${itemSel ? (F.itemSel !== undefined ? 'man' : 'auto') : 'need'}"><select data-fi="${F.id}">${itOpts(itemSel)}</select>${F.itemSel === undefined && F.item && F.item.label ? `<small title="${esc(F.item.label)}">${esc(F.item.label)}</small>` : ''}</div>`;
       const mo = Object.keys(fst.ym).map(Number);
       const off = mo.filter(m => m !== M.ym.m);
       sheets.forEach((S, si) => {
         const r = S.sel !== undefined ? (S.sel === '__skip' ? { skip: true } : { ch: S.sel }) : S.auto;
         const cur = S.sel !== undefined ? S.sel : (r.skip ? '__skip' : r.ch || '');
-        const n = fst.sheets.get(S.name) || 0;
+        const n = fst.sheets.get(S.name) || 0, on = (fst.other && fst.other.get(S.name)) || 0;
         const c = r.ch && MS.chByName.get(r.ch);
-        h += `<tr class="${si ? 'osr' : 'ofr'}${r.skip ? ' skip' : ''}">
-          ${si ? '<td class="l"></td>' : `<td class="l fn" rowspan="1" title="${esc(F.name)}">📄 ${esc(F.name)}${F.entry.hiddenSheets && F.entry.hiddenSheets.length ? `<small class="hid" title="${esc(F.entry.hiddenSheets.join(', '))}">숨김 시트 ${F.entry.hiddenSheets.length}개 제외</small>` : ''}</td>`}
+        const otherMd = c && OB.tgtOf(c.media) !== this.media;
+        const chCell = otherMd ? `<span class="muted small">${esc(c.name)} · ${c.media} — 이번엔 안 넣어요</span>`
+          : `<div class="obsel ${r.skip ? 'skip' : r.ch ? (S.sel !== undefined ? 'man' : 'auto') : 'need'}"><select data-ch="${F.id}" data-sh="${esc(S.name)}">${chOpts(cur)}</select>${S.sel === undefined && r.label ? `<small title="${esc(r.label)}">${esc(r.label)}</small>` : ''}</div>`;
+        h += `<tr class="${si ? 'osr' : 'ofr'}${r.skip || otherMd ? ' skip' : ''}">
+          ${si ? '<td class="l"></td>' : `<td class="l fn" title="${esc(F.name)}">📄 ${esc(F.name)}${F.entry.hiddenSheets && F.entry.hiddenSheets.length ? `<small class="hid" title="${esc(F.entry.hiddenSheets.join(', '))}">숨김 시트 ${F.entry.hiddenSheets.length}개 제외</small>` : ''}</td>`}
           <td class="l sn">${esc(S.name)}</td>
-          <td class="l"><div class="obsel ${r.skip ? 'skip' : r.ch ? (S.sel !== undefined ? 'man' : 'auto') : 'need'}"><select data-ch="${F.id}" data-sh="${esc(S.name)}">${chOpts(cur)}</select>${S.sel === undefined && (r.label || (c && c.media)) ? `<small title="${esc(r.label || '')}">${c ? `<span class="md ${c.media === '지상파' ? 'g' : 'c'}">${c.media}</span>` : ''}${esc(r.label || '')}</small>` : ''}</div></td>
-          <td class="l">${si ? '' : itemCell}</td>
-          <td class="tnum">${r.skip ? '<span class="muted">뺌</span>' : fmt.int(n)}</td>
+          <td class="l">${chCell}</td>
+          ${cab ? `<td class="l">${si ? '' : itemCell}</td>` : ''}
+          <td class="tnum">${r.skip ? '<span class="muted">뺌</span>' : otherMd ? `<span class="muted">${fmt.int(on)}</span>` : fmt.int(n)}</td>
           <td class="tnum">${si || r.skip ? '' : fmt.won(fst.price)}</td>
-          <td class="tnum">${si || !fst.d2 ? '' : `${mo.length > 1 ? '' : (mo[0] || '') + '/'}${fst.d1}~${fst.d2}${off.length ? ` <span class="warn" title="지금 작업 월(${M.ym.m}월)이 아닌 날짜가 있어요">⚠ ${off.join('·')}월</span>` : ''}`}</td>
+          <td class="tnum">${si || !fst.d2 ? '' : `${mo.length > 1 ? '' : (mo[0] || '') + '/'}${fst.d1}~${fst.d2}${off.length ? ` <span class="warn" title="지금 작업 월(${M.ym.m}월)이 아닌 날짜">⚠ ${off.join('·')}월</span>` : ''}`}</td>
           <td>${si ? '' : `<button class="x" data-rm="${F.id}" title="이 파일 빼기">✕</button>`}</td></tr>`;
       });
     }
     return h + '</tbody></table></div></section>';
   },
 
+  // 확인 카드 — 꼭 필요한 것만: 고르기(추천 몇 개 + 전체 목록) · 없으면 ＋새로 추가 · 다음부터 자동(접힘)
   todoHtml(MS, td, out) {
-    const chNames = MS.chList.map(c => c.name), itNames = MS.itemOrder.slice();
-    let h = `<section class="obsec"><div class="obsh"><h3>확인이 필요해요</h3><span class="muted">마스터에서 맞는 이름을 고르고, 없으면 마스터에 새로 추가하세요. 고른 것은 다음부터 자동으로 맞춰요.</span></div>`;
+    const itNames = MS.itemOrder.slice();
+    const mine = MS.chList.filter(c => OB.tgtOf(c.media) === this.media), chNames = mine.map(c => c.name);
+    let h = `<section class="obsec"><div class="obsh"><h3>확인 필요</h3></div>`;
     // 채널
     for (const { F, S, n } of td.ch) {
       const r = S.auto || {};
-      const sample = [...new Set(out.rows.filter(o => o.file === F.name && o.sheet === S.name).map(o => o.prog))].slice(0, 3);
-      const hint = [S.name, r.guess, F.name].filter(Boolean).join(' ');
-      const sug = [...new Set([].concat(r.guess && resolveCh(MS, r.guess) ? [resolveCh(MS, r.guess).name] : [], r.pp ? MS.chList.filter(c => norm(c.mpp) === norm(r.pp)).map(c => c.name) : [], obSuggest(S.name, chNames), obSuggest(F.name.replace(/\.[^.]+$/, ''), chNames)))].slice(0, 5);
+      const g0 = r.guess && resolveCh(MS, r.guess);
+      const sug = [...new Set([].concat(g0 && OB.tgtOf(g0.media) === this.media ? [g0.name] : [], r.pp ? mine.filter(c => norm(c.mpp) === norm(r.pp)).map(c => c.name) : [], obSuggest(S.name, chNames), obSuggest(F.name.replace(/\.[^.]+$/, ''), chNames)))].slice(0, 4);
       const kwF = S.kwFile != null ? S.kwFile : obKeyword(F.name, itNames.concat([...MS.itemAlias.keys()], [...MS.itemHint.keys()]));
       const kwS = S.kwSheet != null ? S.kwSheet : (/^(sheet\d*|큐시트|통합|운행표|raw|q-?sheet)$/i.test(S.name.trim()) ? '' : S.name);
       const key = `${F.id}|${S.name}`;
       h += `<div class="obcard" data-card="ch" data-key="${esc(key)}"><div class="oc-h"><span class="tag w">채널</span><b>${esc(S.name)}</b><span class="muted">· ${esc(F.name)} · ${fmt.int(n)}회</span></div>
-        <div class="oc-b">${sample.length ? `<div class="smp">프로그램 예: ${sample.map(esc).join(' · ')}</div>` : ''}${r.guess ? `<div class="smp">기본 규칙으로는 ‘${esc(r.guess)}’인데 마스터에 없어요</div>` : r.pp ? `<div class="smp">${esc(r.pp)} 파일이에요. 어느 채널인지 골라 주세요</div>` : ''}
-          <div class="oc-row"><span class="lb">① 마스터에서 고르기</span>${sug.length ? sug.map(x => `<button class="chip" data-pick-ch="${esc(x)}">${esc(x)}</button>`).join('') : ''}<select data-pick-ch-sel><option value="">전체 목록…</option>${['지상파', '케이블'].map(m => `<optgroup label="${m}">${MS.chList.filter(c => c.media === m).map(c => `<option>${esc(c.name)}</option>`).join('')}</optgroup>`).join('')}</select></div>
-          <div class="oc-row"><span class="lb">② 없으면 마스터에 추가</span><input data-nc="name" value="${esc(r.guess || S.name)}" placeholder="채널명" style="width:130px"><select data-nc="media"><option>케이블</option><option>지상파</option></select><input data-nc="mpp" list="ob-mpp" placeholder="MPP (예: CJ ENM)" value="${esc(r.pp && r.pp !== '?' ? r.pp : '')}" style="width:130px"><select data-nc="group">${SUM_GROUPS.map(g => `<option ${g === '기타' ? 'selected' : ''}>${g}</option>`).join('')}</select><button class="btn sm" data-add-ch>＋ 새 채널 추가</button></div>
-          <div class="oc-row rem"><label><input type="checkbox" data-rem ${S.remember !== false ? 'checked' : ''}> 다음부터 자동으로:</label> 파일명에 <input data-kwf value="${esc(kwF)}" style="width:120px"> ${'시트명에'} <input data-kws value="${esc(kwS)}" style="width:110px" placeholder="(상관없음)"> 이(가) 있으면 이 채널 <button class="lnk" data-skip>이 시트는 빼기</button></div>
+        <div class="oc-b"><div class="oc-row">${sug.map(x => `<button class="chip" data-pick-ch="${esc(x)}">${esc(x)}</button>`).join('')}<select data-pick-ch-sel><option value="">${sug.length ? '다른 채널…' : '채널 고르기…'}</option>${mine.map(c => `<option>${esc(c.name)}</option>`).join('')}</select><button class="lnk" data-new>＋ 새 채널</button><button class="lnk" data-skip>이 시트 빼기</button></div>
+          <div class="oc-row oc-new" hidden><input data-nc="name" value="${esc(r.guess || S.name)}" placeholder="채널명" style="width:130px">${this.media === '케이블' ? `<input data-nc="mpp" list="ob-mpp" placeholder="PP (예: CJ ENM)" value="${esc(r.pp && r.pp !== '?' ? r.pp : '')}" style="width:130px"><select data-nc="group" title="요약그룹">${SUM_GROUPS.map(g => `<option ${g === '기타' ? 'selected' : ''}>${g}</option>`).join('')}</select>` : ''}<button class="btn sm" data-add-ch>채널 관리에 추가</button></div>
+          <details class="oc-kw"><summary>다음부터 자동: 파일명 ‘${esc(kwF || '-')}’${kwS ? ` · 시트명 ‘${esc(kwS)}’` : ''}</summary><div class="oc-row rem"><label><input type="checkbox" data-rem ${S.remember !== false ? 'checked' : ''}> 기억</label> 파일명에 <input data-kwf value="${esc(kwF)}" style="width:120px"> 시트명에 <input data-kws value="${esc(kwS)}" style="width:110px" placeholder="(상관없음)"></div></details>
         </div></div>`;
     }
-    // 품목
+    // 품목 (케이블만)
     const cats = [...new Set((WS.sheets.품목 || []).map(r => str(r[2])).filter(Boolean))];
     for (const { F } of td.item) {
       const st = out.byFile.get(F.id) || { n: 0 };
       const sh0 = F.entry.sheets[0];
       const title = sh0 ? (sh0.raw || []).slice(0, Math.min(6, (sh0.colInfo && sh0.colInfo.hIdx) || 6)).map(r => r.filter(Boolean).join(' ')).filter(Boolean).slice(0, 2).join(' / ') : '';
-      const sug = [...new Set([].concat(F.item && F.item.cands || [], obSuggest(F.name.replace(/\.[^.]+$/, ''), itNames), obSuggest(title, itNames)))].slice(0, 5);
+      const sug = [...new Set([].concat(F.item && F.item.cands || [], obSuggest(F.name.replace(/\.[^.]+$/, ''), itNames), obSuggest(title, itNames)))].slice(0, 4);
       const kw = F.kw != null ? F.kw : obKeyword(F.name, MS.chList.map(c => c.name).concat([...MS.channels.keys()]), OB.files.filter(x => x !== F).map(x => x.name));
       h += `<div class="obcard" data-card="item" data-fid="${F.id}"><div class="oc-h"><span class="tag w">품목</span><b>${esc(F.name)}</b><span class="muted">· ${fmt.int(st.n)}회</span></div>
-        <div class="oc-b">${title ? `<div class="smp">파일 안 제목: ${esc(title.slice(0, 120))}</div>` : ''}${F.item && F.item.label ? `<div class="smp">${esc(F.item.label)}</div>` : ''}
-          <div class="oc-row"><span class="lb">① 마스터에서 고르기</span>${sug.map(x => `<button class="chip" data-pick-it="${esc(x)}"><span class="sw" style="background:${itemColor(x)}"></span>${esc(x)}</button>`).join('')}<select data-pick-it-sel><option value="">전체 목록…</option>${itNames.map(k => `<option>${esc(k)}</option>`).join('')}</select><button class="lnk" data-pick-it="__none">품목 없이 넣기</button></div>
-          <div class="oc-row"><span class="lb">② 없으면 마스터에 추가</span><input data-ni="key" placeholder="약칭 (큐시트 표기)" style="width:130px" value="${esc(kw)}"><input data-ni="full" placeholder="정식명" style="width:130px"><input data-ni="cat" list="ob-cat" placeholder="카테고리" style="width:100px"><button class="btn sm" data-add-it>＋ 새 품목 추가</button></div>
-          <div class="oc-row rem"><label><input type="checkbox" data-rem ${F.remember !== false ? 'checked' : ''}> 다음부터 자동으로:</label> 파일명에 <input data-kw value="${esc(kw)}" style="width:140px"> 이(가) 있으면 이 품목</div>
+        <div class="oc-b"><div class="oc-row">${sug.map(x => `<button class="chip" data-pick-it="${esc(x)}"><span class="sw" style="background:${itemColor(x)}"></span>${esc(x)}</button>`).join('')}<select data-pick-it-sel><option value="">${sug.length ? '다른 품목…' : '품목 고르기…'}</option>${itNames.map(k => `<option>${esc(k)}</option>`).join('')}</select><button class="lnk" data-new>＋ 새 품목</button><button class="lnk" data-pick-it="__none">품목 없이</button></div>
+          <div class="oc-row oc-new" hidden><input data-ni="key" placeholder="약칭" style="width:120px" value="${esc(kw)}"><input data-ni="full" placeholder="정식명" style="width:120px"><input data-ni="cat" list="ob-cat" placeholder="카테고리" style="width:100px"><button class="btn sm" data-add-it>품목 관리에 추가</button></div>
+          <details class="oc-kw"><summary>다음부터 자동: 파일명 ‘${esc(kw || '-')}’</summary><div class="oc-row rem"><label><input type="checkbox" data-rem ${F.remember !== false ? 'checked' : ''}> 기억</label> 파일명에 <input data-kw value="${esc(kw)}" style="width:140px"></div></details>
         </div></div>`;
     }
     // CM위치
     if (td.cm.length) {
-      h += `<div class="obcard" data-card="cm"><div class="oc-h"><span class="tag">CM위치</span><b>마스터에 없는 CM위치 ${td.cm.length}개</b><span class="muted">· 추정한 구분으로 넣어도 돼요. 넣을 때 마스터 CM위치에 함께 추가해요</span></div><div class="oc-b"><table class="t sm"><tbody>
-        ${td.cm.map(x => { const g = cmClassOf(MS, x.raw, x.media).cls; const v = OB.cm[x.raw] || g; return `<tr><td class="l"><b>${esc(x.raw)}</b></td><td class="tnum">${fmt.int(x.n)}회</td><td class="l muted small">${[...x.files].slice(0, 2).map(esc).join(', ')}${x.files.size > 2 ? ` 외 ${x.files.size - 2}` : ''}</td><td>${CM_CLASSES.map(c => `<label class="rd"><input type="radio" name="cm-${esc(x.raw)}" data-cm="${esc(x.raw)}" value="${c}" ${v === c ? 'checked' : ''}> ${c}</label>`).join('')}</td></tr>`; }).join('')}</tbody></table></div></div>`;
+      h += `<div class="obcard" data-card="cm"><div class="oc-h"><span class="tag">CM위치</span><b>처음 보는 CM위치 ${td.cm.length}개</b><span class="muted">· 넣을 때 CM위치 보정 규칙에 추가돼요</span></div><div class="oc-b"><table class="t sm"><tbody>
+        ${td.cm.map(x => { const g = cmClassOf(MS, x.raw, x.media).cls; const v = OB.cm[x.raw] || g; return `<tr><td class="l"><b>${esc(x.raw)}</b></td><td class="tnum">${fmt.int(x.n)}회</td><td>${CM_CLASSES.map(c => `<label class="rd"><input type="radio" name="cm-${esc(x.raw)}" data-cm="${esc(x.raw)}" value="${c}" ${v === c ? 'checked' : ''}> ${c}</label>`).join('')}</td></tr>`; }).join('')}</tbody></table></div></div>`;
     }
-    const mpps = [...new Set(MS.chList.map(c => c.mpp))];
+    const mpps = [...new Set(MS.chList.filter(c => c.media === '케이블').map(c => c.mpp))];
     return h + `<datalist id="ob-mpp">${mpps.map(m => `<option value="${esc(m)}">`).join('')}</datalist><datalist id="ob-cat">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist></section>`;
   },
 
   previewHtml(MS, rows) {
     const g = new Map();
     for (const o of rows) {
-      const tgt = o.media === '지상파' ? '지상파' : '케이블';
+      const tgt = OB.tgtOf(o.media);
       const k = tgt + '|' + o.ch + '|' + o.item;
       const x = g.get(k) || { tgt, ch: o.ch, item: o.item, n: 0, price: 0, amt: 0, paid: 0, d1: 99, d2: 0, files: new Set() };
       x.n++; x.price += +o.price || 0; if (tgt === '지상파' && +o.amount > 0) { x.paid++; x.amt += +o.amount; }
@@ -8243,22 +8676,23 @@ const OBUI = {
       x.files.add(o.file); g.set(k, x);
     }
     const ex = (tgt, ch, item) => { const sh = WS.sheets[tgt] || []; const ci = colIndex(tgt, 'ch'), ii = colIndex(tgt, 'item'); return sh.filter(r => { const c = resolveCh(MS, r[ci]); const it = resolveItem(MS, r[ii]) || str(r[ii]); return c && c.name === ch && (it || '') === (item || ''); }).length; };
-    const list = [...g.values()].sort((a, b) => (a.tgt === b.tgt ? 0 : a.tgt === '지상파' ? -1 : 1) || (MS.chByName.get(a.ch) || {}).order - (MS.chByName.get(b.ch) || {}).order || (MS.itemOrder.indexOf(a.item) - MS.itemOrder.indexOf(b.item)));
+    const list = [...g.values()].sort((a, b) => (MS.chByName.get(a.ch) || {}).order - (MS.chByName.get(b.ch) || {}).order || (MS.itemOrder.indexOf(a.item) - MS.itemOrder.indexOf(b.item)));
     let exTot = 0; list.forEach(x => { x.ex = ex(x.tgt, x.ch, x.item); exTot += x.ex; });
-    const hasG = list.some(x => x.tgt === '지상파');
-    return `<section class="obsec"><div class="obsh"><h3>넣을 내용</h3><span class="muted">채널 · 품목별로 묶어 보여줘요</span></div>
-      <div class="tw"><table class="t obtab"><thead><tr><th class="l">시트</th><th class="l">채널</th><th class="l">품목</th><th>송출</th><th>단가 합</th>${hasG ? '<th>유상(금액)</th>' : ''}<th>기간</th><th>지금 시트의 같은 채널·품목</th></tr></thead><tbody>
-      ${list.map(x => `<tr><td class="l"><span class="md ${x.tgt === '지상파' ? 'g' : 'c'}">${x.tgt}</span></td><td class="l"><b>${esc(x.ch)}</b></td><td class="l">${x.item ? `<span class="sw" style="background:${itemColor(x.item)};margin-right:6px"></span>${esc(x.item)}` : '<span class="muted">품목 없음</span>'}</td><td class="tnum">${fmt.int(x.n)}</td><td class="tnum">${fmt.won(x.price)}</td>${hasG ? `<td class="tnum">${x.tgt === '지상파' ? `${fmt.int(x.paid)}회 · ${fmt.won(x.amt)}` : ''}</td>` : ''}<td class="tnum">${x.d2 ? `${x.d1}~${x.d2}일` : ''}</td><td class="tnum">${x.ex ? `<span class="warn">${fmt.int(x.ex)}행</span>` : '<span class="muted">없음</span>'}</td></tr>`).join('')}
+    const G = this.media === '지상파';
+    return `<section class="obsec"><div class="obsh"><h3>넣을 내용</h3></div>
+      <div class="tw"><table class="t obtab"><thead><tr><th class="l">채널</th>${G ? '' : '<th class="l">품목</th>'}<th>송출</th><th>단가 합</th>${G ? '<th>유상(금액)</th>' : ''}<th>기간</th><th>시트에 이미 있는 행</th></tr></thead><tbody>
+      ${list.map(x => `<tr><td class="l"><b>${esc(x.ch)}</b></td>${G ? '' : `<td class="l">${x.item ? `<span class="sw" style="background:${itemColor(x.item)};margin-right:6px"></span>${esc(x.item)}` : '<span class="muted">품목 없음</span>'}</td>`}<td class="tnum">${fmt.int(x.n)}</td><td class="tnum">${fmt.won(x.price)}</td>${G ? `<td class="tnum">${fmt.int(x.paid)}회 · ${fmt.won(x.amt)}</td>` : ''}<td class="tnum">${x.d2 ? `${x.d1}~${x.d2}일` : ''}</td><td class="tnum">${x.ex ? `<span class="warn">${fmt.int(x.ex)}행</span>` : '<span class="muted">없음</span>'}</td></tr>`).join('')}
       </tbody></table></div>
-      ${hasG ? '<div class="note">지상파는 원본의 방송금액(실집행금액)이 0이거나 비어 있으면 보너스로 들어가요. 금액 열이 없는 양식이면 지상파 시트에서 유상 금액을 확인해 주세요.</div>' : ''}
-      <div class="obmode"><label class="opt"><input type="radio" name="obmode" value="replace" ${OB.mode === 'replace' ? 'checked' : ''}><span><b>같은 채널·품목의 기존 행은 지우고 새로 넣기</b><small>수정본을 다시 받았을 때 · 지금 시트에서 ${fmt.int(exTot)}행이 바뀌어요</small></span></label>
-        <label class="opt"><input type="radio" name="obmode" value="append" ${OB.mode === 'append' ? 'checked' : ''}><span><b>기존 행은 그대로 두고 뒤에 이어 붙이기</b><small>추가 편성분만 받았을 때</small></span></label></div></section>`;
+      ${G ? '<div class="note">금액이 0·빈칸이면 보너스로 들어가요.</div>' : ''}
+      <div class="obmode"><label class="opt"><input type="radio" name="obmode" value="replace" ${OB.mode === 'replace' ? 'checked' : ''}><span><b>같은 채널${G ? '' : '·품목'}의 기존 행 바꾸기</b><small>수정본을 다시 받았을 때 · ${fmt.int(exTot)}행이 바뀌어요</small></span></label>
+        <label class="opt"><input type="radio" name="obmode" value="append" ${OB.mode === 'append' ? 'checked' : ''}><span><b>뒤에 이어 붙이기</b><small>추가 편성분만 받았을 때</small></span></label></div></section>`;
   },
 
   bind() {
     const B = this.box;
     B.querySelector('.obx').onclick = () => this.close();
     B.querySelector('[data-ob="close"]').onclick = () => this.close();
+    const chg = B.querySelector('.obchg'); if (chg) chg.onclick = () => { this.pending = []; OB.reset(); this.media = null; this.render(); };
     const fin = B.querySelector('.obfile');
     B.querySelector('.obpick').onclick = e => { e.stopPropagation(); fin.click(); };
     B.querySelector('.obdrop').onclick = e => { if (!e.target.closest('button')) fin.click(); };
@@ -8268,13 +8702,14 @@ const OBUI = {
     const sheetOf = (fid, sn) => { const F = fileOf(fid); return F && F.sheets.find(S => S.name === sn); };
     B.querySelectorAll('select[data-ch]').forEach(s => s.onchange = () => { const S = sheetOf(s.dataset.ch, s.dataset.sh); if (!S) return; S.sel = s.value || undefined; S.manual = !!s.value; this.refresh(); });
     B.querySelectorAll('select[data-fi]').forEach(s => s.onchange = () => { const F = fileOf(s.dataset.fi); if (!F) return; F.itemSel = s.value === '__none' ? '' : (s.value || undefined); F.manual = !!s.value; this.refresh(); });
+    B.querySelectorAll('.obcard [data-new]').forEach(b => b.onclick = () => { const n = b.closest('.obcard').querySelector('.oc-new'); n.hidden = !n.hidden; if (!n.hidden) { const i = n.querySelector('input'); if (i) { i.focus(); i.select(); } } });
     // 확인 카드 — 채널
     B.querySelectorAll('[data-card="ch"]').forEach(card => {
       const [fid, ...rest] = card.dataset.key.split('|'); const S = sheetOf(fid, rest.join('|')); if (!S) return;
+      const F = fileOf(fid);
       const keep = () => { S.kwFile = card.querySelector('[data-kwf]').value.trim(); S.kwSheet = card.querySelector('[data-kws]').value.trim(); S.remember = card.querySelector('[data-rem]').checked; };
       // 고른 채널 이름·별칭이 파일명에 있으면 그 글자를 키워드로 (직접 고친 키워드는 그대로)
       const kwFor = v => { if (S.kwDirty || v === '__skip') return; const MS = buildMaster(WS); const c = MS.chByName.get(v); if (!c) return; const names = [c.name].concat([...MS.channels].filter(([, x]) => x === c).map(([n]) => n)); const k = obKwFromName(F.name, names); if (k) S.kwFile = k; };
-      const F = fileOf(fid);
       const pick = v => { keep(); kwFor(v); S.sel = v; S.manual = true; this.refresh(); };
       card.querySelectorAll('[data-kwf],[data-kws]').forEach(i => i.addEventListener('input', () => { S.kwDirty = true; }));
       card.querySelectorAll('[data-pick-ch]').forEach(b => b.onclick = () => pick(b.dataset.pickCh));
@@ -8282,14 +8717,15 @@ const OBUI = {
       card.querySelector('[data-skip]').onclick = () => pick('__skip');
       card.querySelectorAll('[data-kwf],[data-kws],[data-rem]').forEach(i => i.onchange = keep);
       card.querySelector('[data-add-ch]').onclick = () => {
-        const v = k => card.querySelector(`[data-nc="${k}"]`).value.trim();
+        const v = k => { const x = card.querySelector(`[data-nc="${k}"]`); return x ? x.value.trim() : ''; };
         const name = v('name'); if (!name) return App.toast('채널명을 적어 주세요');
         const MS = buildMaster(WS); const ex = resolveCh(MS, name);
-        if (ex) { App.toast(`‘${esc(ex.name)}’은(는) 이미 마스터에 있어요. 그 채널로 맞췄어요`); return pick(ex.name); }
-        const media = v('media'), mpp = v('mpp') || name;
-        WS.sheets.채널.push([name, '', media, mpp, media === '지상파' ? name : (card.querySelector('[data-nc="group"]').value || '기타')]);
+        if (ex) { App.toast(`‘${esc(ex.name)}’은(는) 이미 있어요. 그 채널로 맞췄어요`); return pick(ex.name); }
+        const media = this.media, mpp = media === '지상파' ? name : v('mpp');
+        if (media === '케이블' && !mpp) return App.toast('PP를 적어 주세요 (예: CJ ENM)');
+        WS.sheets.채널.push(stampRow([name, '', media, mpp, media === '지상파' ? (SUM_GROUPS.includes(name) ? name : '기타') : (v('group') || '기타')], 5));
         App.changed('master', true);
-        App.toast(`마스터에 새 채널 ‘${esc(name)}’(${media} · ${esc(mpp)})을 추가했어요. 목표 CPRP가 필요하면 마스터에서 넣어 주세요`, 6000);
+        App.toast(`채널 관리에 ‘${esc(name)}’을(를) 추가했어요`, 4000);
         keep(); kwFor(name); S.sel = name; S.manual = true; this.refresh(true);
       };
     });
@@ -8307,10 +8743,10 @@ const OBUI = {
         const v = k => card.querySelector(`[data-ni="${k}"]`).value.trim();
         const key = v('key'); if (!key) return App.toast('품목 약칭을 적어 주세요');
         const MS = buildMaster(WS); const ex = resolveItem(MS, key) || resolveItemLoose(MS, v('full'));
-        if (ex) { App.toast(`‘${esc(ex)}’은(는) 이미 마스터에 있어요. 그 품목으로 맞췄어요`); return pick(ex); }
+        if (ex) { App.toast(`‘${esc(ex)}’은(는) 이미 있어요. 그 품목으로 맞췄어요`); return pick(ex); }
         WS.sheets.품목.push([key, v('full') || key, v('cat') || '기타', nextColor(), '']);
         App.changed('master', true);
-        App.toast(`마스터에 새 품목 ‘${esc(key)}’을 추가했어요. 색상·정식명·비고는 마스터에서 바꿀 수 있어요`, 6000);
+        App.toast(`품목 관리에 ‘${esc(key)}’을(를) 추가했어요`, 4000);
         keep(); kwFor(key); F.itemSel = key; F.manual = true; this.refresh(true);
       };
     });
@@ -8319,18 +8755,26 @@ const OBUI = {
     const go = B.querySelector('[data-ob="go"]'); if (go) go.onclick = () => this.commit();
   },
 
-  // 시트에 넣기
+  // 시트에 넣기 (고른 시트만)
   async commit() {
+    const tgt = this.media; if (!tgt) return;
+    // 잠금 다시 확인 (오래 쉬어서 풀렸거나 다른 사람이 잡았으면 넣지 않음)
+    if (typeof LOCK !== 'undefined' && LOCK.active()) {
+      const t = LOCK.key(tgt); LOCK.cur = t; await LOCK.acquire(t, true);
+      if (LOCK.blocked(tgt)) return App.toast(`<b>${esc(LOCK.other(tgt) || (LOCK.st[t] || {}).who || '다른 관리자')}</b>님이 ${tgt} 입력을 작업 중이라 지금은 넣을 수 없어요`, 5000);
+    }
     const out = OB.build(); const MS = buildMaster(WS);
-    const rows = out.rows.filter(o => o.ch);
+    const rows = out.rows.filter(o => o.ch && OB.tgtOf(o.media) === tgt);
     if (!rows.length) return;
     const R = obToSheetRows(rows);
+    // 15차: 입력 일시 · 입력자 — 나중에 잘못 넣은 것을 찾을 수 있게
+    const at = fmt.at(), by = whoNow(), ai = colIndex(tgt, 'obAt'), bi = colIndex(tgt, 'obBy');
+    for (const r of R[tgt]) { while (r.length < SHEETS[tgt].cols.length) r.push(''); r[ai] = at; r[bi] = by; }
     const before = deepClone(WS);
     await App.saveVersion('큐시트 온보딩 전 자동 백업', true);
     let removed = 0;
-    const combos = new Set(rows.map(o => (o.media === '지상파' ? '지상파' : '케이블') + '|' + o.ch + '|' + (o.item || '')));
-    for (const tgt of ['지상파', '케이블']) {
-      if (!R[tgt].length) continue;
+    const combos = new Set(rows.map(o => tgt + '|' + o.ch + '|' + (o.item || '')));
+    {
       const hid = new Set(WS.hidden[tgt] || []);
       let keep = (WS.sheets[tgt] || []).map((r, i) => ({ r, i })).filter(x => !isBlankRow(x.r));
       if (OB.mode === 'replace') {
@@ -8344,9 +8788,9 @@ const OBUI = {
     }
     // 마스터: 새 CM위치 · 매칭 규칙
     const cmk = new Set(WS.sheets.CM위치.map(r => norm(r[0])));
-    for (const [raw, x] of out.cm) if (!cmk.has(norm(raw))) { WS.sheets.CM위치.push([raw, OB.cm[raw] || cmClassOf(MS, raw, x.media).cls]); cmk.add(norm(raw)); }
+    for (const [raw, x] of out.cm) if (!cmk.has(norm(raw))) { WS.sheets.CM위치.push(stampRow([raw, OB.cm[raw] || cmClassOf(MS, raw, x.media).cls], 2)); cmk.add(norm(raw)); }
     const rules = WS.sheets.매칭규칙 = WS.sheets.매칭규칙 || [];
-    const has = (k, f, s, v) => rules.some(r => str(r[0]) === k && kwn(r[1]) === kwn(f) && kwn(r[2]) === kwn(s));
+    const has = (k, f, s) => rules.some(r => str(r[0]) === k && kwn(r[1]) === kwn(f) && kwn(r[2]) === kwn(s));
     let nr = 0;
     for (const F of OB.files) {
       for (const S of F.sheets) if (S.manual && S.remember !== false && S.sel && (S.kwFile || S.kwSheet)) {
@@ -8359,11 +8803,11 @@ const OBUI = {
     App.dataReplaced();
     const d = diffModels(Mb, M);
     const nf = OB.files.filter(F => F.status === 'ok').length;
-    await App.saveVersion(`큐시트 온보딩: 원본 ${nf}개 파일 (${fmt.int(rows.length)}회)`, true, d);
+    await App.saveVersion(`큐시트 온보딩(${tgt}): 원본 ${nf}개 파일 (${fmt.int(rows.length)}회)`, true, d);
     await App.flushSave();
-    const msg = `<b>${fmt.int(rows.length)}회</b>를 넣었어요 · 케이블 ${fmt.int(R.케이블.length)} · 지상파 ${fmt.int(R.지상파.length)}${removed ? ` · 기존 ${fmt.int(removed)}행 바꿈` : ''}${nr ? ` · 매칭 규칙 ${nr}개 기억` : ''}`;
+    const msg = `${tgt} 입력에 <b>${fmt.int(rows.length)}회</b>를 넣었어요${removed ? ` · 기존 ${fmt.int(removed)}행 바꿈` : ''}${nr ? ` · 매칭 규칙 ${nr}개 기억` : ''}`;
     this.close();
-    App.go(R.케이블.length >= R.지상파.length ? 'cuec' : 'cueg');
+    App.go(tgt === '지상파' ? 'cueg' : 'cuec');
     App.toast(msg, 7000);
   },
 };
@@ -8675,6 +9119,16 @@ function colFit(table, key, opts = {}) {
   if (flex >= 0 && typeof ResizeObserver !== 'undefined') { let lw = host.clientWidth; table._ro = new ResizeObserver(() => { if (!table.isConnected) return table._ro.disconnect(); if (Math.abs(host.clientWidth - lw) > 1) { lw = host.clientWidth; apply(); } }); table._ro.observe(host); }
 }
 
+// 15차: 두 줄 머리글 표 — 둘째 줄 sticky top을 첫 줄 실제 높이로 (고정 31px이면 줄 높이가 다를 때 머리글 사이가 벌어져 세로선에 단차가 생김)
+function syncStickyHeads(root) {
+  if (!root) return;
+  root.querySelectorAll('table.t > thead').forEach(th => {
+    const rows = [...th.rows]; if (rows.length < 2) return;
+    let top = 0;
+    rows.forEach((tr, i) => { const h = tr.getBoundingClientRect().height; if (i && h) for (const c of tr.cells) c.style.top = top + 'px'; top += h; });
+  });
+}
+
 // ===== 16-cueall.js : 전체 큐시트 — 지상파·케이블을 섞어 날짜 → 시작 시간 순, 1행 = 1회 송출 (광고주 제공용 '결과 데이터') =====
 const CUEALL_EXTRA = [['cre', '소재'], ['cm', 'CM 위치'], ['grade', '시급'], ['price', '단가']];
 function cueAllUI() {
@@ -8853,6 +9307,7 @@ const CLOUD = {
     if (!r.ok) {
       const x = new Error((j && (j.message || j.msg || j.error_description || j.error)) || ('HTTP ' + r.status)); x.status = r.status; x.body = j;
       if (r.status === 401 && /session expired/i.test(x.message) && this.admin) { this.logout(true); x.message = '관리자 접속 시간이 끝났어요. 새로고침해서 다시 접속해 주세요'; }
+      if (r.status === 403 && /password change required/i.test(x.message) && this.admin) { x.message = '처음 접속이라 비밀번호를 먼저 바꿔 주세요'; if (typeof App !== 'undefined' && App.forcePwDialog) App.forcePwDialog(); }
       throw x;
     }
     return j;
@@ -8862,17 +9317,28 @@ const CLOUD = {
   arpc(fn, args) { return this.rpc(fn, Object.assign({ p_tok: this.tok && this.tok.tok }, args)); },
 
   // ---------- 관리자 접속 (비밀번호 → 세션 토큰, 이 탭에서만 유지) ----------
-  async login(pw) {
-    const t = await this.rpc('cue_login', { p_pw: pw });
-    this.tok = { tok: typeof t === 'string' ? t : (t && t.cue_login) }; this.admin = true;
-    try { sessionStorage.setItem('cue.admin', JSON.stringify(this.tok)); } catch (e) { }
+  // 15차: 관리자 개별 계정 — 이메일 아이디 + 비밀번호 (비밀번호는 서버에 bcrypt 해시로만 저장, 운영자도 볼 수 없음)
+  async login(email, pw) {
+    const r = await this.rpc('cue_login2', { p_email: email, p_pw: pw });
+    const x = Array.isArray(r) ? r[0] : r; if (!x || !x.o_tok) throw new Error('bad login');
+    this.tok = { tok: x.o_tok, name: x.o_name, email: x.o_email, must: !!x.o_must }; this.admin = true; this.saveTok();
+    return this.tok;
   },
+  saveTok() { try { sessionStorage.setItem('cue.admin', JSON.stringify(this.tok)); } catch (e) { } },
+  async setPw(oldPw, newPw) { await this.arpc('cue_set_pw', { p_old: oldPw, p_new: newPw }); this.tok.must = false; this.saveTok(); },
+  async users() { return ((await this.arpc('cue_users_list', {})) || []).map(u => ({ email: u.o_email, name: u.o_name, must: u.o_must, created: u.o_created, by: u.o_by, pwAt: u.o_pw_at })); },
+  invite(email, name) { return this.arpc('cue_user_invite', { p_email: email, p_name: name }); },
+  resetPw(email) { return this.arpc('cue_user_reset', { p_email: email }); },
+  removeUser(email) { return this.arpc('cue_user_remove', { p_email: email }); },
   logout(silent) {
     const t = this.tok && this.tok.tok; if (t && !silent) this.rpc('cue_logout', { p_tok: t }).catch(() => { });
     this.tok = null; this.admin = false; try { sessionStorage.removeItem('cue.admin'); } catch (e) { }
     if (!silent) setTimeout(() => location.reload(), 150);
   },
 
+  // ---------- 캠페인 설정 (15차: 운영 누적 메뉴 보이기 등) — 함수가 아직 없으면 기본값 ----------
+  async loadSettings(cid) { try { const r = await this.rpc('cue_view_settings', { p_camp: cid }); SETTINGS.v = (r && typeof r === 'object' && !Array.isArray(r)) ? r : (Array.isArray(r) && r[0] && r[0].cue_view_settings) || {}; } catch (e) { SETTINGS.v = {}; } },
+  async saveSetting(k, v) { await this.arpc('cue_admin_setting', { p_camp: this.camp.id, p_key: k, p_val: v }); SETTINGS.v = Object.assign({}, SETTINGS.v, { [k]: v }); },
   // ---------- 캠페인 · 달 ----------
   async loadCamps() { this.camps = this.admin ? (await this.arpc('cue_admin_camps', {})) || [] : []; return this.camps; },
   async campInfo(id) {
@@ -8940,7 +9406,7 @@ const CLOUD = {
     finally { this.saving = false; if (this.again) setTimeout(() => App.cloudSave(), 50); }
   },
   // 저장한 사람 표시용 이름 (이 브라우저에 한 번 적어 두면 충돌 알림에 나옴)
-  who() { try { return localStorage.getItem('cue.who') || null; } catch (e) { return null; } },
+  who() { if (this.tok && this.tok.name) return this.tok.name; try { return localStorage.getItem('cue.who') || null; } catch (e) { return null; } },
   async serverStamps(id, ym) {
     const r = await this.rpc('cue_stamps', { p_camp: id, p_ym: ym });
     const o = {}; for (const x of r || []) o[x.part] = x; return o;
@@ -8976,9 +9442,9 @@ const CLOUD = {
 // 시트를 열면 잠금을 잡고(3분짜리, 30초마다 연장), 다른 사람이 잡고 있으면 그 시트는 보기만. 5분 동안 손대지 않으면 스스로 풀어 줌.
 const LOCK = {
   TABS: ['master', '지상파', '케이블', 'reach', '예산', '소재'],
-  LABEL: { master: '품목·채널 관리', 지상파: '지상파 입력 시트', 케이블: '케이블 입력 시트', reach: '누적리치', 예산: '당월 예산', 소재: '당월 소재' },
-  // 14차: 품목·채널·CM위치·목표 CPRP·매칭 규칙 메뉴는 같은 '마스터' 잠금을 함께 씀
-  key(tab) { return ['mch', 'mcm', 'mcprp', 'mrule'].includes(tab) ? 'master' : tab; },
+  LABEL: { master: '규칙 관리', 지상파: '지상파 입력', 케이블: '케이블 입력', reach: '리치 입력', 예산: '당월 예산', 소재: '당월 소재' },
+  // 14차: 품목·채널·CM위치·목표 CPRP 메뉴는 같은 '마스터' 잠금을 함께 씀
+  key(tab) { return ['mch', 'mcm', 'mcprp'].includes(tab) ? 'master' : tab; },
   IDLE: 5 * 60 * 1000, BEAT: 30 * 1000,
   st: {}, others: {}, cur: null, lastAct: Date.now(), timer: null, on: false,
   holder() {
@@ -9054,7 +9520,7 @@ const LOCK = {
   // 잠금 상태가 바뀌면 그 시트 화면을 편집/보기로 다시 그림
   applied(key) {
     const ro = this.blocked(key);
-    for (const tab of (key === 'master' ? ['master', 'mch', 'mcm', 'mcprp', 'mrule'] : [key])) {
+    for (const tab of (key === 'master' ? ['master', 'mch', 'mcm', 'mcprp'] : [key])) {
       const g = App.grids[tab]; if (g) { g.setRO(ro); App.gridStat(tab); }
       else if (App.tab === tab) App.renderPane(tab);
       else if (App.panes[tab]) App.panes[tab].dataset.ver = '';
@@ -9141,7 +9607,7 @@ function renderCal(root) {
         if (!nowDone && a > now.min) { nowDone = true; pre = `<div class="calnow" data-now><span>지금 ${now.hm}</span></div>`; }
         // 한 줄: 시간 · 채널 · 품목 카드(약칭 앞 2글자) · 프로그램(길면 …) · ×N · CM — 마우스를 올리면 전체
         const nm = e.item || e.itemRaw || '';
-        return pre + `<div class="cale one${e.cmCls === '중CM' ? ' mid' : ''}" title="${esc(`${e.st}${e.en ? '~' + e.en : ''} · ${e.ch} · ${nm} · ${e.sec ? e.sec + '초 · ' : ''}${e.prog} · ${e.cm || ''}${e.n > 1 ? ` · ${e.n}회` : ''}`)}"><span class="t tnum">${esc(e.st)}</span><span class="c">${esc(e.ch)}</span>${nm ? `<span class="ic" style="background:${col};color:${inkOn(col)}">${esc([...nm.replace(/\s+/g, '')].slice(0, 2).join(''))}</span>` : ''}<span class="p">${progHtml(e.prog)}</span>${e.n > 1 ? `<span class="x">×${e.n}</span>` : ''}${e.cm ? `<span class="m">${esc(e.cm)}</span>` : ''}</div>`;
+        return pre + `<div class="cale one${e.cmCls === '중CM' ? ' mid' : ''}" title="${esc(`${e.st}${e.en ? '~' + e.en : ''} · ${e.ch} · ${nm} · ${e.sec ? e.sec + '초 · ' : ''}${e.prog} · ${e.cm || ''}${e.n > 1 ? ` · ${e.n}회` : ''}`)}"><span class="t tnum">${esc(e.st)}</span><span class="c">${esc(e.ch)}</span>${nm ? `<span class="ic" style="background:${col};color:${calInk(col)}">${esc([...nm.replace(/\s+/g, '')].slice(0, 2).join(''))}</span>` : ''}<span class="p">${progHtml(e.prog)}</span>${e.n > 1 ? `<span class="x">×${e.n}</span>` : ''}${e.cm ? `<span class="m">${esc(e.cm)}</span>` : ''}</div>`;
       };
       const body = c.list.map(line).join('') + (nowDone ? '' : `<div class="calnow" data-now><span>지금 ${now.hm}</span></div>`);
       return `<td class="${cls.trim()}"${today ? ' id="cal-td-today"' : ''}><div class="cald"><b>${c.d}</b>${today ? '<em>오늘</em>' : ''}<span class="tnum">${c.n ? fmt.int(c.n) + '회' : ''}</span></div>${body}</td>`;
@@ -9172,7 +9638,7 @@ function renderCal(root) {
 // 엑셀: 요일 머리글(5칸씩 병합) → 주마다 날짜 줄(병합) + 송출 줄(채널 · 시간 · 초수 · 프로그램 · CM)
 function exportCal(weeks) { xrDownload([xrCalSheet(weeks)], null, xrName('큐시트캘린더')); }
 // 배경색 위 글자색: 밝은 바탕이면 진한 글자
-function inkOn(hex) { const c = hexToRgb(hex) || [128, 128, 128]; const L = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255; return L > 0.62 ? '#1c1c1c' : '#fff'; }
+function calInk(hex) { const c = hexToRgb(hex) || [128, 128, 128]; const L = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255; return L > 0.62 ? '#1c1c1c' : '#fff'; }
 
 // ===== 19-xlreport.js : 보고용 엑셀 =====
 // 모든 시트 공통: 눈금선 없음 · A열 여백(너비 3) · 1·3행 높이 2(비움) · 2행 = 시트 제목 · 값은 가운데 정렬 · 엑셀 차트(웹 그래프를 엑셀 차트로)
@@ -9419,12 +9885,7 @@ function xrBudgetSheet() {
 }
 
 // ---------- ③ 지상파 큐시트 (정산 → 큐시트) ----------
-function xrSpotTxt(s, mode) {
-  const o = chipOpts(mode), p = [];
-  if (o.item) p.push(s.item || s.itemRaw); if (o.cre && s.cre && mode === 'g') p.push(s.cre); if (o.sec && s.sec) p.push(s.sec + '초');
-  if (o.cm && (s.cmCls || s.cmRaw)) p.push(mode === 'g' ? (s.cmRaw || s.cmCls) : s.cmCls);
-  return p.join(' / ') + (s.day ? ` ${M.ym.m}/${s.day}` : '');
-}
+function xrSpotTxt(s, mode) { return spotText(s, mode); }   // 화면 주차 칸과 같은 양식
 function xrGroundSheet() {
   const b = XRSheet('지상파 큐시트', xrTitle('지상파 큐시트'));
   const W = M.weeks, sp = M.spots.filter(s => s.src === '지상파');
@@ -9556,7 +10017,7 @@ function xrCalSheet(weeks) {
         const mid = e.cmCls === '중CM', st = mid ? XRS.bon : XRS.cell;
         const ic = itemColor(e.item);
         b.put(r, cc, e.ch, xs2(st, { font: { bold: true } }));
-        b.put(r, cc + 1, e.st, st); b.put(r, cc + 2, e.item || e.itemRaw || '', xs2(st, { fill: { fgColor: { rgb: hexRgb(ic) } }, font: { bold: true, color: { rgb: hexRgb(inkOn(ic)) } } })); b.put(r, cc + 3, e.prog + (e.n > 1 ? ` ×${e.n}` : ''), xs2(st, { alignment: { horizontal: 'center', wrapText: true } }));
+        b.put(r, cc + 1, e.st, st); b.put(r, cc + 2, e.item || e.itemRaw || '', xs2(st, { fill: { fgColor: { rgb: hexRgb(ic) } }, font: { bold: true, color: { rgb: hexRgb(calInk(ic)) } } })); b.put(r, cc + 3, e.prog + (e.n > 1 ? ` ×${e.n}` : ''), xs2(st, { alignment: { horizontal: 'center', wrapText: true } }));
         b.put(r, cc + 4, e.cm, mid ? xs2(st, { font: { bold: true, color: { rgb: 'E0005A' } } }) : st);
       });
       r++;
@@ -9582,5 +10043,125 @@ function xrDataSheets(which) {
 // '큐시트 엑셀 받기': 보고용 5개 시트 + 숨김 데이터(이 파일을 '백업 파일 다시 넣기'로 그대로 넣을 수 있음)
 function xrFullBytes() { return xrBookBytes([xrOpsSheet(), xrBudgetSheet(), xrGroundSheet(), xrCableSheet(), xrCreSheet()], xrDataSheets(ALL_SHEETS)); }
 function downloadFullReport() { saveBlob(new Blob([xrFullBytes()], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), xrName('큐시트')); }
+
+// ===== 20-year.js : 'YYYY년 운영 누적' — 월별 PP별 · 품목별 광고비(예산) 그래프 + 표 (15차) =====
+// 데이터: 그 해 달마다 저장된 예산표 + 마스터(채널→PP, 품목) — 온라인은 cue_view_year 한 번(없으면 달마다 불러옴), 오프라인은 이 브라우저 저장분
+// 지금 열린 달은 화면에 있는 내용(WS) 그대로 · 아직 집행하지 않은 달은 빈 칸
+const SETTINGS = { v: {} };
+function yearMenuOn() { return !CLOUD.on || !!SETTINGS.v.yearMenu; }
+const YEAR = { cache: {}, loading: null };
+const YEAR_GC = { KBS: '#2f2f31', MBC: '#4d4d50', SBS: '#6c6c70', 'CJ ENM': '#8e8e93', JTBC: '#b2b2b7', 기타: '#d3d3d7' };
+
+async function yearData(y) {
+  const yms = App.months.filter(m => parseYM(m) && parseYM(m).y === y).sort();
+  const key = y + '|' + yms.join(',');
+  const c = YEAR.cache[y];
+  if (c && c.key === key && Date.now() - c.at < 5 * 60 * 1000) return c.data;
+  const data = {};
+  if (CLOUD.on) {
+    let rows = null;
+    try { rows = await CLOUD.rpc('cue_view_year', { p_camp: CLOUD.camp.id, p_year: String(y) }); } catch (e) { rows = null; }
+    if (rows) for (const r of rows) { const d = data[r.ym] = data[r.ym] || {}; d[r.part] = r.data; }
+    else for (const ym of yms) { try { const w = await CLOUD.load(CLOUD.camp.id, ym); if (w) data[ym] = { 예산: w.sheets.예산, master: { 품목: w.sheets.품목, 채널: w.sheets.채널 } }; } catch (e) { } }
+  } else {
+    for (const ym of yms) { try { const w = await Store.load(ym); if (w) data[ym] = { 예산: w.sheets.예산, master: { 품목: w.sheets.품목, 채널: w.sheets.채널 } }; } catch (e) { } }
+  }
+  YEAR.cache[y] = { key, at: Date.now(), data };
+  return data;
+}
+
+// 달 하나의 예산표 → { pp: Map(ppKey → {v, media, group, order}), item: Map(item → v), total }
+function yearMonthAgg(budget, master) {
+  const w = { sheets: { 품목: (master && master.품목) || [], 채널: (master && master.채널) || [] }, itemLegacy: {} };
+  const MS = buildMaster(w); const cur = M.MS;
+  const out = { pp: new Map(), item: new Map(), total: 0, colors: {} };
+  const B = budget || []; const head = B[0] || [];
+  const itemOf = h => resolveItemLoose(cur, h) || resolveItemLoose(MS, h) || str(h);
+  for (let i = 1; i < B.length; i++) {
+    const r = B[i] || []; const raw = str(r[0]); if (!raw || /^(합계|계|total)/i.test(raw)) continue;
+    const ch = resolveCh(cur, raw) || resolveCh(MS, raw); if (!ch) continue;
+    for (let j = 1; j < r.length; j++) {
+      const v = num(r[j]); if (!v || !str(head[j])) continue;
+      const pk = ch.media === '지상파' ? ch.name : ch.mpp;
+      const o = out.pp.get(pk) || { v: 0, media: ch.media, group: ch.group, order: ch.order };
+      o.v += v; o.order = Math.min(o.order, ch.order); out.pp.set(pk, o);
+      const it = itemOf(head[j]); out.item.set(it, (out.item.get(it) || 0) + v);
+      if (!out.colors[it]) { const x = MS.items.get(it); if (x) out.colors[it] = x.color; }
+      out.total += v;
+    }
+  }
+  return out;
+}
+
+async function renderYear(root) {
+  const y = App.selYear || parseYM(WS.ym).y;
+  root.innerHTML = `<div class="viewhead"><div><h2>${y}년 운영 누적</h2><div class="sub">${y}년 월별 광고비(예산, 원 VAT 별도) · 불러오는 중…</div></div></div><div class="card"><div class="empty"><div class="spin"></div></div></div>`;
+  let data;
+  try { data = await yearData(y); } catch (e) { root.innerHTML = `<div class="card"><div class="empty">불러오지 못했어요: ${esc(e.message)}</div></div>`; return; }
+  if (App.tab !== 'year' || !root.isConnected) return;
+  // 지금 열린 달은 화면의 내용으로
+  if (parseYM(WS.ym).y === y) data = Object.assign({}, data, { [WS.ym]: { 예산: WS.sheets.예산, master: { 품목: WS.sheets.품목, 채널: WS.sheets.채널 } } });
+  const MON = Array.from({ length: 12 }, (_, i) => `${y}-${pad2(i + 1)}`);
+  const per = MON.map(ym => data[ym] ? yearMonthAgg(data[ym].예산, data[ym].master) : null);
+  const done = per.filter(x => x && x.total > 0).length;
+  const total = sum(per, x => x ? x.total : 0);
+  // PP 줄: 지상파 → 케이블, 채널 관리 순서
+  const pps = new Map();
+  per.forEach(x => { if (x) for (const [k, o] of x.pp) { const p = pps.get(k) || { k, media: o.media, group: o.group, order: o.order }; p.order = Math.min(p.order, o.order); pps.set(k, p); } });
+  const ppList = [...pps.values()].sort((a, b) => (a.media === b.media ? 0 : a.media === '지상파' ? -1 : 1) || a.order - b.order);
+  // 품목 줄: 지금 마스터 순서(카테고리끼리) → 그 밖의 예전 품목
+  const its = new Set(); per.forEach(x => { if (x) for (const k of x.item.keys()) its.add(k); });
+  const ord = k => { const i = M.MS.itemOrder.indexOf(k); return i < 0 ? 999 : i; };
+  const itList = [...its].sort((a, b) => ord(a) - ord(b) || String(a).localeCompare(String(b), 'ko'));
+  const colorOf = k => { const it = M.MS.items.get(k); if (it) return it.color; for (const x of per) if (x && x.colors[k]) return x.colors[k]; return '#9a9aa0'; };
+  const cell = v => v ? fmt.dec(v / 1e8, 2) : '';
+  const monCols = MON.map((ym, i) => `<th>${i + 1}월</th>`).join('');
+  // ---- PP별 표 ----
+  const ppRow = p => { const vs = per.map(x => x ? (x.pp.get(p.k) || {}).v || 0 : null); return `<tr><td class="l">${esc(p.k)}</td>${vs.map((v, i) => `<td class="${v == null ? 'na' : v ? '' : 'z'}" data-ck="yr|pp|${esc(p.k)}|${i}">${v == null ? '' : cell(v)}</td>`).join('')}<td class="yt">${cell(sum(vs, v => v || 0))}</td></tr>`; };
+  const sumRow = (cls, lab, f) => { const vs = per.map(x => x ? f(x) : null); return `<tr class="${cls}"><td class="l">${lab}</td>${vs.map(v => `<td>${v == null ? '' : cell(v)}</td>`).join('')}<td class="yt">${cell(sum(vs, v => v || 0))}</td></tr>`; };
+  let ppBody = '';
+  for (const md of ['지상파', '케이블']) {
+    const l = ppList.filter(p => p.media === md); if (!l.length) continue;
+    ppBody += `<tr class="grp"><td colspan="14">${md}</td></tr>` + l.map(ppRow).join('') + sumRow('sub', `${md} 계`, x => sum([...x.pp.values()].filter(o => o.media === md), o => o.v));
+  }
+  ppBody += sumRow('tot', '합계', x => x.total);
+  // ---- 품목별 표 ----
+  const itBody = itList.map(k => { const vs = per.map(x => x ? x.item.get(k) || 0 : null); return `<tr><td class="l"><span class="sw" style="background:${colorOf(k)};margin-right:6px"></span>${esc(k)}</td>${vs.map((v, i) => `<td class="${v == null ? 'na' : v ? '' : 'z'}" data-ck="yr|it|${esc(k)}|${i}">${v == null ? '' : cell(v)}</td>`).join('')}<td class="yt">${cell(sum(vs, v => v || 0))}</td></tr>`; }).join('') + sumRow('tot', '합계', x => x.total);
+  // ---- 그래프 (월별 쌓은 막대) ----
+  const groups = SUM_GROUPS.concat(['그 밖']);
+  const gOf = p => SUM_GROUPS.includes(p.group) ? (p.media === '지상파' ? p.k : p.group) : '기타';
+  const ppSeries = groups.filter(g => g !== '그 밖').map(g => ({ k: g, c: YEAR_GC[g] || '#c7c7cc', v: per.map(x => x ? sum([...x.pp.entries()].filter(([k, o]) => gOf({ k, media: o.media, group: o.group }) === g), ([, o]) => o.v) : null) })).filter(s => s.v.some(v => v));
+  const itSeries = itList.map(k => ({ k, c: colorOf(k), v: per.map(x => x ? x.item.get(k) || 0 : null) }));
+  root.innerHTML = `<div class="viewhead"><div><h2>${y}년 운영 누적</h2><div class="sub">${y}년 월별 광고비 · 예산(VAT 별도) 기준 · 단위 억원 · 아직 집행하지 않은 달은 비워 둬요</div></div><div class="spacer"></div>${readOnly() ? '' : `<span class="muted small">${yearMenuOn() ? '뷰어에게 보이는 메뉴예요' : '지금은 숨김 — 관리자 메뉴에서 뷰어에게 보이게 할 수 있어요'}</span>`}</div>
+    <div class="kpis k3">
+      <div class="kpi hl"><div class="l">${y}년 누적 광고비</div><div class="v tnum">${fmt.eok(total)}</div><div class="s">${done ? `${done}개월 집행` : '아직 집행한 달이 없어요'}</div></div>
+      <div class="kpi"><div class="l">월평균</div><div class="v tnum">${done ? fmt.eok(total / done) : '-'}</div><div class="s">집행한 달 기준</div></div>
+      <div class="kpi"><div class="l">가장 많이 쓴 달</div><div class="v tnum">${done ? (() => { const i = per.reduce((b, x, j) => (x && x.total > ((per[b] || {}).total || 0)) ? j : b, 0); return `${i + 1}월`; })() : '-'}</div><div class="s">${done ? fmt.eok(Math.max(...per.map(x => x ? x.total : 0))) : ''}</div></div>
+    </div>
+    <section class="card" style="margin-bottom:16px"><div class="hd"><h3>월별 PP별 광고비</h3><span class="sub">지상파 3사 · CJ ENM · JTBC · 기타 PP 묶음으로 쌓음 · 표는 PP별</span></div><div class="bd">
+      ${yearChartHtml(ppSeries, MON)}
+      <div class="tw free"><table class="t ctr yeart"><thead><tr><th class="l">PP</th>${monCols}<th>계</th></tr></thead><tbody>${ppBody}</tbody></table></div></div></section>
+    <section class="card"><div class="hd"><h3>월별 품목별 광고비</h3><span class="sub">품목 색으로 쌓음</span></div><div class="bd">
+      ${yearChartHtml(itSeries, MON)}
+      <div class="tw free"><table class="t ctr yeart"><thead><tr><th class="l">품목</th>${monCols}<th>계</th></tr></thead><tbody>${itBody}</tbody></table></div></div></section>`;
+  yearChartBind(root);
+}
+// 월 12칸 쌓은 막대 (HTML) — 막대 위 = 그 달 합계 · 마우스를 올리면 구성
+function yearChartHtml(series, MON) {
+  const tots = MON.map((_, i) => sum(series, s => s.v[i] || 0));
+  const mx = Math.max(1, ...tots);
+  const step = [0.5, 1, 2, 5, 10, 20, 50].find(s => mx / 1e8 / s <= 5) || 100;
+  const top = Math.ceil(mx / 1e8 / step) * step;
+  const ticks = []; for (let v = 0; v <= top + 1e-9; v += step) ticks.push(v);
+  return `<div class="ychart"><div class="ylg">${series.map(s => `<span><i style="background:${s.c}"></i>${esc(s.k)}</span>`).join('')}</div>
+    <div class="yplot"><div class="yax">${ticks.map(t => `<span style="bottom:${t / top * 100}%">${t % 1 ? t.toFixed(1) : t}억</span>`).join('')}</div>
+    <div class="ycols"><div class="ygrid">${ticks.map(t => `<i class="ygl" style="bottom:${t / top * 100}%"></i>`).join('')}</div>${MON.map((ym, i) => { const T = tots[i]; const has = series.some(s => s.v[i] != null);
+      return `<div class="ycol${has ? '' : ' na'}" data-tip="${esc(`<b>${i + 1}월 · ${T ? fmt.eok(T, 2) : '집행 없음'}</b>` + series.filter(s => s.v[i]).map(s => `<div><span class="sw" style="background:${s.c}"></span> ${esc(s.k)} ${fmt.eok(s.v[i], 2)} <span class="m">${fmt.pct(s.v[i] / (T || 1))}</span></div>`).join(''))}"><div class="ystk" style="height:${T / 1e8 / top * 100}%">${T ? `<em>${fmt.dec(T / 1e8, 1)}</em>` : ''}${series.map(s => s.v[i] ? `<b style="flex:${s.v[i]};background:${s.c}"></b>` : '').join('')}</div><span class="ym">${i + 1}월</span></div>`; }).join('')}</div></div></div>`;
+}
+function yearChartBind(root) {
+  root.querySelectorAll('.ycol').forEach(c => { c.addEventListener('mousemove', e => ftip(e, c.dataset.tip)); c.addEventListener('mouseleave', ftipHide); });
+  // 처음 그릴 때 막대가 아래에서 자라남
+  root.querySelectorAll('.ystk').forEach(s => { const h = s.style.height; s.style.height = '0%'; requestAnimationFrame(() => requestAnimationFrame(() => { s.style.height = h; })); });
+}
 </script>
 </head><body><div id="root"></div></body></html>

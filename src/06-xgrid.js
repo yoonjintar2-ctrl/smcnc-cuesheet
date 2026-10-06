@@ -250,8 +250,8 @@ class XGrid {
       for (let c = 0; c < this.nc; c++) {
         const v = row.v[c];
         const x = info ? info(di, c, v, row.v) : null;
-        const txt = x && x.t != null ? x.t : (v == null ? '' : v);
-        const cls = (this.cols[c].left ? ' l' : '') + (x && x.cls ? ' ' + x.cls : '') + (this.hits.has(row.id + ':' + c) ? ' hit' : '') + (this.flashK && this.flashK.has(row.id + ':' + c) ? ' fl' : '');
+        const txt = x && x.t != null ? x.t : (v == null ? '' : this.cols[c].disp && v !== '' ? this.cols[c].disp(v) : v);
+        const cls = (this.cols[c].left ? ' l' : '') + (this.cols[c].auto ? ' au' : '') + (x && x.cls ? ' ' + x.cls : '') + (this.hits.has(row.id + ':' + c) ? ' hit' : '') + (this.flashK && this.flashK.has(row.id + ':' + c) ? ' fl' : '');
         const st2 = x && x.bg ? ` style="width:${this.widths[c]}px;background:${x.bg}"` : ` style="width:${this.widths[c]}px"`;
         html += `<div class="xg-c${cls}"${st2}${x && x.tip ? ` title="${esc(x.tip)}"` : ''}>${esc(txt)}</div>`;
       }
@@ -489,6 +489,7 @@ class XGrid {
   startEdit(mode, init) {
     if (this.ro) { this.ed.value = ''; this.roNote(); return; }
     const a = this.act; const row = this.rowAt(a.r); if (!row) return;
+    if (this.cols[a.c] && this.cols[a.c].auto) { this.ed.value = ''; if (this.o.toast) this.o.toast('입력 일시·입력자는 행을 넣을 때 자동으로 적혀요', 2400); return; }
     this.editing = { mode, id: row.id, c: a.c };
     this.placeEd();
     this.ed.classList.add('on'); this.ddEl.style.display = 'none';
@@ -539,15 +540,30 @@ class XGrid {
   posMap() { const m = new Map(); this.rows.forEach((r, i) => m.set(r.id, i)); return m; }
   applyCells(changes, label, extraOps) {
     const ch = []; const pos = changes.length > 30 ? this.posMap() : null;
+    const touched = new Map();
     for (const x of changes) {
+      if (this.cols[x.c] && this.cols[x.c].auto) continue;   // 자동 칸(입력 일시·입력자)은 손으로 못 바꿈
       const i = pos ? (pos.has(x.id) ? pos.get(x.id) : -1) : this.idxOf(x.id); if (i < 0) continue;
       const o = this.rows[i].v[x.c];
       if (String(o) === String(x.n)) continue;
-      this.rows[i].v[x.c] = x.n; ch.push({ id: x.id, c: x.c, o, n: x.n });
+      this.rows[i].v[x.c] = x.n; ch.push({ id: x.id, c: x.c, o, n: x.n }); touched.set(x.id, this.rows[i]);
+    }
+    // 15차: 처음 내용이 들어간 행에 입력 일시·입력자 (이미 적힌 행은 그대로 — 처음 넣은 때·사람)
+    for (const row of touched.values()) {
+      for (const x of this.stampOf(row)) { ch.push({ id: row.id, c: x.c, o: row.v[x.c], n: x.n }); row.v[x.c] = x.n; }
+      // 내용을 다 지운 행은 자동 칸도 비움 (빈 행으로)
+      if (this.o.stamp && row.v.every((v, j) => this.cols[j].auto || v === '' || v == null)) this.cols.forEach((c, j) => { if (c.auto && row.v[j] !== '') { ch.push({ id: row.id, c: j, o: row.v[j], n: '' }); row.v[j] = ''; } });
     }
     const ops = (extraOps || []).concat(ch.length ? [{ t: 'cells', ch }] : []);
     if (!ops.length) { this.renderRows(); return; }
     this.pushOp(ops.length === 1 ? ops[0] : { t: 'multi', ops }, label);
+  }
+  // 자동 칸: o.stamp() → { obAt: '…', obBy: '…' } · 행에 다른 내용이 있고 입력 일시가 비어 있을 때만
+  stampOf(row) {
+    if (!this.o.stamp) return [];
+    const ai = this.cols.findIndex(c => c.k === 'obAt'); if (ai < 0 || str(row.v[ai])) return [];
+    if (row.v.every((v, j) => this.cols[j].auto || v === '' || v == null)) return [];
+    const S = this.o.stamp(); return this.cols.map((c, j) => c.auto && S[c.k] != null && row.v[j] === '' ? { c: j, n: S[c.k] } : null).filter(Boolean);
   }
   pushOp(op, label) { op.label = label; this.undoS.push(op); if (this.undoS.length > 200) this.undoS.shift(); this.redoS = []; this.changed(op); }
   changed(op) {
@@ -589,7 +605,7 @@ class XGrid {
   clearSel(label) {
     if (this.ro) return this.roNote();
     const s = this.sel; const ch = [];
-    for (const row of this.selRows()) for (let c = s.c1; c <= s.c2; c++) if (row.v[c] !== '') ch.push({ id: row.id, c, n: '' });
+    for (const row of this.selRows()) for (let c = s.c1; c <= s.c2; c++) if (row.v[c] !== '' && !this.cols[c].auto) ch.push({ id: row.id, c, n: '' });
     this.copyR = null; this.applyCells(ch, label || '지우기');
   }
   // 잘라내기: 행 전체를 골랐으면 그 행을 빼기(아래 행이 올라옴), 아니면 칸 비우기
@@ -611,13 +627,13 @@ class XGrid {
     while (B.length > 1 && B[B.length - 1].every(v => v == null || String(v).trim() === '')) B.pop();
     const r0 = Math.min(s.r1, this.view.length);
     const at = r0 < this.view.length ? this.view[r0] : this.rows.length;
-    const rows = B.map(br => { const row = this.blankRow(); br.forEach((v, j) => { const c = c0 + j; if (c < this.nc) row.v[c] = this.coerce(c, v); }); return row; });
+    const rows = B.map(br => { const row = this.blankRow(); br.forEach((v, j) => { const c = c0 + j; if (c < this.nc) row.v[c] = this.coerce(c, v); }); for (const x of this.stampOf(row)) row.v[x.c] = x.n; return row; });
     this.rows.splice(at, 0, ...rows); this.mrows = null; this.copyR = null;
     this.pushOp({ t: 'ins', at, rows }, '붙여넣기');
     const vr = this.view.findIndex(di => this.rows[di] === rows[0]);
     const w = pre ? this.nc : Math.min(this.nc - c0, Math.max(...B.map(r => r.length)));
     if (vr >= 0) { this.anchor = { r: vr, c: c0 }; this.select(vr, c0, Math.min(this.view.length - 1, vr + rows.length - 1), Math.min(this.nc - 1, c0 + w - 1), { r: vr, c: c0 }); this.ensureVisible(vr, c0); }
-    this.flash(rows.flatMap(r => r.v.map((v, c) => v === '' ? null : { id: r.id, c }).filter(Boolean)));
+    this.flash(rows.flatMap(r => r.v.map((v, c) => v === '' || this.cols[c].auto ? null : { id: r.id, c }).filter(Boolean)));
     if (this.o.toast) this.o.toast(pre && pre.note ? pre.note + ' · 고른 칸 위에 끼워 넣었어요' : `${rows.length.toLocaleString('ko-KR')}행을 고른 칸 위에 끼워 넣었어요 (기존 행은 아래로)`, pre && pre.note ? 5000 : 2600);
   }
   // 붙여넣기·채우기·바꾸기로 값이 바뀐 칸을 잠깐 반짝

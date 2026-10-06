@@ -58,14 +58,15 @@ function donut3D(host, slices, opts = {}) {
   }
   const W = host.clientWidth || 460, H = opts.height || 340;
   st.W = W; st.H = H; st.ctx = setupCanvas(st.cv, W, H);
-  const R = Math.min(W * 0.27, 150);
-  st.g = { R, r: R * 0.55, t: 0.5, H0: 16, cx: W / 2, cy: H * 0.66 };
+  const R = Math.min(W * (opts.rScale || 0.27), opts.rMax || 150);
+  st.g = { R, r: R * (opts.hole || 0.55), t: 0.5, H0: opts.h0 || 16, cx: W / 2, cy: H * (opts.cyR || 0.66) };
+  st.opts = opts;
   const HMAX = Math.min(120, H * 0.36);
   const metric = s => Math.max(0, s.extra || 0);
   const mx = Math.max(1e-9, ...slices.map(metric));
   const tgt = slices.map(s => ({ ...s, h: opts.bonus === false ? 0 : HMAX * metric(s) / mx }));
   if (st.stop) st.stop();
-  const from = opts.intro ? null : (st.cur || DN.last);
+  const from = opts.intro ? null : (st.cur || (opts.own ? null : DN.last));   // own: 다른 도넛 모양에서 바뀌어 오지 않음
   if (!from || from.length !== tgt.length) {
     st.cur = tgt; st.sweep = 0; st.rise = 0; dnDraw(st);
     st.stop = tween(620, q => { st.sweep = q; dnDraw(st); }, () => { st.stop = tween(560, q => { st.rise = q; dnDraw(st); }); });
@@ -76,7 +77,7 @@ function donut3D(host, slices, opts = {}) {
       dnDraw(st);
     });
   }
-  DN.last = tgt;
+  if (!opts.own) DN.last = tgt;
 }
 function dnGeo(st) {
   const { R, r, t, cx, cy } = st.g; const O0 = { x: 0, y: 0 };
@@ -135,7 +136,7 @@ function dnDraw(st) {
     ctx.strokeStyle = shade(s.color, -0.3); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.lineTo(ex, p1[1]); ctx.stroke();
     ctx.fillStyle = shade(s.color, -0.3); ctx.beginPath(); ctx.arc(p0[0], p0[1], 2, 0, Math.PI * 2); ctx.fill();
     ctx.textAlign = side > 0 ? 'left' : side < 0 ? 'right' : 'center';
-    const l1 = `${s.label} ${Math.round(share * 100)}%`, l2 = fmt.eok(s.value, 1);
+    const l1 = `${s.label} ${Math.round(share * 100)}%`, l2 = (st.opts && st.opts.valFmt) ? st.opts.valFmt(s.value) : fmt.eok(s.value, 1);
     ctx.font = '600 12px ' + ff; const tw = ctx.measureText(l1).width;
     let tx = side ? ex + side * 3 : p1[0]; const ty1 = front ? ey + 9 : ey - 12, ty2 = ty1 + 14;
     if (side < 0) tx = Math.max(tw + 4, tx); else if (side > 0) tx = Math.min(W - tw - 4, tx);
@@ -143,8 +144,28 @@ function dnDraw(st) {
     ctx.strokeText(l1, tx, ty1); ctx.fillStyle = '#262626'; ctx.fillText(l1, tx, ty1);
     ctx.font = '11px ' + ff; ctx.strokeText(l2, tx, ty2); ctx.fillStyle = '#616161'; ctx.fillText(l2, tx, ty2);
   }
+  // 15차: 매체 묶음(지상파/케이블)이 있으면 묶음 바깥을 따라 옅은 점선 호 + 매체 이름(방송사 레이블과 가장 먼 자리)
+  if (nb && st.sweep > 0.98) {
+    const mids = S.filter(s => s.value / total >= 0.035).map(s => s.mid);
+    const angD = (x, y) => { let d = Math.abs(x - y) % (Math.PI * 2); return d > Math.PI ? Math.PI * 2 - d : d; };
+    for (const g of vg) {
+      const ss = S.filter(s => (s.grp || '') === g && s.value > 0); if (!ss.length || !g) continue;
+      const a0 = Math.min(...ss.map(s => s.a0)), a1 = Math.max(...ss.map(s => s.a1)), o = ss[0].o;
+      ctx.strokeStyle = 'rgba(120,120,126,.38)'; ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); G.arc(a0 + 0.03, a1 - 0.03, R + 9, 0, o).forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.stroke(); ctx.setLineDash([]);
+      if (a1 - a0 < 0.35) continue;
+      let best = null, bs = -1;
+      for (let t = a0 + 0.14; t <= a1 - 0.14; t += 0.02) { const sc = mids.length ? Math.min(...mids.map(m => angD(t, m))) : 1; if (sc > bs) { bs = sc; best = t; } }
+      if (best == null) best = (a0 + a1) / 2;
+      const cs = Math.cos(best), sn = Math.sin(best), p = G.P(best, R + 16, 0, o);
+      ctx.textAlign = cs > 0.25 ? 'left' : cs < -0.25 ? 'right' : 'center'; ctx.font = '600 11px ' + ff;
+      const ty = p[1] + (sn > 0 ? 10 : -3);
+      ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.strokeText(g, p[0], ty); ctx.fillStyle = '#8e8e93'; ctx.fillText(g, p[0], ty);
+    }
+  }
   // 가운데 글자 (지금 그려지는 값 기준)
-  const c1 = fmt.eok(total, 1), c2 = `보너스 ${fmt.eok(sum(st.cur, s => s.extra), 1)}`;
+  const cc = st.opts && st.opts.center ? st.opts.center(st.cur, total) : null;
+  const c1 = cc ? cc[0] : fmt.eok(total, 1), c2 = cc ? cc[1] : `보너스 ${fmt.eok(sum(st.cur, s => s.extra), 1)}`;
   ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,.92)';
   ctx.font = '700 15px ' + ff; ctx.strokeText(c1, cx, cy - H0 - 4); ctx.fillStyle = '#262626'; ctx.fillText(c1, cx, cy - H0 - 4);
   ctx.font = '12px ' + ff; ctx.strokeText(c2, cx, cy - H0 + 13); ctx.fillStyle = '#616161'; ctx.fillText(c2, cx, cy - H0 + 13);
@@ -158,7 +179,8 @@ function dnMove(st, e) {
   for (const i of order) if (hp[i] && st.ctx.isPointInPath(hp[i], x * sx, y * sy)) { h = i; break; }
   if (h < 0) for (const i of order) { if (st.ctx.isPointInPath(G.top(S[i], st.g.H0), x * sx, y * sy)) { h = i; break; } }
   if (h !== st.hover) { st.hover = h; dnDraw(st); }
-  if (h >= 0) { const s = S[h]; const total = sum(S, z => z.value); tipShow(st.tip, st.host, x, y, `<b>${s.grp ? esc(s.grp) + ' · ' : ''}${esc(s.label)}</b><div>예산 ${fmt.eok(s.value, 2)} <span class="m">(${fmt.pct(s.value / total)})</span></div><div>보너스 ${fmt.eok(s.extra, 2)} · 보너스율 ${fmt.pct(s.value ? s.extra / s.value : null)}</div><div class="m">예산+보너스 ${fmt.eok(s.value + s.extra, 2)}</div>`); }
+  if (h >= 0 && st.opts && st.opts.tip) { const s = S[h]; tipShow(st.tip, st.host, x, y, st.opts.tip(s, sum(S, z => z.value))); }
+  else if (h >= 0) { const s = S[h]; const total = sum(S, z => z.value); tipShow(st.tip, st.host, x, y, `<b>${s.grp ? esc(s.grp) + ' · ' : ''}${esc(s.label)}</b><div>예산 ${fmt.eok(s.value, 2)} <span class="m">(${fmt.pct(s.value / total)})</span></div><div>보너스 ${fmt.eok(s.extra, 2)} · 보너스율 ${fmt.pct(s.value ? s.extra / s.value : null)}</div><div class="m">예산+보너스 ${fmt.eok(s.value + s.extra, 2)}</div>`); }
   else st.tip.style.display = 'none';
 }
 
@@ -182,6 +204,8 @@ function itemBars(host, rows, opts = {}) {
     rows.forEach((x, i) => {
       const e = els[i], v = vals[i]; const wb = v.b / mx * 100, wx = Math.max(0, v.x) / mx * 100;
       e.bb.style.width = wb + '%'; e.bx.style.left = wb + '%'; e.bx.style.width = wx + '%';
+      // 15차: 예산·보너스가 맞닿는 쪽은 각지게 → 한 막대처럼
+      e.bb.style.borderRadius = wx > 0.05 ? '4px 0 0 4px' : '4px'; e.bx.style.borderRadius = wb > 0.05 ? '0 4px 4px 0' : '4px';
       const TW = e.trk.clientWidth || 1, pb = TW * wb / 100, px = TW * wx / 100;
       e.lbb.textContent = v.b > 0 ? fmt.eok(v.b, 1) : '';
       const bw = e.lbb.offsetWidth; const inB = bw + 12 <= pb;
@@ -190,7 +214,7 @@ function itemBars(host, rows, opts = {}) {
       e.lbx.textContent = v.x > 0.5e6 ? '+' + fmt.eok(v.x, 1) : '';
       const xw = e.lbx.offsetWidth, used = inB ? pb : pb + 6 + bw;
       const okX = xw && pb + px - xw - 8 > used + 6;
-      e.lbx.style.visibility = okX ? '' : 'hidden'; e.lbx.style.left = (pb + px - xw - 7) + 'px'; e.lbx.style.color = shade(x.color, -0.45);
+      e.lbx.style.visibility = okX ? '' : 'hidden'; e.lbx.style.left = (pb + px - xw - 7) + 'px'; e.lbx.style.color = shade(x.color, isLight(x.color) ? -0.34 : -0.14);   // 다른 레이블처럼 품목 색 계열
       e.lbv.textContent = v.b + v.x > 0 ? fmt.eok(v.b + Math.max(0, v.x), 1) : '';
       e.lbv.style.left = (pb + px + 7) + 'px';
     });
@@ -231,7 +255,7 @@ function dailyStack(host, spots, opts) {
   const wmax = Math.max(1, ...weeks.map(w => wkTot(w)));
   // 13차: 왼쪽 = 주차별(먼저 읽는 쪽), 오른쪽 = 일별 막대
   host.innerHTML = `<div class="dstk"><div class="dstk-r"><div class="dstk-h">주차별 <span>누르면 그 주를 강조</span></div>
-    ${weeks.map((w, i) => `<button type="button" class="wkr" data-w="${i}"><span class="t"><b>${w.label}</b><span class="rg">${esc(w.range)}</span><em class="tnum" data-wt="${i}">${fmt.int(wkTot(w))}</em></span><span class="bar" data-wb="${i}"></span></button>`).join('')}</div>
+    ${weeks.map((w, i) => `<button type="button" class="wkr" data-w="${i}"><span class="t"><b>${w.label}</b><span class="rg">${esc(w.range)}</span></span><span class="bar"><span class="fill" data-wb="${i}"></span><em class="tnum" data-wt="${i}">${fmt.int(wkTot(w))}</em></span></button>`).join('')}</div>
     <div class="dstk-l chost"><div class="dstk-h">일별 <span>막대 = 하루 · 품목 색으로 쌓음</span></div><canvas></canvas><div class="ctip"></div></div></div>`;
   const pane = host.querySelector('.dstk-l'), cv = pane.querySelector('canvas'), tip = pane.querySelector('.ctip');
   const ffam = getComputedStyle(document.body).fontFamily;
@@ -287,7 +311,9 @@ function dailyStack(host, spots, opts) {
       const bar = host.querySelector(`[data-wb="${i}"]`), t = host.querySelector(`[data-wt="${i}"]`); if (!bar) return;
       const wt = wkTot(w, upto);
       t.textContent = fmt.int(wt);
-      bar.innerHTML = `<span class="fill" style="width:${(wt / wmax * 100).toFixed(2)}%">${order.map(k => { const v = wkItem(w, k, upto); return v ? `<i style="flex:${v};background:${focus && k !== focus ? tint(itemColor(k), 0.74) : itemColor(k)}"></i>` : ''; }).join('')}</span>`;
+      // 15차: 숫자는 막대 끝 오른쪽 (막대 길이 = 숫자 자리를 뺀 너비 기준)
+      bar.style.width = `calc((100% - 52px) * ${(wt / wmax).toFixed(4)})`;
+      bar.innerHTML = order.map(k => { const v = wkItem(w, k, upto); return v ? `<i style="flex:${v};background:${focus && k !== focus ? tint(itemColor(k), 0.74) : itemColor(k)}"></i>` : ''; }).join('');
     });
     host.querySelectorAll('.wkr').forEach(b => b.classList.toggle('on', selW === +b.dataset.w));
     if (opts.onTick) { const dd = Math.max(1, Math.min(days, Math.floor(prog))); opts.onTick(prog > days ? `${ym.m}/1~${days} · ${fmt.int(total)}회` : `${ym.m}/${dd} (${dowOf(ym.y, ym.m, dd)}) · 누적 ${fmt.int(sum(tot.slice(0, dd + 1), x => x))}회`, prog <= days); }

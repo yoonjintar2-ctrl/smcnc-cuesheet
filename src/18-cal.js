@@ -61,7 +61,7 @@ function renderCal(root) {
         if (!nowDone && a > now.min) { nowDone = true; pre = `<div class="calnow" data-now><span>지금 ${now.hm}</span></div>`; }
         // 한 줄: 시간 · 채널 · 품목 카드(약칭 앞 2글자) · 프로그램(길면 …) · ×N · CM — 마우스를 올리면 전체
         const nm = e.item || e.itemRaw || '';
-        return pre + `<div class="cale one${e.cmCls === '중CM' ? ' mid' : ''}" title="${esc(`${e.st}${e.en ? '~' + e.en : ''} · ${e.ch} · ${nm} · ${e.sec ? e.sec + '초 · ' : ''}${e.prog} · ${e.cm || ''}${e.n > 1 ? ` · ${e.n}회` : ''}`)}"><span class="t tnum">${esc(e.st)}</span><span class="c">${esc(e.ch)}</span>${nm ? `<span class="ic" style="background:${col};color:${inkOn(col)}">${esc([...nm.replace(/\s+/g, '')].slice(0, 2).join(''))}</span>` : ''}<span class="p">${progHtml(e.prog)}</span>${e.n > 1 ? `<span class="x">×${e.n}</span>` : ''}${e.cm ? `<span class="m">${esc(e.cm)}</span>` : ''}</div>`;
+        return pre + `<div class="cale one${e.cmCls === '중CM' ? ' mid' : ''}" title="${esc(`${e.st}${e.en ? '~' + e.en : ''} · ${e.ch} · ${nm} · ${e.sec ? e.sec + '초 · ' : ''}${e.prog} · ${e.cm || ''}${e.n > 1 ? ` · ${e.n}회` : ''}`)}"><span class="t tnum">${esc(e.st)}</span><span class="c">${esc(e.ch)}</span>${nm ? `<span class="ic" style="background:${col};color:${calInk(col)}">${esc([...nm.replace(/\s+/g, '')].slice(0, 2).join(''))}</span>` : ''}<span class="p">${progHtml(e.prog)}</span>${e.n > 1 ? `<span class="x">×${e.n}</span>` : ''}${e.cm ? `<span class="m">${esc(e.cm)}</span>` : ''}</div>`;
       };
       const body = c.list.map(line).join('') + (nowDone ? '' : `<div class="calnow" data-now><span>지금 ${now.hm}</span></div>`);
       return `<td class="${cls.trim()}"${today ? ' id="cal-td-today"' : ''}><div class="cald"><b>${c.d}</b>${today ? '<em>오늘</em>' : ''}<span class="tnum">${c.n ? fmt.int(c.n) + '회' : ''}</span></div>${body}</td>`;
@@ -92,4 +92,4 @@ function renderCal(root) {
 // 엑셀: 요일 머리글(5칸씩 병합) → 주마다 날짜 줄(병합) + 송출 줄(채널 · 시간 · 초수 · 프로그램 · CM)
 function exportCal(weeks) { xrDownload([xrCalSheet(weeks)], null, xrName('큐시트캘린더')); }
 // 배경색 위 글자색: 밝은 바탕이면 진한 글자
-function inkOn(hex) { const c = hexToRgb(hex) || [128, 128, 128]; const L = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255; return L > 0.62 ? '#1c1c1c' : '#fff'; }
+function calInk(hex) { const c = hexToRgb(hex) || [128, 128, 128]; const L = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255; return L > 0.62 ? '#1c1c1c' : '#fff'; }

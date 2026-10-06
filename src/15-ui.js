@@ -304,3 +304,13 @@ function colFit(table, key, opts = {}) {
   if (table._ro) table._ro.disconnect();
   if (flex >= 0 && typeof ResizeObserver !== 'undefined') { let lw = host.clientWidth; table._ro = new ResizeObserver(() => { if (!table.isConnected) return table._ro.disconnect(); if (Math.abs(host.clientWidth - lw) > 1) { lw = host.clientWidth; apply(); } }); table._ro.observe(host); }
 }
+
+// 15차: 두 줄 머리글 표 — 둘째 줄 sticky top을 첫 줄 실제 높이로 (고정 31px이면 줄 높이가 다를 때 머리글 사이가 벌어져 세로선에 단차가 생김)
+function syncStickyHeads(root) {
+  if (!root) return;
+  root.querySelectorAll('table.t > thead').forEach(th => {
+    const rows = [...th.rows]; if (rows.length < 2) return;
+    let top = 0;
+    rows.forEach((tr, i) => { const h = tr.getBoundingClientRect().height; if (i && h) for (const c of tr.cells) c.style.top = top + 'px'; top += h; });
+  });
+}

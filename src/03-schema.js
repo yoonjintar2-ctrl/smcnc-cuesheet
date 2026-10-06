@@ -1,49 +1,55 @@
 // ===== 03-schema.js : 시트(입력 표) 정의 =====
 // 각 시트는 '배열의 배열'로 저장한다. 열 순서가 곧 엑셀 붙여넣기 순서다.
+// 15차: 입력 일시는 표에서 짧게 (10/6 14:53) — 저장·엑셀은 2026-10-06 14:53 그대로
+function stampShort(v) { const m = /^\d{4}-(\d\d)-(\d\d) (\d\d:\d\d)/.exec(String(v || '')); return m ? `${+m[1]}/${+m[2]} ${m[3]}` : v; }
 const SHEETS = {
   지상파: {
     label: '지상파', group: 'input', media: '지상파',
     hint: '1행 = 1송출 · 금액 0이면 보너스 · 구분(정기물 등)은 행마다 적어요. 엑셀에서 복사해 바로 붙여넣기(머리글째 OK) · 방송사 원본은 상단 ‘방송사 큐시트 온보딩’ · 행 삭제는 행 번호를 고르고 우클릭',
     cols: [
-      { k: 'ch', t: '채널', w: 62 },
+      { k: 'ch', t: '채널', w: 58 },
       { k: 'kind', t: '구분', w: 56 },
-      { k: 'prog', t: '프로그램', w: 200, left: 1 },
+      { k: 'prog', t: '프로그램', w: 170, left: 1 },
       { k: 'dow', t: '요일', w: 50 },
       { k: 'start', t: '시작', w: 56 },
       { k: 'end', t: '종료', w: 56 },
       { k: 'grade', t: '시급', w: 52 },
       { k: 'sec', t: '초수', w: 52, num: 1 },
-      { k: 'price', t: '단가', w: 96, num: 1, money: 1, sum: 1 },
-      { k: 'amount', t: '금액', w: 96, num: 1, money: 1, sum: 1 },
+      { k: 'price', t: '단가', w: 90, num: 1, money: 1, sum: 1 },
+      { k: 'amount', t: '금액', w: 90, num: 1, money: 1, sum: 1 },
       { k: 'date', t: '날짜', w: 56 },
       { k: 'item', t: '품목', w: 96 },
-      { k: 'cre', t: '소재', w: 92 },
+      { k: 'cre', t: '소재', w: 84 },
       { k: 'cm', t: 'CM지정', w: 78 },
       { k: 'rate', t: '지정율', w: 52, num: 1 },
       { k: 'ar', t: 'A.R(%)', w: 56, num: 1 },
-      { k: 'note', t: '비고', w: 90 },
+      { k: 'note', t: '비고', w: 70 },
+      { k: 'obAt', t: '입력 일시', w: 86, auto: 1, disp: stampShort },
+      { k: 'obBy', t: '입력자', w: 52, auto: 1 },
     ],
   },
   케이블: {
     label: '케이블', group: 'input', media: '케이블',
     hint: '케이블raw A~S열(채널~날짜) 순서. 엑셀에서 복사해 바로 붙여넣기(머리글째면 열 순서 달라도 OK) · 방송사 원본은 상단 ‘방송사 큐시트 온보딩’ · 행 삭제는 행 번호를 고르고 우클릭',
     cols: [
-      { k: 'ch', t: '채널', w: 92 },
+      { k: 'ch', t: '채널', w: 88 },
       { k: 'item', t: '품목', w: 96 },
-      { k: 'prog', t: '프로그램명', w: 200, left: 1 },
+      { k: 'prog', t: '프로그램명', w: 170, left: 1 },
       { k: 'dow', t: '요일', w: 50 },
       { k: 'start', t: '시작', w: 56 },
       { k: 'end', t: '종료', w: 56 },
       { k: 'grade', t: '시급', w: 52 },
       { k: 'sec', t: '초수', w: 52, num: 1 },
-      { k: 'cm', t: '구분', w: 68 },
+      { k: 'cm', t: '구분', w: 62 },
       { k: 'price', t: '단가', w: 92, num: 1, money: 1, sum: 1, sumW: 'cnt' },
       { k: 'cnt', t: '총횟수', w: 60, num: 1, sum: 1 },
       { k: 'd1', t: '월', w: 28, sum: 1 }, { k: 'd2', t: '화', w: 28, sum: 1 }, { k: 'd3', t: '수', w: 28, sum: 1 }, { k: 'd4', t: '목', w: 28, sum: 1 },
       { k: 'd5', t: '금', w: 28, sum: 1 }, { k: 'd6', t: '토', w: 28, sum: 1 }, { k: 'd7', t: '일', w: 28, sum: 1 },
       { k: 'date', t: '날짜', w: 56 },
-      { k: 'cre', t: '소재', w: 96 },
-      { k: 'note', t: '비고', w: 90 },
+      { k: 'cre', t: '소재', w: 88 },
+      { k: 'note', t: '비고', w: 70 },
+      { k: 'obAt', t: '입력 일시', w: 86, auto: 1, disp: stampShort },
+      { k: 'obBy', t: '입력자', w: 52, auto: 1 },
     ],
   },
   예산: {
@@ -85,6 +91,8 @@ const SHEETS = {
       { k: 'media', t: '매체', w: 62 },
       { k: 'mpp', t: 'MPP', w: 110 },
       { k: 'group', t: '요약그룹', w: 80 },
+      { k: 'by', t: '수정한 사람', w: 70 },
+      { k: 'at', t: '수정 일시', w: 110 },
     ],
   },
   CM위치: {
@@ -93,6 +101,8 @@ const SHEETS = {
     cols: [
       { k: 'expr', t: '표현', w: 120 },
       { k: 'cls', t: '구분', w: 90 },
+      { k: 'by', t: '수정한 사람', w: 70 },
+      { k: 'at', t: '수정 일시', w: 110 },
     ],
   },
   매칭규칙: {
@@ -112,6 +122,8 @@ const SHEETS = {
       { k: 'media', t: '매체', w: 70 },
       { k: 'pp', t: 'PP', w: 130 },
       { k: 'cprp', t: 'CPRP(원)', w: 100, num: 1, money: 1 },
+      { k: 'by', t: '수정한 사람', w: 70 },
+      { k: 'at', t: '수정 일시', w: 110 },
     ],
   },
 };

@@ -243,12 +243,7 @@ function xrBudgetSheet() {
 }
 
 // ---------- ③ 지상파 큐시트 (정산 → 큐시트) ----------
-function xrSpotTxt(s, mode) {
-  const o = chipOpts(mode), p = [];
-  if (o.item) p.push(s.item || s.itemRaw); if (o.cre && s.cre && mode === 'g') p.push(s.cre); if (o.sec && s.sec) p.push(s.sec + '초');
-  if (o.cm && (s.cmCls || s.cmRaw)) p.push(mode === 'g' ? (s.cmRaw || s.cmCls) : s.cmCls);
-  return p.join(' / ') + (s.day ? ` ${M.ym.m}/${s.day}` : '');
-}
+function xrSpotTxt(s, mode) { return spotText(s, mode); }   // 화면 주차 칸과 같은 양식
 function xrGroundSheet() {
   const b = XRSheet('지상파 큐시트', xrTitle('지상파 큐시트'));
   const W = M.weeks, sp = M.spots.filter(s => s.src === '지상파');
@@ -380,7 +375,7 @@ function xrCalSheet(weeks) {
         const mid = e.cmCls === '중CM', st = mid ? XRS.bon : XRS.cell;
         const ic = itemColor(e.item);
         b.put(r, cc, e.ch, xs2(st, { font: { bold: true } }));
-        b.put(r, cc + 1, e.st, st); b.put(r, cc + 2, e.item || e.itemRaw || '', xs2(st, { fill: { fgColor: { rgb: hexRgb(ic) } }, font: { bold: true, color: { rgb: hexRgb(inkOn(ic)) } } })); b.put(r, cc + 3, e.prog + (e.n > 1 ? ` ×${e.n}` : ''), xs2(st, { alignment: { horizontal: 'center', wrapText: true } }));
+        b.put(r, cc + 1, e.st, st); b.put(r, cc + 2, e.item || e.itemRaw || '', xs2(st, { fill: { fgColor: { rgb: hexRgb(ic) } }, font: { bold: true, color: { rgb: hexRgb(calInk(ic)) } } })); b.put(r, cc + 3, e.prog + (e.n > 1 ? ` ×${e.n}` : ''), xs2(st, { alignment: { horizontal: 'center', wrapText: true } }));
         b.put(r, cc + 4, e.cm, mid ? xs2(st, { font: { bold: true, color: { rgb: 'E0005A' } } }) : st);
       });
       r++;

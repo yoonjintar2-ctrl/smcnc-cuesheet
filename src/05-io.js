@@ -12,10 +12,10 @@ function hnorm(h) { return norm(h).replace(/\(.*$/, ''); }
 const HEADER_MAP = {
   지상파: { ch: ['채널'], kind: ['구분'], prog: ['프로그램', '프로그램명'], dow: ['요일'], start: ['시작', '시작시간', '시작2'], end: ['종료', '종료시간', '종료2'],
     grade: ['시급'], sec: ['초수'], price: ['단가'], amount: ['금액'], date: ['날짜', '집행일자', '일자'], item: ['품목'], cre: ['소재'],
-    cm: ['cm지정', 'cm위치', 'cm순서'], rate: ['지정율', '지정률'], ar: ['a.r', 'ar', 'a.r%'], note: ['비고'] },
+    cm: ['cm지정', 'cm위치', 'cm순서'], rate: ['지정율', '지정률'], ar: ['a.r', 'ar', 'a.r%'], note: ['비고'], obAt: ['입력일시'], obBy: ['입력자'] },
   케이블: { ch: ['채널'], item: ['품목'], prog: ['프로그램명', '프로그램'], dow: ['요일'], start: ['시작2', '시작', '시작시간'], end: ['종료2', '종료', '종료시간'],
     grade: ['시급'], sec: ['초수'], cm: ['구분', 'cm위치', 'cm구분'], price: ['단가'], cnt: ['총횟수', '횟수'],
-    d1: ['월'], d2: ['화'], d3: ['수'], d4: ['목'], d5: ['금'], d6: ['토'], d7: ['일'], date: ['날짜', '일자'], cre: ['소재'], note: ['비고'] },
+    d1: ['월'], d2: ['화'], d3: ['수'], d4: ['목'], d5: ['금'], d6: ['토'], d7: ['일'], date: ['날짜', '일자'], cre: ['소재'], note: ['비고'], obAt: ['입력일시'], obBy: ['입력자'] },
 };
 function mapHeaders(header, sheet) {
   const map = {}; const hm = HEADER_MAP[sheet];

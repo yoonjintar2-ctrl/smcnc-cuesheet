@@ -148,7 +148,19 @@ const fmt = {
   dec: (v, d = 1) => (v == null || isNaN(v)) ? '-' : (Math.round(v * Math.pow(10, d)) / Math.pow(10, d)).toLocaleString('ko-KR', { minimumFractionDigits: d, maximumFractionDigits: d }),
   time: d => { const x = new Date(d); return `${x.getMonth() + 1}/${x.getDate()} ${pad2(x.getHours())}:${pad2(x.getMinutes())}`; },
   stamp: d => { const x = new Date(d || Date.now()); return `${String(x.getFullYear()).slice(2)}${pad2(x.getMonth() + 1)}${pad2(x.getDate())}_${pad2(x.getHours())}${pad2(x.getMinutes())}`; },
+  at: d => { const x = new Date(d || Date.now()); return `${x.getFullYear()}-${pad2(x.getMonth() + 1)}-${pad2(x.getDate())} ${pad2(x.getHours())}:${pad2(x.getMinutes())}`; },
 };
+// 15차: 누가·언제 추가/수정했는지 (마스터 행 · 지상파/케이블 입력 행)
+function whoNow() { try { return (typeof CLOUD !== 'undefined' && CLOUD.who && CLOUD.who()) || ''; } catch (e) { return ''; } }
+// 마스터 행: by(i) · at(i+1)
+function stampRow(r, i) { if (!r || i < 0) return r; r[i] = whoNow(); r[i + 1] = fmt.at(); return r; }
+// 표에 보일 때: '윤석진 · 10/6 14:53' (올해가 아니면 연도까지)
+function stampHtml(by, at) {
+  by = str(by); at = str(at); if (!by && !at) return '<span class="muted">-</span>';
+  const m = /^(\d{4})-(\d\d)-(\d\d)\s+(\d\d:\d\d)/.exec(at); const y = new Date().getFullYear();
+  const t = m ? `${+m[1] === y ? '' : m[1].slice(2) + '/'}${+m[2]}/${+m[3]} ${m[4]}` : at;
+  return `<span class="stmp" title="${esc([by, at].filter(Boolean).join(' · '))}">${by ? `<b>${esc(by)}</b>` : ''}${by && t ? ' · ' : ''}${esc(t)}</span>`;
+}
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

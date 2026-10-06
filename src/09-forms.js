@@ -126,6 +126,8 @@ function mstMove(sheet, i, d, sameFn) {
   if (j < 0 || j >= rows.length) return false;
   [rows[i], rows[j]] = [rows[j], rows[i]]; return true;
 }
+// 수정한 칸 옆 '추가·수정' 칸만 바로 고침 (표 전체를 다시 그리지 않음)
+function mstStampCell(tr, r, i) { const td = tr && tr.querySelector('td.stc'); if (td) td.innerHTML = stampHtml(r[i], r[i + 1]); }
 function mstFocusLast(el, f) { const ins = el.querySelectorAll(`#mbody tr[data-i] input[data-f="${f}"]`); const x = ins[ins.length - 1]; if (x) { x.focus(); x.scrollIntoView({ block: 'center' }); } }
 function mstDelete(el, sheet, i, label, used) {
   const go = () => { WS.sheets[sheet].splice(i, 1); App.changed('master'); };
@@ -190,11 +192,11 @@ function mRename(kind, sheet, i, v, inp, el) {
   if (rows.some((x, j) => j !== i && norm(x[0]) === norm(v))) { inp.value = old; return App.toast(`'${esc(v)}'은(는) 이미 있는 ${what}이에요`); }
   const owner = kind === 'item' ? resolveItem(M.MS, v) : (resolveCh(M.MS, v) || {}).name;
   if (owner && owner !== old) { inp.value = old; return App.toast(kind === 'item' ? `'${esc(v)}'은(는) 이미 있는 약칭이에요.` : `'${esc(v)}'은(는) 이미 '${esc(owner)}'의 별칭이에요. 그 ${what}의 별칭에서 먼저 빼 주세요.`, 5000); }
-  if (!old) { r[0] = v; if (kind === 'item' && !str(r[1])) { r[1] = v; const f1 = inp.closest('tr').querySelector('[data-f="1"]'); if (f1) f1.value = v; } inp.classList.remove('need'); App.changed('master', true); return; }
+  if (!old) { r[0] = v; if (kind === 'ch') { stampRow(r, 5); mstStampCell(inp.closest('tr'), r, 5); } if (kind === 'item' && !str(r[1])) { r[1] = v; const f1 = inp.closest('tr').querySelector('[data-f="1"]'); if (f1) f1.value = v; } inp.classList.remove('need'); App.changed('master', true); return; }
   const n = renameEverywhere(kind, old, v, true);
   const syncFull = () => { if (kind === 'item' && str(r[1]) === old) r[1] = v; };
   // 품목: 별칭 없이 이름만 바꿈 (옛 이름은 '잘못 적힌 이름' 알림용으로만 기억) · 채널: 옛 이름을 별칭으로 남김
-  const keepOld = () => { if (kind === 'item') { WS.itemLegacy = WS.itemLegacy || {}; WS.itemLegacy[v] = addAlias(WS.itemLegacy[old] || '', old); delete WS.itemLegacy[old]; } else r[1] = addAlias(dropAlias(r[1], v), old); };
+  const keepOld = () => { if (kind === 'ch') { stampRow(r, 5); mstStampCell(inp.closest('tr'), r, 5); } if (kind === 'item') { WS.itemLegacy = WS.itemLegacy || {}; WS.itemLegacy[v] = addAlias(WS.itemLegacy[old] || '', old); delete WS.itemLegacy[old]; } else r[1] = addAlias(dropAlias(r[1], v), old); };
   const apply = () => { syncFull(); r[0] = v; keepOld(); renameEverywhere(kind, old, v); App.dataReplaced(); App.toast(`${what} 이름을 '${esc(old)}' → '${esc(v)}'로 바꿨어요${n.total ? ` (${renameTxt(n)})` : ''}.${kind === 'item' ? '' : ' 옛 이름은 별칭으로 남겼어요.'}`, 6000); };
   if (!n.total) { syncFull(); r[0] = v; keepOld(); App.changed('master', true); const tr = inp.closest('tr'); const al = kind === 'ch' && tr.querySelector('[data-f="1"]'); if (al) al.value = r[1]; const f1 = kind === 'item' && tr.querySelector('[data-f="1"]'); if (f1) f1.value = r[1]; return; }
   App.confirm(`${what} 이름 바꾸기: ${old} → ${v}`, `<p>이번 달 <b>${renameTxt(n)}</b>에 '${esc(old)}'로 적혀 있어요. 모두 '${esc(v)}'로 바꿀게요.${kind === 'item' ? ' 나중에 옛 이름으로 들어오면 고치라고 알려 드려요.' : ` 담당자가 옛 이름으로 보내도 알아보도록 '${esc(old)}'는 별칭으로 남겨 둘게요.`}</p><p class="small muted">입력 표의 되돌리기(Ctrl+Z) 기록은 초기화돼요.</p>`, '모두 바꾸기', apply, () => { inp.value = old; });
@@ -208,14 +210,14 @@ function mChannels(body, el) {
   const isG = r => /지상파/.test(str(r[2]));
   // 14차: 매체 → PP → 채널. 케이블은 PP마다 묶음 줄(채널 수 · ＋ 이 PP에 채널), 끌어서 순서는 같은 PP 안에서만
   const rowHtml = (i, media, pp) => {
-    const r = rows[i]; const name = str(r[0]); const n = U.ch.get(name) || 0, b = U.budCh.get(name) || 0;
+    const r = rows[i]; const name = str(r[0]);
     return `<tr data-i="${i}" data-sec="${media}" data-pp="${esc(pp)}"><td class="dh" title="끌어서 순서 바꾸기 (같은 PP 안에서)">⋮⋮</td>
       <td class="in"><input data-f="0" value="${esc(name)}" placeholder="채널명" class="${name ? '' : 'need'}"></td>
       <td class="in"><select data-f="2">${optHtml(['지상파', '케이블'], isG(r) ? '지상파' : '케이블')}</select></td>
       <td class="in"><input data-f="3" value="${esc(str(r[3]))}" list="dl-mpp" placeholder="${isG(r) ? '' : 'PP'}"></td>
       <td class="in"><select data-f="4">${optHtml(groups, str(r[4]) || (isG(r) ? name : '기타'))}</select></td>
       <td class="in wide"><input data-f="1" value="${esc(str(r[1]))}" placeholder="${name ? '' : '다르게 적히는 이름 (쉼표로 구분)'}"></td>
-      <td class="use">${n || b ? [n ? fmt.int(n) + '회' : '', b ? fmt.eok(b, 2) : ''].filter(Boolean).join(' · ') : '<span class="muted">-</span>'}</td>
+      <td class="stc">${stampHtml(r[5], r[6])}</td>
       <td><button class="x" data-del title="삭제">✕</button></td></tr>`;
   };
   const sec = (media) => {
@@ -231,8 +233,8 @@ function mChannels(body, el) {
   };
   body.innerHTML = `<div class="fhd"><div class="muted small">지상파는 채널, 케이블은 <b>PP → 채널</b>로 관리해요. 여기 있는 채널만 지상파·케이블 입력에서 골라 쓸 수 있어요(없는 이름을 쓰면 비슷한 채널을 추천하거나 추가하라고 알려 줘요). 순서는 표·큐시트의 채널 순서 — 왼쪽 ⋮⋮를 끌어 바꿔요.</div><div class="spacer"></div><button class="btn sm" data-add="지상파">＋ 지상파 채널</button><button class="btn sm" data-newpp>＋ 새 PP</button><button class="btn sm pri" data-add="케이블">＋ 케이블 채널</button></div>
   <datalist id="dl-mpp">${mpps.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
-  <div class="tw free"><table class="t form mch"><thead><tr><th></th><th class="l">채널</th><th class="l">매체</th><th class="l">PP</th><th class="l">요약그룹</th><th class="l">별칭</th><th>이번 달</th><th></th></tr></thead><tbody>${sec('지상파')}${sec('케이블')}</tbody></table></div>`;
-  const addAt = (at, media, pp) => { rows.splice(at, 0, ['', '', media, pp || '', media === '지상파' ? '' : '기타']); App.changed('master', true); renderMasterForm(el); const tr = el.querySelector(`#mbody tr[data-i="${at}"] input[data-f="0"]`); if (tr) { tr.focus(); tr.scrollIntoView({ block: 'center' }); } };
+  <div class="tw free"><table class="t form mch"><thead><tr><th></th><th class="l">채널</th><th class="l">매체</th><th class="l">PP</th><th class="l">요약그룹</th><th class="l">별칭</th><th class="l">추가·수정</th><th></th></tr></thead><tbody>${sec('지상파')}${sec('케이블')}</tbody></table></div>`;
+  const addAt = (at, media, pp) => { rows.splice(at, 0, stampRow(['', '', media, pp || '', media === '지상파' ? '' : '기타'], 5)); App.changed('master', true); renderMasterForm(el); const tr = el.querySelector(`#mbody tr[data-i="${at}"] input[data-f="0"]`); if (tr) { tr.focus(); tr.scrollIntoView({ block: 'center' }); } };
   body.querySelectorAll('[data-addpp]').forEach(b => b.onclick = () => { const pp = b.dataset.addpp; let k = -1; rows.forEach((r, i) => { if (!isG(r) && str(r[3]) === pp) k = i; }); addAt(k >= 0 ? k + 1 : rows.length, '케이블', pp); });
   body.querySelector('[data-newpp]').onclick = () => App.promptText('새 PP', '케이블 PP 이름 (예: CJ ENM)', '', pp => { pp = str(pp); if (!pp) return; if (mpps.some(x => norm(x) === norm(pp))) return App.toast(`'${esc(pp)}'은(는) 이미 있는 PP예요`); addAt(rows.length, '케이블', pp); });
   body.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { const g = b.dataset.add === '지상파'; addAt(g ? rows.reduce((a2, r, i) => isG(r) ? i + 1 : a2, 0) : rows.length, b.dataset.add, ''); });
@@ -244,7 +246,8 @@ function mChannels(body, el) {
       const f = +inp.dataset.f; let v = inp.value.trim();
       if (f === 0) return mRename('ch', '채널', i, v, inp, el);
       if (f === 1) { v = v.split(/[,;/]/).map(x => x.trim()).filter(Boolean).join(', '); inp.value = v; }
-      r[f] = v;
+      if (str(r[f]) === v) return;
+      r[f] = v; stampRow(r, 5); mstStampCell(tr, r, 5);
       if (f === 2) { if (v === '지상파' && (!str(r[4]) || str(r[4]) === '기타')) r[4] = str(r[0]); App.changed('master', true); renderMasterForm(el); return; }
       if (f === 3) { App.changed('master', true); renderMasterForm(el); return; }   // PP를 바꾸면 그 PP 묶음으로
       App.changed('master', true);
@@ -254,32 +257,30 @@ function mChannels(body, el) {
 
 // ---- CM 위치 ----
 function mCm(body, el) {
-  const rows = WS.sheets.CM위치; const U = usageMaps();
+  const rows = WS.sheets.CM위치;
   const classes = [...new Set(CM_CLASSES.concat(rows.map(r => str(r[1])).filter(Boolean)))];
   const unk = new Map();
-  for (const s of M.spots) if (s.cmRaw && !M.MS.cm.has(norm(s.cmRaw))) { const k = s.cmRaw; const x = unk.get(k) || { n: 0, cls: s.cmCls, media: s.media }; x.n += s.cnt; unk.set(k, x); }
+  for (const s of M.spots) if (s.cmRaw && !M.MS.cm.has(norm(s.cmRaw))) { const k = s.cmRaw; unk.set(k, (unk.get(k) || 0) + s.cnt); }
   const q = UI.cmQ || '';
-  body.innerHTML = `${unk.size ? `<div class="note warn" style="margin-top:0"><b>마스터에 없는 표현 ${unk.size}개</b> — 지금은 규칙으로 추정해서 집계하고 있어요. 맞으면 추가만 누르세요.
-      <div class="unkcm">${[...unk].sort((a, b) => b[1].n - a[1].n).map(([k, x]) => `<span class="uc"><b>${esc(k)}</b> <span class="muted">${fmt.int(x.n)}회</span> → <select data-ucls="${esc(k)}">${optHtml(classes, x.cls)}</select><button class="btn sm" data-uadd="${esc(k)}">추가</button></span>`).join('')}</div>
-      <button class="btn sm pri" data-uall style="margin-top:6px">추정대로 모두 추가</button></div>` : ''}
-    <div class="fhd"><input class="search" id="cmq" placeholder="표현 검색" value="${esc(q)}"><span class="muted small">${rows.length}개 · 앞 글자가 '중'이면 중CM, TOP·END·PIB면 PIB로 추정해요</span><div class="spacer"></div><button class="btn sm pri" data-add>＋ 표현 추가</button></div>
+  // 15차: 마스터에 없는 표현은 목록만 (추천·추가 단추 없음)
+  body.innerHTML = `${unk.size ? `<div class="note warn" style="margin-top:0"><b>마스터에 없는 표현 ${unk.size}개</b> — ${[...unk].sort((a, b) => b[1] - a[1]).map(([k, n]) => `<span class="ucx">${esc(k)} <span class="muted">${fmt.int(n)}회</span></span>`).join(', ')}</div>` : ''}
+    <div class="fhd"><input class="search" id="cmq" placeholder="표현 검색" value="${esc(q)}"><span class="muted small">${rows.length}개</span><div class="spacer"></div><button class="btn sm pri" data-add>＋ 표현 추가</button></div>
     <datalist id="dl-cmcls">${classes.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
-    <div class="tw free fit"><table class="t form narrow"><thead><tr><th class="l">큐시트 표현</th><th class="l">구분</th><th>이번 달</th><th></th></tr></thead><tbody>
-    ${rows.map((r, i) => { if (q && !norm(r[0]).includes(norm(q)) && !norm(r[1]).includes(norm(q))) return ''; const n = U.cm.get(norm(r[0])) || 0;
-      return `<tr data-i="${i}"><td class="in"><input data-f="0" value="${esc(str(r[0]))}" class="${str(r[0]) ? '' : 'need'}"></td><td class="in"><input data-f="1" value="${esc(str(r[1]))}" list="dl-cmcls"></td><td class="use">${n ? fmt.int(n) + '회' : '<span class="muted">-</span>'}</td><td><button class="x" data-del title="삭제">✕</button></td></tr>`; }).join('')}
+    <div class="tw free fit"><table class="t form narrow"><thead><tr><th class="l">큐시트 표현</th><th class="l">구분</th><th class="l">추가·수정</th><th></th></tr></thead><tbody>
+    ${rows.map((r, i) => { if (q && !norm(r[0]).includes(norm(q)) && !norm(r[1]).includes(norm(q))) return '';
+      return `<tr data-i="${i}"><td class="in"><input data-f="0" value="${esc(str(r[0]))}" class="${str(r[0]) ? '' : 'need'}"></td><td class="in"><input data-f="1" value="${esc(str(r[1]))}" list="dl-cmcls"></td><td class="stc">${stampHtml(r[2], r[3])}</td><td><button class="x" data-del title="삭제">✕</button></td></tr>`; }).join('')}
     </tbody></table></div>`;
   const qi = body.querySelector('#cmq');
   qi.oninput = debounce(() => { UI.cmQ = qi.value; const pos = qi.selectionStart; renderMasterForm(el); const n = el.querySelector('#cmq'); n.focus(); n.setSelectionRange(pos, pos); }, 200);
-  body.querySelector('[data-add]').onclick = () => { UI.cmQ = ''; rows.push(['', '중CM']); App.changed('master', true); renderMasterForm(el); mstFocusLast(el, 0); };
-  body.querySelectorAll('[data-uadd]').forEach(b => b.onclick = () => { const k = b.dataset.uadd; rows.push([k, body.querySelector(`[data-ucls="${CSS.escape(k)}"]`).value]); App.changed('master'); });
-  const ua = body.querySelector('[data-uall]'); if (ua) ua.onclick = () => { body.querySelectorAll('[data-ucls]').forEach(s => rows.push([s.dataset.ucls, s.value])); App.changed('master'); App.toast(`CM 위치 ${unk.size}개를 추가했어요`); };
+  body.querySelector('[data-add]').onclick = () => { UI.cmQ = ''; rows.push(stampRow(['', '중CM'], 2)); App.changed('master', true); renderMasterForm(el); mstFocusLast(el, 0); };
   body.querySelectorAll('tr[data-i]').forEach(tr => {
     const i = +tr.dataset.i, r = rows[i];
     tr.querySelector('[data-del]').onclick = () => { rows.splice(i, 1); App.changed('master'); };
     tr.querySelectorAll('[data-f]').forEach(inp => inp.addEventListener('change', () => {
       const f = +inp.dataset.f, v = inp.value.trim();
       if (f === 0 && v && rows.some((x, j) => j !== i && norm(x[0]) === norm(v))) { inp.value = str(r[0]); return App.toast(`'${esc(v)}'은(는) 이미 있어요`); }
-      r[f] = v; inp.classList.toggle('need', f === 0 && !v); App.changed('master', true);
+      if (str(r[f]) === v) return;
+      r[f] = v; stampRow(r, 2); mstStampCell(tr, r, 2); inp.classList.toggle('need', f === 0 && !v); App.changed('master', true);
     }));
   });
 }
@@ -291,18 +292,17 @@ function mCprp(body, el) {
   const gch = M.MS.chList.filter(c => c.media === '지상파').map(c => c.name);
   const miss = new Map();
   for (const c of M.cells) if (c.budget > 0 && !c.cprp) { const pp = c.media === '지상파' ? c.ch : c.mpp; miss.set(c.media + '|' + pp, { media: c.media, pp, b: (miss.get(c.media + '|' + pp) || { b: 0 }).b + c.budget }); }
-  const used = r => { const media = /지상파/.test(str(r[0])) ? '지상파' : '케이블'; return M.cells.filter(c => c.budget > 0 && c.cprpKey === media + '|' + norm(r[1])); };
   body.innerHTML = `${miss.size ? `<div class="note warn" style="margin-top:0"><b>목표 CPRP가 없는 예산</b> — GRP가 0으로 잡혀요.<div class="unkcm">${[...miss.values()].map(x => `<span class="uc"><b>${esc(x.media)} · ${esc(x.pp)}</b> <span class="muted">예산 ${fmt.eok(x.b, 2)}</span><button class="btn sm" data-madd="${esc(x.media + '|' + x.pp)}">행 추가</button></span>`).join('')}</div></div>` : ''}
     <div class="fhd"><div class="muted small">15초 기준 CPRP(원). '150만'처럼 써도 돼요. 케이블은 PP로 적되, 같은 PP 안에서 채널마다 다르면 채널 이름으로 따로 적으면 그 채널은 그 값을 써요.</div><div class="spacer"></div><button class="btn sm pri" data-add>＋ CPRP 추가</button></div>
     <datalist id="dl-pp-케이블">${pps.concat(M.MS.chList.filter(c => c.media === '케이블' && !pps.includes(c.name)).map(c => c.name)).map(c => `<option value="${esc(c)}">`).join('')}</datalist><datalist id="dl-pp-지상파">${gch.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
-    <div class="tw free fit"><table class="t form narrow"><thead><tr><th class="l">매체</th><th class="l">PP · 채널</th><th>CPRP (원)</th><th>이번 달 적용</th><th></th></tr></thead><tbody>
-    ${rows.map((r, i) => { const media = /지상파/.test(str(r[0])) ? '지상파' : '케이블'; const u = used(r);
+    <div class="tw free fit"><table class="t form narrow"><thead><tr><th class="l">매체</th><th class="l">PP · 채널</th><th>CPRP (원)</th><th class="l">추가·수정</th><th></th></tr></thead><tbody>
+    ${rows.map((r, i) => { const media = /지상파/.test(str(r[0])) ? '지상파' : '케이블';
       return `<tr data-i="${i}"><td class="in"><select data-f="0">${optHtml(['지상파', '케이블'], media)}</select></td><td class="in"><input data-f="1" value="${esc(str(r[1]))}" list="dl-pp-${media}" class="${str(r[1]) ? '' : 'need'}"></td>
       <td class="in"><input data-f="2" class="r" inputmode="numeric" value="${esc(amtTxt(num(r[2]) == null ? r[2] : num(r[2])))}"></td>
-      <td class="use">${u.length ? `${u.length}개 채널×품목 · 예산 ${fmt.eok(sum(u, c => c.budget), 2)}` : '<span class="muted">-</span>'}</td><td><button class="x" data-del title="삭제">✕</button></td></tr>`; }).join('')}
+      <td class="stc">${stampHtml(r[3], r[4])}</td><td><button class="x" data-del title="삭제">✕</button></td></tr>`; }).join('')}
     </tbody></table></div>`;
-  body.querySelector('[data-add]').onclick = () => { rows.push(['케이블', '', '']); App.changed('master', true); renderMasterForm(el); mstFocusLast(el, 1); };
-  body.querySelectorAll('[data-madd]').forEach(b => b.onclick = () => { const [media, pp] = b.dataset.madd.split('|'); rows.push([media, pp, '']); App.changed('master', true); renderMasterForm(el); mstFocusLast(el, 2); });
+  body.querySelector('[data-add]').onclick = () => { rows.push(stampRow(['케이블', '', ''], 3)); App.changed('master', true); renderMasterForm(el); mstFocusLast(el, 1); };
+  body.querySelectorAll('[data-madd]').forEach(b => b.onclick = () => { const [media, pp] = b.dataset.madd.split('|'); rows.push(stampRow([media, pp, ''], 3)); App.changed('master', true); renderMasterForm(el); mstFocusLast(el, 2); });
   body.querySelectorAll('tr[data-i]').forEach(tr => {
     const i = +tr.dataset.i, r = rows[i];
     tr.querySelector('[data-del]').onclick = () => { rows.splice(i, 1); App.changed('master'); };
@@ -310,8 +310,9 @@ function mCprp(body, el) {
       if (+inp.dataset.f === 2) inp.addEventListener('focus', () => { inp.value = num(r[2]) == null ? str(r[2]) : String(num(r[2])); inp.select(); });
       inp.addEventListener('change', () => {
         const f = +inp.dataset.f; let v = inp.value.trim();
-        if (f === 2) { const n = parseAmount(v); if (n === null) { inp.classList.add('bad'); return App.toast('숫자로 읽을 수 없어요'); } inp.classList.remove('bad'); r[2] = n; inp.value = amtTxt(n); }
-        else r[f] = v;
+        if (f === 2) { const n = parseAmount(v); if (n === null) { inp.classList.add('bad'); return App.toast('숫자로 읽을 수 없어요'); } inp.classList.remove('bad'); if (num(r[2]) === n) { inp.value = amtTxt(n); return; } r[2] = n; inp.value = amtTxt(n); }
+        else { if (str(r[f]) === v) return; r[f] = v; }
+        stampRow(r, 3); mstStampCell(tr, r, 3);
         App.changed('master', f !== 0); if (f === 0) renderMasterForm(el);
       });
       if (+inp.dataset.f === 2) inp.addEventListener('blur', () => { if (!inp.classList.contains('bad')) inp.value = amtTxt(num(r[2]) == null ? r[2] : num(r[2])); });
@@ -383,7 +384,7 @@ function openAddChannel(anchor, media, present, onPick) {
       const ex = resolveCh(M.MS, name); if (ex) { closePops(); return onPick(ex.name); }
       if (media === '케이블' && !ppv) return App.toast('PP를 적거나 골라 주세요');
       const rows = WS.sheets.채널; const at = media === '지상파' ? rows.reduce((a, r, i) => /지상파/.test(str(r[2])) ? i + 1 : a, 0) : rows.length;
-      rows.splice(at, 0, [name, '', media, ppv, media === '지상파' ? name : '기타']);
+      rows.splice(at, 0, stampRow([name, '', media, ppv, media === '지상파' ? name : '기타'], 5));
       setM(compute(WS)); App.toast(`마스터 채널에 '${esc(name)}'${media === '케이블' ? ` (PP ${esc(ppv)})` : ''}을(를) 추가했어요`);
       closePops(); onPick(name);
     }
@@ -762,11 +763,14 @@ function renderCreForm(el) {
 }
 
 // ---- 매칭 규칙 (방송사 원본 가져오기) ----
-function mRules(body, el) {
+function mRules(body, el, opt) {
+  opt = opt || {};
+  // 온보딩 창 안: 바꾸면 매칭을 다시 해서 창 전체를 다시 그림(포커스가 다음 칸으로 옮겨 간 뒤에)
+  const rr = opt.rerender ? () => setTimeout(opt.rerender, 0) : (() => renderMasterForm(el));
   const rows = WS.sheets.매칭규칙 = WS.sheets.매칭규칙 || [];
   const MS = M.MS;
   const vals = kind => kind === '품목' ? MS.itemOrder : kind === '채널' ? MS.chList.map(c => c.name) : [];
-  body.innerHTML = `<div class="fhd"><div class="muted small">예: 파일명에 ‘KBS조이’ → 채널 KBS Joy · 파일명에 ‘비렉스’ → 품목 안마매트리스 · 시트명에 ‘일자별’ → 제외(같은 내용 중복 시트)</div><div class="spacer"></div><button class="btn sm" data-ob>방송사 큐시트 온보딩 열기</button><button class="btn sm pri" data-add>＋ 규칙 추가</button></div>
+  body.innerHTML = `<div class="fhd"><div class="muted small">파일명·시트명에 이 글자가 있으면 그 채널/품목으로 맞춰요 (위에서부터 먼저). 예: 파일명 ‘KBS조이’ → KBS Joy</div><div class="spacer"></div>${opt.inOb ? '' : '<button class="btn sm" data-ob>방송사 큐시트 온보딩 열기</button>'}<button class="btn sm pri" data-add>＋ 규칙 추가</button></div>
     <datalist id="dl-rch">${MS.chList.map(c => `<option value="${esc(c.name)}">`).join('')}</datalist><datalist id="dl-rit">${MS.itemOrder.map(k => `<option value="${esc(k)}">`).join('')}</datalist>
     <div class="tw free fit"><table class="t form"><thead><tr><th></th><th class="l">종류</th><th class="l">파일명에 포함</th><th class="l">시트명에 포함</th><th class="l">→ 채널 / 품목</th><th></th></tr></thead><tbody>
     ${rows.length ? rows.map((r, i) => { const k = str(r[0]) || '채널'; const bad = k !== '제외' && str(r[3]) && !(k === '품목' ? resolveItem(MS, r[3]) : resolveCh(MS, r[3]));
@@ -777,16 +781,16 @@ function mRules(body, el) {
       <div class="small muted" style="margin:6px 0">판정은 Q-Mate와 똑같아요. 채널: 직접 만든 규칙 → 기본 규칙 순으로 ① 파일명(+시트명 조건) ② 시트명 키워드를 시트명·파일명 어디서든 ③ 파일명 키워드를 시트명에서. 품목: 기본 규칙 → 직접 만든 규칙 순으로 파일명 키워드. 찾은 이름은 마스터 약칭(채널은 이름·별칭)으로 맞춰요.</div>
       <table class="t sm"><thead><tr><th class="l">파일명에 포함</th><th class="l">시트명에 포함</th><th class="l">채널</th></tr></thead><tbody>${QM_CH_RULES.map(([f, sh, pp, ch]) => `<tr><td class="l"><code>${esc(f)}</code></td><td class="l">${esc(sh)}</td><td class="l">${ch ? esc(ch) : pp ? `<span class="muted">${esc(pp)} (시트에서 찾기)</span>` : '<span class="muted">빼기</span>'}</td></tr>`).join('')}</tbody></table>
       <table class="t sm" style="margin-top:8px"><thead><tr><th class="l">파일명 키워드</th><th class="l">품목</th></tr></thead><tbody>${QM_ITEM_RULES.map(([k, v]) => `<tr><td class="l"><code>${esc(k)}</code></td><td class="l">${esc(resolveItemLoose(MS, v) || v)}</td></tr>`).join('')}</tbody></table></details>`;
-  body.querySelector('[data-ob]').onclick = () => OBUI.open();
-  body.querySelector('[data-add]').onclick = () => { rows.push(['채널', '', '', '']); App.changed('master', true); renderMasterForm(el); mstFocusLast(el, 1); };
-  dragRows(body.querySelector('tbody'), order => { reorderBy(rows, order); App.changed('master', true); renderMasterForm(el); });
+  const ob = body.querySelector('[data-ob]'); if (ob) ob.onclick = () => OBUI.open();
+  body.querySelector('[data-add]').onclick = () => { rows.push(['채널', '', '', '']); App.changed('master', true); if (el) { rr(); mstFocusLast(el, 1); } else { mRules(body, el, opt); const ins = body.querySelectorAll('tr[data-i] input[data-f="1"]'); if (ins.length) ins[ins.length - 1].focus(); } };
+  dragRows(body.querySelector('tbody'), order => { reorderBy(rows, order); App.changed('master', true); rr(); });
   body.querySelectorAll('tr[data-i]').forEach(tr => {
     const i = +tr.dataset.i, r = rows[i];
-    tr.querySelector('[data-del]').onclick = () => { rows.splice(i, 1); App.changed('master'); };
+    tr.querySelector('[data-del]').onclick = () => { rows.splice(i, 1); App.changed('master'); if (opt.inOb) rr(); };
     tr.querySelectorAll('[data-f]').forEach(inp => inp.addEventListener('change', () => {
       const f = +inp.dataset.f; let v = inp.value.trim();
       if (f === 3 && v) { const k = str(r[0]); const x = k === '품목' ? resolveItemLoose(MS, v) : resolveCh(MS, v); if (x) v = typeof x === 'string' ? x : x.name; }
-      r[f] = v; App.changed('master', true); if (f === 0 || f === 3) renderMasterForm(el);
+      r[f] = v; App.changed('master', true); if (f === 0 || f === 3 || opt.inOb) rr();
     }));
   });
 }

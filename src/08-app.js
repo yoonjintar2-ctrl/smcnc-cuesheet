@@ -2,10 +2,11 @@
 let WS = null, M = null, MVER = 0;
 const REPORT = (typeof window !== 'undefined' && window.__REPORT__) || null;
 const GRID_SHEETS = ['지상파', '케이블'];
-// 14차: 마스터를 메뉴별로 나눔 — 품목 관리(master) · 채널 관리(mch) · CM위치 보정 규칙(mcm) · 목표 CPRP(mcprp) · 매칭 규칙(mrule)
-const MST_TAB = { master: '품목', mch: '채널', mcm: 'CM위치', mcprp: '목표CPRP', mrule: '매칭규칙' };
+// 14차: 마스터를 메뉴별로 나눔 — 품목 관리(master) · 채널 관리(mch) · CM위치 보정 규칙(mcm) · 목표 CPRP(mcprp)
+// 15차: 매칭 규칙 메뉴는 없앰 → 방송사 큐시트 온보딩 창 위쪽에서 고치고 추가
+const MST_TAB = { master: '품목', mch: '채널', mcm: 'CM위치', mcprp: '목표CPRP' };
 const MST_OF = Object.fromEntries(Object.entries(MST_TAB).map(([t, s]) => [s, t]));
-const FORM_TABS = { master: el => renderMasterForm(el, '품목'), mch: el => renderMasterForm(el, '채널'), mcm: el => renderMasterForm(el, 'CM위치'), mcprp: el => renderMasterForm(el, '목표CPRP'), mrule: el => renderMasterForm(el, '매칭규칙'), 예산: el => renderBudgetForm(el), 소재: el => renderCreForm(el) };
+const FORM_TABS = { master: el => renderMasterForm(el, '품목'), mch: el => renderMasterForm(el, '채널'), mcm: el => renderMasterForm(el, 'CM위치'), mcprp: el => renderMasterForm(el, '목표CPRP'), 예산: el => renderBudgetForm(el), 소재: el => renderCreForm(el) };
 function fixWS(w) {
   w.sheets = w.sheets || {};
   for (const k of ALL_SHEETS) if (!w.sheets[k]) w.sheets[k] = k === '예산' ? [['채널']] : (DEFAULT_MASTER[k] ? DEFAULT_MASTER[k].map(r => r.slice()) : []);
@@ -82,13 +83,21 @@ const App = {
   // 메뉴: 평소엔 분류(입력 · 당월 운영 · 큐시트 · 점검)만 한 줄 → 누르면 전체 메뉴가 한 판에 펼쳐짐 (미디어 대시보드와 같은 방식)
   // 14차: 입력 = 품목·채널·CM위치·목표 CPRP·매칭 규칙(관리자 전용) · 당월 운영 = 예산·소재·지상파·케이블·누적리치(관리자 전용) · 뷰어는 큐시트만
   TABS: [
-    { id: 'input', g: '입력', note: '관리자 전용', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M3.2 14.2 12.6 4.8l2.6 2.6-9.4 9.4H3.2z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M11 6.4l2.6 2.6"/>', items: [['master', '품목 관리'], ['mch', '채널 관리'], ['mcm', 'CM위치 보정 규칙'], ['mcprp', '목표 CPRP'], ['mrule', '매칭 규칙']] },
-    { id: 'plan', g: '당월 운영', note: '관리자 전용', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 3.4h11.2v13.4H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 7.4h5.6M7.2 10.4h5.6M7.2 13.4h3.4"/>', items: [['예산', '당월 예산'], ['소재', '당월 소재'], ['지상파', '지상파'], ['케이블', '케이블'], ['reach', '누적리치']] },
+    // 15차: 맨 왼쪽 'YYYY년 운영 누적'(월별 PP·품목 광고비) — 기본 숨김, 관리자 메뉴에서 뷰어에게 보이기 켜고 끔. 매칭 규칙은 온보딩 창 안으로
+    { id: 'year', g: '운영 누적', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3.4 16.4h13.2M5.6 13.6V9.8M9 13.6V6.4M12.4 13.6V8.4M15.8 13.6V4.2"/>', items: [['year', '월별 광고비']] },
+    { id: 'input', g: '규칙 관리', note: '관리자 전용', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M3.2 14.2 12.6 4.8l2.6 2.6-9.4 9.4H3.2z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M11 6.4l2.6 2.6"/>', items: [['master', '품목 관리'], ['mch', '채널 관리'], ['mcm', 'CM위치 보정 규칙'], ['mcprp', '목표 CPRP']] },
+    { id: 'plan', g: '당월 입력', note: '관리자 전용', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 3.4h11.2v13.4H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 7.4h5.6M7.2 10.4h5.6M7.2 13.4h3.4"/>', items: [['예산', '당월 예산'], ['소재', '당월 소재'], ['지상파', '지상파 입력'], ['케이블', '케이블 입력'], ['reach', '리치 입력']] },
     { id: 'cue', g: '큐시트', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.8 3.6h14.4v12.8H2.8z"/><path fill="none" stroke="currentColor" stroke-width="1.7" d="M2.8 7.6h14.4M7.6 7.6v8.8"/>', items: [['summary', '요약'], ['cueall', '전체 큐시트'], ['cueg', '지상파 큐시트'], ['cuec', '케이블 큐시트'], ['cal', '큐시트 캘린더']] },
     { id: 'chk', g: '점검', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 10.4l3.6 3.6L16 5.6"/>', items: [['issues', '확인 필요'], ['history', '변경 이력']] },
   ],
   // 지금 보여 줄 분류 (뷰어: 큐시트만)
-  areas() { return readOnly() && !REPORT ? this.TABS.filter(a => a.id === 'cue') : this.TABS; },
+  areas() {
+    const yr = this.selYear || (typeof WS !== 'undefined' && WS && parseYM(WS.ym) ? parseYM(WS.ym).y : new Date().getFullYear());
+    const show = yearMenuOn();
+    const T = this.TABS.map(a => a.id !== 'year' ? a : Object.assign({}, a, { g: `${yr}년 운영 누적`, note: show ? '' : '숨김' }));
+    if (REPORT) return T.filter(a => a.id !== 'year');
+    return readOnly() ? T.filter(a => a.id === 'cue' || (a.id === 'year' && show)) : T;
+  },
   tabAllowed(tab) { return this.areas().some(a => a.items.some(x => x[0] === tab)); },
 
   async init() {
@@ -127,6 +136,8 @@ const App = {
     this.bindKeys(); this.bindCloudTop();
     if (CLOUD.admin) { this.bindTop(); this.bindDrop(); }
     this.gate('<div class="spin"></div><div>불러오는 중…</div>');
+    // 15차: 첫 비밀번호를 아직 안 바꾼 계정이면 바꾸기부터 (서버가 다른 관리자 기능을 막음)
+    if (CLOUD.admin && CLOUD.tok && CLOUD.tok.must) { this.gate('<h2>비밀번호를 먼저 바꿔 주세요</h2><p class="muted">처음 접속이라 사용할 비밀번호로 바꾸면 편집 화면이 열려요.</p>'); setTimeout(() => this.forcePwDialog(), 50); return; }
     try {
       if (CLOUD.admin) await CLOUD.loadCamps();
       // 코웨이 전용: 캠페인은 config.js 의 camp 로 고정 (예전 링크의 ?c= 도 그대로 열림)
@@ -136,6 +147,7 @@ const App = {
       const camp = await CLOUD.campInfo(cid);
       if (!camp) return this.gate(`<h2>큐시트를 찾을 수 없어요</h2><p class="muted">링크가 바뀌었을 수 있어요. 담당자에게 새 링크를 받아 주세요.</p>`);
       CLOUD.camp = camp; CLOUD.setQs({ c: cid === CLOUD.cfg.camp ? null : cid });
+      await CLOUD.loadSettings(cid);
       const adv = document.getElementById('advchip'); if (adv) adv.textContent = camp.name;
       this.months = await CLOUD.months(cid);
       let ym = CLOUD.qs('m'); if (!this.months.includes(ym)) ym = this.months[0];
@@ -225,10 +237,12 @@ const App = {
         <button data-bak="master">마스터만</button>
         <hr><button data-bak="restore">백업 파일 다시 넣기…<small>이 도구에서 받은 엑셀을 골라 그대로 넣어요</small></button></div></div>
       <button class="btn ibtn" id="b-onboard" title="방송사 큐시트 온보딩 — 방송사에서 받은 원본 큐시트 엑셀을 자동 매칭해서 지상파·케이블 시트에 넣기" aria-label="방송사 큐시트 온보딩"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 4v12M4 10h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-      ${CLOUD.on ? `<div class="dd" id="dd-admin"><button class="btn" id="b-adm">관리자 ▾</button><div class="dd-menu">
+      ${CLOUD.on ? `<div class="dd" id="dd-admin"><button class="btn" id="b-adm">${esc((CLOUD.tok && CLOUD.tok.name) || '관리자')} ▾</button><div class="dd-menu">
         <button data-adm="link">뷰어 링크 복사<small>보기만 하는 링크 (광고주·내부 공유용)</small></button>
         <button data-adm="view">뷰어 화면으로 보기<small>새 탭에서 뷰어가 보는 화면</small></button>
-        <button data-adm="who">내 이름 바꾸기<small>다른 관리자에게 '작업 중'으로 보이는 이름</small></button>
+        <button data-adm="me">내 설정<small>내 계정 · 비밀번호 바꾸기</small></button>
+        <button data-adm="users">관리자 계정<small>관리자 목록 · 새 관리자 초대 · 비밀번호 초기화</small></button>
+        <button data-adm="yearmenu" class="tglrow">운영 누적 메뉴 뷰어에게 보이기<small>맨 왼쪽 'YYYY년 운영 누적' 메뉴</small><span class="mtgl${yearMenuOn() ? ' on' : ''}" id="ym-tgl"><i></i></span></button>
         <button data-adm="report">보고서 HTML 내보내기<small>오프라인으로 보낼 때</small></button>
         <button data-adm="out">관리자 모드 종료</button></div></div>` : '<button class="btn" id="b-report">보고서 내보내기</button>'}
       <input type="file" id="filein" accept=".xlsx,.xlsm,.xls" multiple hidden>
@@ -328,6 +342,7 @@ const App = {
     if (GRID_SHEETS.includes(tab)) { window.scrollTo(0, 0); this.showGrid(tab); return; }
     if (tab === 'cal' && prev !== tab) calUI().jump = true;   // 캘린더는 열 때마다 오늘이 있는 주로
     if (force || tab === 'cal' || el.dataset.ver !== String(M.ver) || !el.firstChild) this.renderPane(tab);   // 캘린더는 '지금' 줄 때문에 열 때마다 새로
+    syncStickyHeads(el);
     if (prev !== tab) window.scrollTo(0, this.scrollMem[tab] || 0);
   },
   renderPane(tab) {
@@ -345,11 +360,13 @@ const App = {
       else if (tab === 'history') this.renderHistory(el);
       else if (tab === 'reach') this.renderReach(el);
       else if (tab === 'cal') renderCal(el);
+      else if (tab === 'year') renderYear(el);
       else if (FORM_TABS[tab]) FORM_TABS[tab](el);
       if (!readOnly() && LOCK.blocked(tab)) lockForm(el);
       el.classList.toggle('lockdim', !readOnly() && LOCK.blocked(tab));   // 다른 관리자가 편집 중이면 탭 전체를 옅은 회색으로
     } catch (e) { console.error(e); el.innerHTML = `<div class="card"><div class="empty">화면을 그리다 오류가 났어요: ${esc(e.message)}</div></div>`; }
     el.dataset.ver = M.ver;
+    syncStickyHeads(el); requestAnimationFrame(() => syncStickyHeads(el));
     if (prev && prev.size) { let n = 0; const now = ckSnapshot(el); for (const [k, v] of now) if (prev.has(k) && prev.get(k) !== v) n++; if (n && n <= 300) ckFlash(el, prev); }
   },
   rerender() {
@@ -442,26 +459,118 @@ const App = {
       dd.classList.remove('open'); const a = x.dataset.adm;
       if (a === 'link') { try { await navigator.clipboard.writeText(link()); this.toast(`뷰어 링크를 복사했어요<br><small>${esc(link())}</small>`, 6000); } catch (e) { this.promptText('뷰어 링크', '이 주소를 복사해서 보내세요', link(), () => { }); } }
       else if (a === 'view') { await this.flushSave(); window.open(link() + sep() + 'm=' + encodeURIComponent(WS.ym) + '&viewer=1', '_blank'); }
-      else if (a === 'who') this.promptText('내 이름', '다른 관리자에게 “○○님이 작업 중”으로 보여요', CLOUD.who() || '', n => { try { localStorage.setItem('cue.who', n); } catch (e) { } LOCK.renew(); this.toast(`이름을 '${esc(n)}'(으)로 바꿨어요`); });
+      else if (a === 'me') this.meDialog();
+      else if (a === 'users') this.usersDialog();
+      else if (a === 'yearmenu') {
+        const on = !yearMenuOn();
+        try { await CLOUD.saveSetting('yearMenu', on); const t = document.getElementById('ym-tgl'); if (t) t.classList.toggle('on', on); this.renderNav(); if (this.tab === 'year') this.renderPane('year'); this.toast(on ? '운영 누적 메뉴를 뷰어에게도 보여요' : '운영 누적 메뉴를 숨겼어요 (관리자에게만 보여요)'); }
+        catch (e) { this.toast('바꾸지 못했어요: ' + esc(e.message), 5000); }
+      }
       else if (a === 'report') this.exportReport();
       else if (a === 'out') { await this.flushSave(); CLOUD.logout(); }
     });
   },
   loginDialog() {
-    this.modal(`<div class="hd"><h3>관리자 모드 접속</h3></div><div class="bd"><p class="small muted" style="margin-top:0">비밀번호를 넣으면 편집 화면이 열려요. 고친 내용은 바로 온라인에 저장돼요.</p>
-      <input type="password" id="admpw" autocomplete="current-password" placeholder="비밀번호" style="width:100%;height:36px;border:1px solid var(--rule);border-radius:8px;padding:0 10px">
-      <input id="admwho" placeholder="내 이름 (작업 중 표시용 · 이 브라우저에 기억)" value="${esc(CLOUD.who() || '')}" style="width:100%;height:34px;border:1px solid var(--rule);border-radius:8px;padding:0 10px;margin-top:8px">
+    let saved = ''; try { saved = localStorage.getItem('cue.email') || ''; } catch (e) { }
+    this.modal(`<div class="hd"><h3>관리자 모드 접속</h3></div><div class="bd"><p class="small muted" style="margin-top:0">관리자 계정(회사 이메일)으로 들어오면 편집 화면이 열려요.</p>
+      <input type="email" id="admid" autocomplete="username" placeholder="이메일 (예: name@smtown.com)" value="${esc(saved)}" class="minp">
+      <input type="password" id="admpw" autocomplete="current-password" placeholder="비밀번호" class="minp" style="margin-top:8px">
       <div id="admerr" class="small" style="color:#8f3d35;margin-top:6px;min-height:18px"></div></div>
       <div class="ft"><button class="btn" data-x>취소</button><button class="btn pri" id="adm-ok">접속</button></div>`, (box, close) => {
-      const inp = box.querySelector('#admpw'), er = box.querySelector('#admerr'), ok = box.querySelector('#adm-ok');
+      const id = box.querySelector('#admid'), inp = box.querySelector('#admpw'), er = box.querySelector('#admerr'), ok = box.querySelector('#adm-ok');
       const go = async () => {
-        if (!inp.value) return; ok.disabled = true; er.textContent = '확인 중…';
-        const nm = box.querySelector('#admwho').value.trim(); if (nm) { try { localStorage.setItem('cue.who', nm); } catch (e) { } }
-        try { await CLOUD.login(inp.value); close(true); CLOUD.setQs({ viewer: null, t: this.tab }); location.reload(); }
-        catch (e) { ok.disabled = false; er.textContent = e.net ? e.message : '비밀번호가 맞지 않아요'; inp.select(); }
+        if (!id.value.trim() || !inp.value) { er.textContent = '이메일과 비밀번호를 넣어 주세요'; return; }
+        ok.disabled = true; er.textContent = '확인 중…';
+        try {
+          const t = await CLOUD.login(id.value.trim(), inp.value);
+          try { localStorage.setItem('cue.email', t.email); } catch (e) { }
+          close(true);
+          if (t.must) return this.forcePwDialog(inp.value);
+          CLOUD.setQs({ viewer: null, t: this.tab }); location.reload();
+        } catch (e) { ok.disabled = false; er.textContent = e.net ? e.message : '이메일 또는 비밀번호가 맞지 않아요'; inp.select(); }
       };
-      ok.onclick = go; inp.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) go(); };
-      setTimeout(() => inp.focus(), 50);
+      ok.onclick = go; [id, inp].forEach(x => x.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) go(); });
+      setTimeout(() => (id.value ? inp : id).focus(), 50);
+    });
+  },
+  // 첫 접속(초기 비밀번호) → 사용할 비밀번호를 두 번 넣어 바꿔야 편집할 수 있음
+  forcePwDialog(oldPw) {
+    if (document.querySelector('.modal-bg.pwforce')) return;
+    this.modal(`<div class="hd"><h3>비밀번호를 바꿔 주세요</h3><div class="small muted">${esc((CLOUD.tok && CLOUD.tok.name) || '')} · ${esc((CLOUD.tok && CLOUD.tok.email) || '')}</div></div><div class="bd">
+      <p class="small" style="margin-top:0">처음 접속이라 초기 비밀번호를 사용할 비밀번호로 바꿔야 해요.</p>
+      ${oldPw ? '' : '<input type="password" id="pw0" autocomplete="current-password" placeholder="지금(초기) 비밀번호" class="minp" style="margin-bottom:8px">'}
+      <input type="password" id="pw1" autocomplete="new-password" placeholder="새 비밀번호 (6자 이상)" class="minp">
+      <input type="password" id="pw2" autocomplete="new-password" placeholder="새 비밀번호 한 번 더" class="minp" style="margin-top:8px">
+      <div class="note" style="margin-top:10px">🔒 비밀번호는 암호화(해시)해서 저장돼요. 운영자를 포함해 누구도 볼 수 없어요.</div>
+      <div id="pwerr" class="small" style="color:#8f3d35;margin-top:6px;min-height:18px"></div></div>
+      <div class="ft"><button class="btn" id="pw-out">로그아웃</button><button class="btn pri" id="pw-ok">바꾸고 시작하기</button></div>`, (box) => {
+      box.closest('.modal-bg').classList.add('pwforce');
+      const er = box.querySelector('#pwerr'), ok = box.querySelector('#pw-ok');
+      const go = async () => {
+        const o = oldPw || (box.querySelector('#pw0') || {}).value || '', a = box.querySelector('#pw1').value, b = box.querySelector('#pw2').value;
+        if (a.length < 6) { er.textContent = '6자 이상으로 정해 주세요'; return; }
+        if (a !== b) { er.textContent = '두 번 넣은 비밀번호가 달라요'; return; }
+        ok.disabled = true; er.textContent = '바꾸는 중…';
+        try { await CLOUD.setPw(o, a); er.textContent = ''; CLOUD.setQs({ viewer: null }); location.reload(); }
+        catch (e) { ok.disabled = false; er.textContent = /same|initial/i.test(e.message) ? '초기 비밀번호와 다른 것으로 정해 주세요' : /too short/i.test(e.message) ? '6자 이상으로 정해 주세요' : /bad password/i.test(e.message) ? '지금 비밀번호가 맞지 않아요' : '바꾸지 못했어요: ' + e.message; }
+      };
+      ok.onclick = go; box.querySelectorAll('input').forEach(x => x.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) go(); });
+      box.querySelector('#pw-out').onclick = () => CLOUD.logout();
+      setTimeout(() => box.querySelector('input').focus(), 50);
+    }, () => { if (CLOUD.tok && CLOUD.tok.must) setTimeout(() => this.forcePwDialog(oldPw), 0); });
+  },
+  // 내 설정: 계정 정보 · 비밀번호 바꾸기
+  meDialog() {
+    const t = CLOUD.tok || {};
+    this.modal(`<div class="hd"><h3>내 설정</h3></div><div class="bd">
+      <div class="kv"><span class="muted">이름</span><b>${esc(t.name || '-')}</b></div><div class="kv"><span class="muted">아이디</span><b>${esc(t.email || '-')}</b></div>
+      <h4 style="margin:14px 0 6px">비밀번호 바꾸기</h4>
+      <input type="password" id="pw0" autocomplete="current-password" placeholder="지금 비밀번호" class="minp">
+      <input type="password" id="pw1" autocomplete="new-password" placeholder="새 비밀번호 (6자 이상)" class="minp" style="margin-top:8px">
+      <input type="password" id="pw2" autocomplete="new-password" placeholder="새 비밀번호 한 번 더" class="minp" style="margin-top:8px">
+      <div class="small muted" style="margin-top:8px">🔒 비밀번호는 암호화(해시)해서 저장돼 운영자를 포함해 누구도 볼 수 없어요.</div>
+      <div id="pwerr" class="small" style="color:#8f3d35;margin-top:6px;min-height:18px"></div></div>
+      <div class="ft"><button class="btn" data-x>닫기</button><button class="btn pri" id="pw-ok">비밀번호 바꾸기</button></div>`, (box, close) => {
+      const er = box.querySelector('#pwerr'), ok = box.querySelector('#pw-ok');
+      ok.onclick = async () => {
+        const o = box.querySelector('#pw0').value, a = box.querySelector('#pw1').value, b = box.querySelector('#pw2').value;
+        if (!o) { er.textContent = '지금 비밀번호를 넣어 주세요'; return; }
+        if (a.length < 6) { er.textContent = '새 비밀번호는 6자 이상으로 정해 주세요'; return; }
+        if (a !== b) { er.textContent = '두 번 넣은 새 비밀번호가 달라요'; return; }
+        ok.disabled = true; er.textContent = '바꾸는 중…';
+        try { await CLOUD.setPw(o, a); close(true); this.toast('비밀번호를 바꿨어요'); }
+        catch (e) { ok.disabled = false; er.textContent = /bad password/i.test(e.message) ? '지금 비밀번호가 맞지 않아요' : /same|initial/i.test(e.message) ? '지금·초기 비밀번호와 다른 것으로 정해 주세요' : '바꾸지 못했어요: ' + e.message; }
+      };
+    });
+  },
+  // 관리자 계정: 목록 · 초대(초기 비밀번호로 계정 생성) · 비밀번호 초기화 · 빼기
+  async usersDialog() {
+    let list = [];
+    try { list = await CLOUD.users(); } catch (e) { return this.toast('관리자 목록을 불러오지 못했어요: ' + esc(e.message), 5000); }
+    const me = (CLOUD.tok || {}).email;
+    const dt = v => v ? fmt.time(new Date(v).getTime()) : '';
+    this.modal(`<div class="hd"><h3>관리자 계정</h3><div class="small muted">관리자는 누구나 새 관리자를 초대할 수 있어요. 초대하면 바로 계정이 생기고, 초기 비밀번호로 처음 접속하면 비밀번호를 바꾸게 돼요.</div></div>
+      <div class="bd"><table class="bulkt"><thead><tr><th class="l">이름</th><th class="l">아이디(이메일)</th><th class="l">상태</th><th class="l">초대한 사람</th><th></th></tr></thead><tbody>
+      ${list.map(u => `<tr><td class="l"><b>${esc(u.name)}</b>${u.email === me ? ' <span class="muted small">(나)</span>' : ''}</td><td class="l">${esc(u.email)}</td><td class="l small">${u.must ? '<span class="warnt">첫 접속 전</span>' : `<span class="muted">비밀번호 설정 ${esc(dt(u.pwAt).split(' ')[0] || '')}</span>`}</td><td class="l small muted">${esc(u.by || '')}</td>
+        <td class="r">${u.email === me ? '' : `<button class="btn sm ghost" data-reset="${esc(u.email)}">비밀번호 초기화</button><button class="btn sm ghost" data-rm="${esc(u.email)}">빼기</button>`}</td></tr>`).join('')}
+      </tbody></table>
+      <h4 style="margin:16px 0 6px">새 관리자 초대</h4>
+      <div class="invrow"><input id="iv-name" placeholder="이름" class="minp" style="width:120px"><input id="iv-email" type="email" placeholder="이메일 아이디 (name@smtown.com)" class="minp" style="flex:1"><button class="btn pri" id="iv-ok">초대</button></div>
+      <div class="small muted" style="margin-top:6px">초대 메일은 보내지 않아요. 사이트 주소와 아이디를 알려 주고, 초기 비밀번호로 처음 접속하라고 전해 주세요.</div>
+      <div id="iverr" class="small" style="color:#8f3d35;margin-top:6px;min-height:18px"></div></div>
+      <div class="ft"><button class="btn" data-x>닫기</button></div>`, (box, close) => {
+      const er = box.querySelector('#iverr');
+      box.querySelector('#iv-ok').onclick = async () => {
+        const n = box.querySelector('#iv-name').value.trim(), e = box.querySelector('#iv-email').value.trim().toLowerCase();
+        if (!n || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) { er.textContent = '이름과 이메일을 바르게 넣어 주세요'; return; }
+        try { await CLOUD.invite(e, n); close(true); this.toast(`${esc(n)}(${esc(e)})님을 관리자로 초대했어요 — 초기 비밀번호로 처음 접속하면 비밀번호를 바꾸게 돼요`, 7000); this.usersDialog(); }
+        catch (x) { er.textContent = /already/i.test(x.message) ? '이미 있는 계정이에요' : '초대하지 못했어요: ' + x.message; }
+      };
+      box.querySelectorAll('[data-reset]').forEach(b => b.onclick = async () => { const e = b.dataset.reset; try { await CLOUD.resetPw(e); this.toast(`${esc(e)}의 비밀번호를 초기 비밀번호로 되돌렸어요 — 다음 접속 때 새로 정하게 돼요`, 6000); close(true); this.usersDialog(); } catch (x) { er.textContent = '초기화하지 못했어요: ' + x.message; } });
+      box.querySelectorAll('[data-rm]').forEach(b => b.onclick = async () => {
+        const e = b.dataset.rm; if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = '정말 빼기'; b.classList.add('danger'); return; }
+        try { await CLOUD.removeUser(e); close(true); this.toast(`${esc(e)}을(를) 관리자에서 뺐어요`); this.usersDialog(); } catch (x) { er.textContent = '빼지 못했어요: ' + x.message; }
+      });
     });
   },
   promptText(title, label, val, onOk) {
@@ -504,10 +613,15 @@ const App = {
   },
   bindDrop() {
     const drop = document.getElementById('drop'); let n = 0;
-    window.addEventListener('dragenter', e => { if ([...(e.dataTransfer.types || [])].includes('Files')) { n++; drop.classList.add('on'); } });
+    // 15차: 온보딩 창 등 다른 창이 열려 있으면 전체 덮개를 띄우지 않음 · 놓기/끌기 끝/마우스 움직임에서 늘 덮개를 걷음
+    //       (창 안에 놓으면 drop 이 창에서 멈춰 window 까지 안 와서 '엑셀 파일을 놓으세요'가 계속 남던 문제)
+    const off = () => { n = 0; drop.classList.remove('on'); };
+    window.addEventListener('dragenter', e => { if (document.querySelector('.modal-bg')) return; if ([...(e.dataTransfer.types || [])].includes('Files')) { n++; drop.classList.add('on'); } });
     window.addEventListener('dragleave', () => { n = Math.max(0, n - 1); if (!n) drop.classList.remove('on'); });
     window.addEventListener('dragover', e => e.preventDefault());
-    window.addEventListener('drop', e => { e.preventDefault(); n = 0; drop.classList.remove('on'); if (readOnly()) return; const f = [...(e.dataTransfer.files || [])].filter(x => /\.xls[xm]?$/i.test(x.name)); if (f.length) this.handleFiles(f); });
+    window.addEventListener('drop', off, true); window.addEventListener('dragend', off, true);
+    window.addEventListener('mousemove', () => { if (drop.classList.contains('on')) off(); });
+    window.addEventListener('drop', e => { e.preventDefault(); off(); if (readOnly()) return; const f = [...(e.dataTransfer.files || [])].filter(x => /\.xls[xm]?$/i.test(x.name)); if (f.length) this.handleFiles(f); });
   },
   bindKeys() {
     // 표 칸을 고르지 않은 채 Ctrl+V 해도 지금 보고 있는 지상파·케이블 표에 붙여넣기
@@ -615,6 +729,7 @@ const App = {
       normalize: (col, v) => (col.k === 'start' || col.k === 'end') ? normTime(v) : v,
       onRo: () => this.toast(LOCK.blockedMsg(name), 3000),
       onCommit: (row, c, v) => this.checkChannel(name, row, c, v),
+      stamp: () => ({ obAt: fmt.at(), obBy: whoNow() }),
     });
     this.grids[name] = g;
     g.setRO(!readOnly() && LOCK.blocked(name));
@@ -643,7 +758,7 @@ const App = {
         const pp = media === '케이블' ? ((box.querySelector('#nc-pp') || {}).value || '').trim() : '';
         if (media === '케이블' && !pp) { this.toast('PP를 적어 주세요 (예: CJ ENM)'); return; }
         const rows = WS.sheets.채널; const isG = r => /지상파/.test(str(r[2]));
-        const nr = [nm, '', media, pp, box.querySelector('#nc-grp').value];
+        const nr = stampRow([nm, '', media, pp, box.querySelector('#nc-grp').value], 5);
         const at = media === '지상파' ? rows.reduce((a2, r, i) => isG(r) ? i + 1 : a2, 0) : (() => { let k = -1; rows.forEach((r, i) => { if (!isG(r) && str(r[3]) === pp) k = i; }); return k >= 0 ? k + 1 : rows.length; })();
         rows.splice(at, 0, nr); close(true);
         if (nm !== raw) g.applyCells([{ id: row.id, c, n: nm }], '채널 고치기');
@@ -993,6 +1108,7 @@ const App = {
       ev.preventDefault(); ev.stopPropagation();
       const s = d.dataset.s, r = +d.dataset.r, col = d.dataset.c || null;
       if (GRID_SHEETS.includes(s)) { this.go(s); if (r >= 0) this.grids[s].gotoData(r, col ? Math.max(0, colIndex(s, col)) : 0); }
+      else if (s === '매칭규칙') OBUI.open(null, { rules: true });
       else if (MST_OF[s]) this.go(MST_OF[s], true);
       else if (FORM_TABS[s]) this.go(s);
     });
@@ -1128,13 +1244,13 @@ const App = {
       WS.sheets.품목.push(def ? def.slice() : [str(r[0]), str(r[1]) || str(r[0]), str(r[2]) || '기타', /^#?[0-9a-f]{6}$/i.test(str(r[3])) ? str(r[3]) : nextColor(), str(r[4])]);
       added++;
     }
-    for (const r of pm.채널 || []) { if (!str(r[0]) || resolveCh(MS, r[0])) continue; WS.sheets.채널.push(r.slice(0, 5)); added++; }
+    for (const r of pm.채널 || []) { if (!str(r[0]) || resolveCh(MS, r[0])) continue; WS.sheets.채널.push(r.slice(0, 7)); added++; }
     const rk = new Set((WS.sheets.매칭규칙 = WS.sheets.매칭규칙 || []).map(r => [r[0], r[1], r[2]].map(norm).join('|')));
     for (const r of pm.매칭규칙 || []) { const k = [r[0], r[1], r[2]].map(norm).join('|'); if (!str(r[0]) || rk.has(k)) continue; WS.sheets.매칭규칙.push(r.slice(0, 4).map(str)); rk.add(k); added++; }
     const cmk = new Set(WS.sheets.CM위치.map(r => norm(r[0])));
-    for (const r of pm.CM위치 || []) { if (!str(r[0]) || cmk.has(norm(r[0]))) continue; WS.sheets.CM위치.push([str(r[0]), str(r[1])]); cmk.add(norm(r[0])); added++; }
+    for (const r of pm.CM위치 || []) { if (!str(r[0]) || cmk.has(norm(r[0]))) continue; WS.sheets.CM위치.push(r.slice(0, 4).map(str)); cmk.add(norm(r[0])); added++; }
     const cpk = new Set(WS.sheets.목표CPRP.map(r => (/지상파/.test(str(r[0])) ? '지상파' : '케이블') + '|' + norm(r[1])));
-    for (const r of pm.목표CPRP || []) { const k = (/지상파/.test(str(r[0])) ? '지상파' : '케이블') + '|' + norm(r[1]); if (cpk.has(k)) continue; WS.sheets.목표CPRP.push(r.slice(0, 3)); cpk.add(k); added++; }
+    for (const r of pm.목표CPRP || []) { const k = (/지상파/.test(str(r[0])) ? '지상파' : '케이블') + '|' + norm(r[1]); if (cpk.has(k)) continue; WS.sheets.목표CPRP.push(r.slice(0, 5)); cpk.add(k); added++; }
     if (added) this.toast(`마스터에 새 항목 ${added}개를 추가했어요`);
   },
 

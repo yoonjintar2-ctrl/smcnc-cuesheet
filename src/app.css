@@ -1240,3 +1240,144 @@ body.rowdragging,body.rowdragging *{cursor:grabbing!important;user-select:none!i
 table.t.cresum td.crit{font-weight:700;background:color-mix(in srgb,var(--c) 10%,#fff)}
 table.t.cresum td.crit .sw{margin-right:6px}
 table.t.cresum td.wrap{min-width:180px}
+
+/* ===== 15차 ===== */
+/* 주차별: 숫자를 막대 끝 오른쪽에 */
+.wkr .t{margin-bottom:5px}
+.wkr .bar{display:flex;align-items:center;gap:8px;height:14px}
+.wkr .bar .fill{flex:none;width:0}
+.wkr .bar em{font-style:normal;font-weight:700;font-size:12px;color:#262626;margin:0;white-space:nowrap}
+.ibr .lbx{font-weight:600}
+/* 요약: 노출수·중CM 정사각형 4칸(왼쪽 2×2) + 중CM·PIB PP별/채널별(오른쪽) */
+.cmrow2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-bottom:16px;align-items:start}
+.sq4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.card.sqcard{aspect-ratio:1/1;display:flex;flex-direction:column;margin:0;min-width:0}
+.sqcard .hd{flex:none;flex-wrap:nowrap}
+.sqcard .hd h3{white-space:nowrap}
+.sqcard .hd .seg button{padding:0 8px;font-size:11.5px}
+.sqcard .bd{flex:1 1 auto;min-height:0;position:relative;padding:0}
+.sqcard .sqd{position:absolute;inset:4px 8px 8px}
+.card.cmcard{margin:0}
+@media (max-width:1100px){.cmrow2{grid-template-columns:1fr}}
+@media (max-width:640px){.sq4{grid-template-columns:1fr}}
+/* ===== 15차: 표 디자인 통일 — 모든 표: 머리글 = 진한 회색·흰 글자 · 소계 = 옅은 회색·굵게 · 합계 = 진한 회색·흰 글자 (당월 예산 표와 같은 규칙) ===== */
+table.t thead th,table.t.ctr thead th{background:#424242;color:#fff;border-right-color:#555558;border-bottom-color:#555558;font-weight:600}
+table.t thead th .rg,table.t.ctr th .rg{color:#cfcfd2}
+table.t thead th.grph,table.t.ctr thead th.grph{background:#333335;color:#fff;border-bottom:1px solid #58585b}
+table.t.grp thead th.gs{border-left:2px solid #8e8e93}
+table.t.grp td.gs{border-left:2px solid #a0a0a5}
+table.t tr.sub td{background:#e6e6e8;font-weight:700;color:#1c1c1e;border-top:1px solid #cfcfd2}
+table.t tr.sub td.z{color:#9a9a9f}
+table.t tr.tot td{background:#575757;color:#fff;font-weight:800;border-color:#575757}
+table.t tr.tot td.z,table.t tr.tot td .muted{color:#c9c9cc}
+table.t td.mg{background:#fff;font-weight:600}
+table.t thead th .colrs:hover,table.t thead th .colrs.on{background:rgba(255,255,255,.35)}
+table.t.form thead th small,table.t.form thead th .muted{color:#cfcfd2}
+table.t.caall th{background:#424242;border-color:#555558}
+/* 운영 요약: 카테고리 병합 칸 · 품목 요약 줄(B~C열) · 합계(A~C열) · 주요 프로그램은 왼쪽 정렬 */
+table.t.ops td.cat{background:#fafafa;font-weight:700;color:var(--acc-deep)}
+table.t.ops td.sumname{font-weight:700}
+table.t.ops.ctr td.prog,table.t.ops.ctr td.wrap,table.t.ops.ctr th.pgh{text-align:left;padding-left:14px}
+/* 큐시트: 머리글은 다른 표와 같은 진한 회색 · 방송사 계 / 3사 계는 진하게(흰 글자) */
+table.t.cue.qm th{background:#424242;border-right-color:#555558;border-bottom-color:#555558}
+table.t.cue.qm tr.sub td{background:#6e6e73;color:#fff;font-weight:700;border-top:2px solid #58585b;border-right-color:#7c7c81;border-bottom-color:#7c7c81}
+table.t.cue.qm tr.tot td{background:#3a3a3c;color:#fff;font-weight:800;border-color:#4a4a4d}
+table.t.cue.qm tr.sub td .muted,table.t.cue.qm tr.tot td .muted{color:#d6d6d9}
+table.t.cue.qm tr.sub:hover td:not(.tsel){background-color:#6e6e73}table.t.cue.qm tr.tot:hover td:not(.tsel){background-color:#3a3a3c}
+.spot.ibox{color:#fff}
+/* 큐시트 열 너비 줄이기: 주차 칸은 글자 길이만큼 · 짧은 열은 여백을 줄임 */
+table.t.cue.qm th.wkh{min-width:0}
+table.t.cue.qm td.wk{min-width:0;padding:3px 4px}
+.spot.ibox{min-width:0;padding:2px 7px;margin:2px 0}
+table.t.cue.qm.cg th,table.t.cue.qm.cg td.info{padding-left:6px;padding-right:6px}
+table.t.cue.qm.cg thead th.h2{white-space:normal;word-break:keep-all;line-height:1.25}
+table.t.cue.qm td.pg{white-space:normal;word-break:keep-all;line-height:1.35}
+table.t.cue.qm th.pgh{width:220px;min-width:180px}
+/* 운영 누적 (월별 광고비) */
+.kpis.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.ychart{margin-bottom:14px}
+.ylg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink2);margin-bottom:8px}
+.ylg span{display:inline-flex;align-items:center;gap:5px}.ylg i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.yplot{position:relative;height:230px;padding-left:44px}
+.yax{position:absolute;left:0;top:0;bottom:22px;width:40px}
+.yax span{position:absolute;right:6px;transform:translateY(50%);font-size:10.5px;color:#a2a2a7;font-variant-numeric:tabular-nums}
+.ycols{position:relative;height:100%;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;padding-bottom:22px;box-sizing:border-box}
+.ycols .ygrid{position:absolute;left:0;right:0;top:0;bottom:22px;pointer-events:none}
+.ycols .ygl{position:absolute;left:0;right:0;height:0;border-top:1px solid #f0f0f1}
+.ycols .ygl:first-child{border-top-color:#d5d5d8}
+.ycol{position:relative;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;cursor:default}
+.ycol .ystk{position:relative;width:min(46px,72%);display:flex;flex-direction:column-reverse;gap:1px;transition:height .7s cubic-bezier(.2,.7,.2,1)}
+.ycol .ystk b{display:block;min-height:1px}
+.ycol .ystk b:last-of-type{border-radius:4px 4px 0 0}
+.ycol .ystk em{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);margin-bottom:3px;font-style:normal;font-weight:700;font-size:11.5px;color:#262626;white-space:nowrap}
+.ycol .ym{position:absolute;bottom:-20px;font-size:11.5px;color:var(--ink2)}
+.ycol.na .ym{color:#c2c2c6}
+.ycol:hover .ystk{filter:brightness(1.06)}
+table.t.yeart td.na{background:#fafafa}
+table.t.yeart td.yt{font-weight:700;background:#efeff1}
+table.t.yeart tr.sub td.yt{background:#dcdce0}table.t.yeart tr.tot td.yt{background:#3a3a3c;color:#fff}
+table.t.yeart td.l,table.t.yeart th.l{text-align:left;padding-left:12px;min-width:120px}
+table.t.yeart tr.grp td{text-align:left}
+/* 관리자 계정 · 내 설정 */
+.minp{width:100%;height:36px;border:1px solid var(--rule);border-radius:8px;padding:0 10px;box-sizing:border-box;font:inherit}
+.minp:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 2px rgba(87,87,87,.15)}
+.modal .kv{display:flex;gap:12px;padding:3px 0;font-size:13px}.modal .kv span{width:56px}
+.invrow{display:flex;gap:8px;align-items:center}
+.warnt{color:#9a5b12;font-weight:600}
+.btn.danger{background:var(--stop-bg);border-color:var(--stop-rule);color:var(--stop)}
+.dd-menu button.tglrow{position:relative;padding-right:56px}
+.mtgl{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:32px;height:18px;border-radius:10px;background:#c7c7cc;transition:background .2s}
+.mtgl i{position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .2s}
+.mtgl.on{background:#2c2c2e}.mtgl.on i{left:16px}
+/* 15차: 온보딩 — 시트 고르기 · 매칭 규칙(창 위쪽) · 짧은 확인 카드 */
+.obpick0{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.obmedia{display:grid;grid-template-columns:repeat(2,minmax(220px,300px));gap:16px}
+.obmd{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:26px 24px;border:1.5px solid var(--rule);border-radius:16px;background:var(--surface);cursor:pointer;text-align:left;font:inherit;transition:border-color .15s,transform .15s,box-shadow .15s}
+.obmd b{font-size:18px;font-weight:700;color:var(--ink)}.obmd small{font-size:12.5px;color:var(--muted)}
+.obmd::before{content:'';position:absolute;left:0;top:18px;bottom:18px;width:4px;border-radius:0 4px 4px 0;background:#3a3a3c}
+.obmd.c::before{background:#8e8e93}
+.obmd:hover:not(:disabled),.obmd:focus-visible{border-color:#2c2c2e;transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.08);outline:none}
+.obmd.cur{border-color:#9b9b9b}
+.obmd:disabled{opacity:.6;cursor:wait}
+.obmd .lk{font-size:12px;color:#9a5b12;font-weight:600;margin-top:2px}
+.obnote{text-align:center}
+.obpend{font-size:12.5px;color:var(--ink2);background:var(--surface);border:1px solid var(--rule2);border-radius:9px;padding:7px 12px}
+.obh h2 .obmdb{font-size:12px;vertical-align:3px;margin-left:6px}
+.obh h2 .lnk{margin-left:4px;font-weight:400;vertical-align:2px}
+details.obrules{border-bottom:1px solid var(--rule2);background:var(--surface)}
+details.obrules>summary{display:flex;align-items:center;gap:10px;padding:8px 24px;cursor:pointer;list-style:none;font-size:13px}
+details.obrules>summary::-webkit-details-marker{display:none}
+details.obrules>summary .obr-tg{font-size:12px;font-weight:600;color:var(--ink);border:1px solid var(--rule);border-radius:7px;padding:3px 10px;background:var(--surface3)}
+details.obrules[open]>summary .obr-tg{background:#2c2c2e;color:#fff;border-color:#2c2c2e}
+details.obrules .obrbody{max-height:38vh;overflow:auto;padding:4px 24px 12px}
+details.obrules .obrbody .fhd{margin-top:0}
+details.obrules details.qmrules{margin-top:10px}
+.oc-row .lnk{margin-left:0}
+.oc-row .lnk+.lnk{margin-left:6px}
+.oc-new{padding:8px 10px;background:var(--surface3);border-radius:9px}
+details.oc-kw{margin-top:8px;font-size:12px;color:var(--muted)}
+details.oc-kw>summary{cursor:pointer;width:max-content}
+details.oc-kw .oc-row.rem{border-top:0;padding-top:0;margin-top:4px}
+/* 15차: 추가·수정한 사람 · 일시 */
+td.stc{white-space:nowrap;font-size:11.5px;color:var(--muted);padding:0 10px}
+.stmp b{font-weight:600;color:var(--ink2)}
+.note .ucx{white-space:nowrap;font-weight:600}.note .ucx .muted{font-weight:400}
+.xg-c.au{color:#8e8e93;font-size:11.5px;background:#fafafa}
+.modal table.bulkt td.manual select{border-color:#9a5b12;font-weight:600;color:#9a5b12}
+/* 15차 b: 지상파 큐시트 더 좁게 — 주차 칸 글자는 필요할 때만 두 줄 · 날짜·CM 순서도 줄바꿈 허용 */
+table.t.cue.qm.cg th.wkh{width:108px}
+table.t.cue.qm.cg td.wk .spot.ibox{white-space:normal;word-break:keep-all;font-size:10.5px;line-height:1.3;padding:2px 5px;text-align:center;letter-spacing:-.15px}
+table.t.cue.qm.cg td.dl{white-space:normal;word-break:keep-all;min-width:52px}
+table.t.cue.qm.cg td.chc{min-width:60px}
+table.t.cue.qm.cg td.kind{min-width:46px}
+table.t.cue.qm.cg th.pgh{width:160px;min-width:140px}
+table.t.cue.qm.cg td.kind.chc{min-width:64px}
+table.t.cue.qm.cg th.cmoh{width:64px}
+table.t.cue.qm.cg td.cmo{white-space:normal;word-break:keep-all;min-width:62px}
+table.t.cue.qm.cg td.cmo .cmtag{white-space:normal}
+table.t.cue.qm.cg th.dsh{width:72px}
+table.t.cue.qm.cg td.wk{min-width:124px}
+.obbg.pick{align-items:center}
+.obm.modal.pick{height:auto;width:min(720px,100%)}
+.obm.pick .obb{flex:none;padding:28px 24px 30px}
+.oc-row[hidden]{display:none}

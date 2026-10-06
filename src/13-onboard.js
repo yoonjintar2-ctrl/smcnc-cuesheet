@@ -110,8 +110,9 @@ function obKwFromName(fn, names) {
 
 // ---- 세션 ----
 const OB = {
-  files: [], seq: 1, cm: {}, mode: 'replace',
-  reset() { this.files = []; this.cm = {}; this.mode = 'replace'; },
+  files: [], seq: 1, cm: {}, mode: 'replace', media: null,   // 15차 media: 넣을 시트(지상파|케이블) — 다른 매체 행은 넣지 않음
+  reset() { this.files = []; this.cm = {}; this.mode = 'replace'; this.media = null; },
+  tgtOf(media) { return media === '지상파' ? '지상파' : '케이블'; },
   async addFiles(list) {
     const arr = [...list].filter(f => /\.(xlsx|xlsm|xls|csv)$/i.test(f.name));
     for (const file of arr) {
@@ -169,7 +170,7 @@ const OB = {
       let rows = [];
       try { rows = QME.buildRows([entry]).slice(1); } catch (e) { console.error(e); F.err = e.message; }
       const item = this.itemOf(F);
-      const st = { n: 0, price: 0, d1: 99, d2: 0, ym: {}, sheets: new Map() };
+      const st = { n: 0, price: 0, d1: 99, d2: 0, ym: {}, sheets: new Map(), other: new Map() };
       for (const r of rows) {
         const shName = r[57], S = F.sheets.find(x => x.name === shName), sh = S && S.sh;
         const chR = S ? this.chOf(S) : {}; const ch = chR && chR.ch || '';
@@ -179,6 +180,7 @@ const OB = {
         const [mo, dd] = String(r[18] || '').split('/').map(Number);
         const terr = c && c.media === '지상파';   // Q-Mate: 지상파 3사는 품목 '미지정'
         const o = { file: F.name, sheet: shName, ch, media: c ? c.media : '', item: terr ? '' : item, prog: str(r[2]), dow: str(r[3]), start: str(r[4]), end: str(r[5]), grade: str(r[6]), sec: r[7] === '' ? '' : +r[7], cm: str(r[8]), cmRaw: str(r[56]), price: r[9] === '' ? '' : +r[9], date: mo ? `${mo}/${dd}` : '', mo, dd, cre: '', note: '', amount: terr ? extra.amount : '' };
+        if (this.media && c && this.tgtOf(c.media) !== this.media) { st.other.set(shName, (st.other.get(shName) || 0) + 1); continue; }   // 고른 시트가 아닌 매체
         out.rows.push(o);
         st.n++; st.price += +o.price || 0; if (dd) { st.d1 = Math.min(st.d1, dd); st.d2 = Math.max(st.d2, dd); st.ym[mo] = (st.ym[mo] || 0) + 1; }
         st.sheets.set(shName, (st.sheets.get(shName) || 0) + 1);
@@ -195,7 +197,7 @@ const OB = {
     for (const F of this.files) {
       if (F.status !== 'ok') continue;
       for (const S of F.sheets) { const r = this.chOf(S); if (!r.skip && !r.ch) { const n = (this.out && this.out.byFile.get(F.id) || { sheets: new Map() }).sheets.get(S.name) || 0; if (n || !S.sh.dataRows || S.sh.dataRows.length) t.ch.push({ F, S, n }); } }
-      const cabSheet = F.sheets.some(S => { const r = this.chOf(S); if (r.skip) return false; const c = r.ch && MS.chByName.get(r.ch); return !c || c.media !== '지상파'; });
+      const cabSheet = this.media !== '지상파' && F.sheets.some(S => { const r = this.chOf(S); if (r.skip) return false; const c = r.ch && MS.chByName.get(r.ch); return !c || c.media !== '지상파'; });
       if (cabSheet && F.itemSel === undefined && !(F.item && F.item.item)) t.item.push({ F });
     }
     if (this.out) for (const [raw, x] of this.out.cm) if (!this.cm[raw]) t.cm.push({ raw, ...x });
