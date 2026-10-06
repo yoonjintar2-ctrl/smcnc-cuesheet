@@ -107,7 +107,7 @@ const SHEETS = {
   },
   목표CPRP: {
     label: '목표 CPRP', group: 'master',
-    hint: 'GRP = 예산 ÷ 목표 CPRP(15초 기준) × 초수 환산. 매체 + PP(MPP)로 찾습니다.',
+    hint: 'GRP = 예산 ÷ 목표 CPRP(15초 기준) × 초수 환산. 매체 + PP(MPP)로 찾습니다(케이블은 채널 이름 행이 있으면 그 채널만 그 값).',
     cols: [
       { k: 'media', t: '매체', w: 70 },
       { k: 'pp', t: 'PP', w: 130 },

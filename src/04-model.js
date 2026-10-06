@@ -122,10 +122,12 @@ function compute(WS) {
   const creByItem = groupBy(creatives.filter(c => c.item), c => c.item);
   // 품목별 'GRP 초수 비중'(예산 비중): WS.secPlan[품목] = {15: 0.27, 30: 0.73} 직접 입력 → 없으면 소재 탭 금액 비중을 초수별로 합산
   const planCache = new Map();
-  const secPlanOf = item => {
-    if (planCache.has(item)) return planCache.get(item);
+  // 품목별 GRP 초수 비중. 'item|지상파'·'item|케이블' 키가 있으면 그 매체만 그 값 (예전 1~2월 엑셀은 지상파·케이블 비중이 달랐음)
+  const secPlanOf = (item, media) => {
+    const ck = item + '|' + (media || '');
+    if (planCache.has(ck)) return planCache.get(ck);
     let res = null;
-    const o = (WS.secPlan || {})[item];
+    const o = (media && (WS.secPlan || {})[item + '|' + media]) || (WS.secPlan || {})[item];
     const fromShares = (sh, src) => { const ks = Object.keys(sh).filter(k => +k > 0 && sh[k] > 0); const tot = sum(ks, k => sh[k]); return tot > 0 ? { src, shares: Object.fromEntries(ks.map(k => [k, sh[k] / tot])), factor: sum(ks, k => sh[k] * 15 / +k) / tot } : null; };
     if (o) res = fromShares(o, 'plan');
     if (!res) {
@@ -134,7 +136,7 @@ function compute(WS) {
       for (const x of list) sh[x.sec] = (sh[x.sec] || 0) + (anyShare ? (x.share || 0) : x.cshare != null ? x.cshare : 1);
       res = fromShares(sh, 'cre');
     }
-    planCache.set(item, res); return res;
+    planCache.set(ck, res); return res;
   };
 
   // ---- 스팟 ----
@@ -272,10 +274,12 @@ function compute(WS) {
     else { c.value = c.priceSum; c.bonus = c.value - c.budget; }
     c.rate = c.budget > 0 ? c.bonus / c.budget : null;
     // GRP: 예산 ÷ 목표CPRP(15초) × 초수 환산
-    let cp = MS.cprp.get(c.media + '|' + norm(c.media === '지상파' ? c.ch : c.mpp)) || MS.cprp.get(c.media + '|' + norm(c.mpp));
-    c.cprp = cp || null;
+    // 지상파는 채널, 케이블은 채널 이름 행이 있으면 그 값(예전 1~2월처럼 tvN·tvN SHOW가 다른 경우) → 없으면 PP(MPP) 값
+    const ckCh = c.media + '|' + norm(c.ch), ckPP = c.media + '|' + norm(c.mpp);
+    let cp = MS.cprp.get(ckCh) || MS.cprp.get(ckPP);
+    c.cprp = cp || null; c.cprpKey = MS.cprp.has(ckCh) ? ckCh : MS.cprp.has(ckPP) ? ckPP : null;
     // 초수 환산(엑셀 기준): 품목마다 계획한 초수별 예산 비중 하나를 모든 채널에 똑같이 씀 — 실제 송출 초수가 아님
-    const pl = secPlanOf(c.item);
+    const pl = secPlanOf(c.item, c.media);
     let factor = pl ? pl.factor : null;
     if (factor == null && c.priceSum > 0) { factor = 0; for (const s in c.secPrice) factor += (c.secPrice[s] / c.priceSum) * (15 / (+s)); }
     if (factor == null) factor = 0.5;

@@ -155,7 +155,9 @@ const CLOUD = {
 // 시트를 열면 잠금을 잡고(3분짜리, 30초마다 연장), 다른 사람이 잡고 있으면 그 시트는 보기만. 5분 동안 손대지 않으면 스스로 풀어 줌.
 const LOCK = {
   TABS: ['master', '지상파', '케이블', 'reach', '예산', '소재'],
-  LABEL: { master: '마스터', 지상파: '지상파 입력 시트', 케이블: '케이블 입력 시트', reach: '누적리치', 예산: '예산', 소재: '소재' },
+  LABEL: { master: '품목·채널 관리', 지상파: '지상파 입력 시트', 케이블: '케이블 입력 시트', reach: '누적리치', 예산: '당월 예산', 소재: '당월 소재' },
+  // 14차: 품목·채널·CM위치·목표 CPRP·매칭 규칙 메뉴는 같은 '마스터' 잠금을 함께 씀
+  key(tab) { return ['mch', 'mcm', 'mcprp', 'mrule'].includes(tab) ? 'master' : tab; },
   IDLE: 5 * 60 * 1000, BEAT: 30 * 1000,
   st: {}, others: {}, cur: null, lastAct: Date.now(), timer: null, on: false,
   holder() {
@@ -170,11 +172,12 @@ const LOCK = {
     this.timer = setInterval(() => this.beat(), this.BEAT);
   },
   // 다른 사람이 잡고 있는 시트면 true (잠금 확인 전에는 편집 가능으로 둠)
-  blocked(tab) { if (!this.active() || !this.TABS.includes(tab)) return false; const s = this.st[tab]; return !!(s && !s.mine); },
-  other(tab) { const o = this.others[tab]; return o ? (o.who || '다른 관리자') : null; },
-  blockedMsg(tab) { const s = this.st[tab] || {}; return s.idle ? '오래 쉬어서 편집 잠금을 풀었어요 — 표를 한 번 누르면 다시 편집할 수 있어요' : `${esc(s.who || '다른 관리자')}님이 이 시트를 작업 중이라 지금은 볼 수만 있어요`; },
+  blocked(tab) { tab = this.key(tab); if (!this.active() || !this.TABS.includes(tab)) return false; const s = this.st[tab]; return !!(s && !s.mine); },
+  other(tab) { const o = this.others[this.key(tab)]; return o ? (o.who || '다른 관리자') : null; },
+  blockedMsg(tab) { const s = this.st[this.key(tab)] || {}; return s.idle ? '오래 쉬어서 편집 잠금을 풀었어요 — 표를 한 번 누르면 다시 편집할 수 있어요' : `${esc(s.who || '다른 관리자')}님이 이 시트를 작업 중이라 지금은 볼 수만 있어요`; },
   enter(tab) {
     if (!this.active()) return;
+    tab = this.key(tab);
     if (this.cur && this.cur !== tab) this.release(this.cur);
     this.cur = this.TABS.includes(tab) ? tab : null;
     if (this.cur) { this.lastAct = Date.now(); this.acquire(this.cur); }
@@ -228,19 +231,22 @@ const LOCK = {
     } catch (e) { }
   },
   // 잠금 상태가 바뀌면 그 시트 화면을 편집/보기로 다시 그림
-  applied(tab) {
-    const ro = this.blocked(tab);
-    const g = App.grids[tab]; if (g) { g.setRO(ro); App.gridStat(tab); }
-    else if (App.tab === tab) App.renderPane(tab);
-    else if (App.panes[tab]) App.panes[tab].dataset.ver = '';
-    if (ro && App.tab === tab) App.toast(this.blockedMsg(tab), 4500);
+  applied(key) {
+    const ro = this.blocked(key);
+    for (const tab of (key === 'master' ? ['master', 'mch', 'mcm', 'mcprp', 'mrule'] : [key])) {
+      const g = App.grids[tab]; if (g) { g.setRO(ro); App.gridStat(tab); }
+      else if (App.tab === tab) App.renderPane(tab);
+      else if (App.panes[tab]) App.panes[tab].dataset.ver = '';
+      if (App.panes[tab]) App.panes[tab].classList.toggle('lockdim', ro);
+    }
+    if (ro && this.key(App.tab) === key) App.toast(this.blockedMsg(key), 4500);
   },
   bar() {
     const el = typeof document !== 'undefined' && document.getElementById('lockbar'); if (!el) return;
     const t = this.cur, s = t && this.st[t];
     if (!t || !s || (s.mine && !s.err)) {
       el.hidden = !t || !s; el.className = 'lockbar mine';
-      el.innerHTML = t && s ? `<span>✎ ${esc(this.LABEL[t])} 편집 중 — 다른 관리자는 이 시트를 볼 수만 있어요</span>` : ''; return;
+      el.innerHTML = t && s ? `<span>✎ <b>${esc(CLOUD.who() || '관리자')}</b>님께서 ${esc(this.LABEL[t])} 편집 중 — 다른 관리자는 이 시트를 볼 수만 있어요</span>` : ''; return;
     }
     el.hidden = false;
     if (s.err) { el.className = 'lockbar warn'; el.innerHTML = '<span>편집 잠금을 확인하지 못했어요 — 다른 관리자와 같은 시트를 동시에 고치지 않게 주의해 주세요</span>'; return; }

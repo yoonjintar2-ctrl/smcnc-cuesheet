@@ -210,6 +210,7 @@ table.t td.wrap{white-space:normal;min-width:260px;text-align:center;color:var(-
 .modal .ft{padding:12px 20px;border-top:1px solid var(--rule2);display:flex;justify-content:flex-end;gap:8px}
 .modal label.opt{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border:1px solid var(--rule);border-radius:9px;margin-bottom:6px;cursor:pointer}
 .modal label.opt small{display:block;color:var(--muted)}
+.modal table.bulkt{width:100%;border-collapse:collapse;margin:0 0 12px;font-size:12.5px}.modal table.bulkt th{background:var(--surface2);color:var(--muted);font-weight:600;padding:6px 8px;text-align:right}.modal table.bulkt td{padding:6px 8px;border-top:1px solid var(--rule2);text-align:right;font-variant-numeric:tabular-nums}.modal table.bulkt .l{text-align:left}
 .note{border-left:3px solid var(--acc);background:var(--acc-soft);padding:10px 13px;border-radius:0 8px 8px 0;font-size:12.5px;color:var(--ink2);margin:8px 0}
 .note.warn{border-left-color:#e0a03a;background:var(--warn-bg);color:var(--warn)}
 .toast{position:fixed;right:20px;bottom:20px;z-index:120;display:grid;gap:8px}
@@ -1041,6 +1042,7 @@ table.t.cue.qm.cg td.kind.fx{position:sticky;z-index:3}
 .crecard .secplan .in.pc{display:inline-flex;align-items:center;gap:2px}
 .crecard .secplan input{width:56px;padding:3px 6px;border:1px solid var(--rule);border-radius:6px;background:var(--surface);color:var(--ink);text-align:right;font:inherit}
 .crecard .secplan input.bad{border-color:var(--stop)}
+.crecard .secplan.sub{border-top:1px dashed var(--rule);padding-left:28px;background:var(--surface2)}
 table.ops td.curve select{font:inherit;font-size:12px;border:1px solid transparent;background:transparent;color:inherit;padding:1px 2px;border-radius:5px;cursor:pointer;text-align:center}
 table.ops td.curve select:hover{border-color:var(--rule)}
 table.ops td.curve.manual select{border-color:var(--acc);font-weight:600}
@@ -1194,3 +1196,47 @@ table.t.cue.qm.cg tr.tot td{border-top:2px solid #3a3a3c}
 .shell{box-shadow:0 1px 0 var(--rule),0 4px 14px rgba(0,0,0,.05)}
 .top .advchip{background:#3a3a3c;color:#fff}
 .top .ibtn svg{color:currentColor}
+
+/* ---------- 14차 ---------- */
+/* 탭 안 제목(메뉴 이름과 같은 글)은 없앰 — 설명 줄·단추만 */
+.viewhead h2{display:none}
+.viewhead{margin-top:2px}
+/* 메뉴 분류 옆 '(관리자 전용)' */
+.area .anote,.subttl .anote{font-size:10.5px;font-weight:500;color:var(--muted);margin-left:-3px;letter-spacing:0}
+.subttl .anote{margin-left:4px}
+/* 다른 관리자가 편집 중인 탭: 전체를 옅은 회색으로 덮어 '지금은 볼 수만' 표시 */
+.pane.lockdim{position:relative}
+.pane.lockdim::after{content:'';position:absolute;inset:-6px;background:rgba(110,110,116,.16);border-radius:12px;pointer-events:none;z-index:25}
+.lockbar.mine b{font-weight:700}
+/* 채널 관리: PP 묶음 줄 */
+table.t.form tr.ppgrp td{background:#f6f6f7;text-align:left;padding:5px 10px;border-top:1px solid var(--rule)}
+table.t.form tr.ppgrp td b{font-size:12.5px;margin-right:6px}
+table.t.form tr.ppgrp td .btn{float:right;height:22px;font-size:11.5px}
+/* 채널 확인 창 */
+.modal .chips.sugg{display:flex;flex-wrap:wrap;gap:6px}
+.modal .addch{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;border-top:1px solid var(--rule2);margin-top:10px}
+.modal .addch .small{flex-basis:100%}
+.modal .addch label{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink2)}
+.modal .addch input,.modal .addch select{height:30px;border:1px solid var(--rule);border-radius:7px;padding:0 8px;width:140px;background:var(--surface)}
+/* 당월 예산 (14차): 횟수 없이 컴팩트 · 품목·계 열 너비 같게 · 계 열은 살짝 강조 · 채널 행 끌어서 순서 */
+table.t.form.budget{width:auto;table-layout:fixed}
+table.t.budget col.cpp{width:96px}
+table.t.budget col.cch{width:150px}
+table.t.budget col.cv{width:108px}
+table.t.budget td.bi,table.t.budget th.ih,table.t.budget td.rt{min-width:0}
+table.t.budget td.bi input{min-width:0;padding:0 6px}
+table.t.budget th.ih{padding:5px 4px}
+table.t.budget th.ih .ihd{justify-content:center}
+table.t.budget td.rt{background:#efeff1;color:var(--ink);font-weight:700;border-left:1px solid #d6d6d9}
+table.t.budget thead th.rth{background:#1f1f21;border-left:1px solid #555}
+table.t.budget tr.sub td:last-child{background:#dadadd}
+table.t.budget td.chn{min-width:0;padding-left:18px}
+table.t.budget td.chn .bgrip{position:absolute;left:3px;top:50%;transform:translateY(-50%);cursor:grab;color:#b4b4b8;font-size:12px;letter-spacing:-2px;user-select:none;padding:2px}
+table.t.budget tr:hover td.chn .bgrip{color:#3a3a3c}
+table.t.budget tr.bdrag td{background:#ececee!important;opacity:.7}
+body.rowdragging,body.rowdragging *{cursor:grabbing!important;user-select:none!important}
+.brline{position:absolute;height:3px;background:#1c1c1e;border-radius:2px;z-index:60;pointer-events:none;box-shadow:0 0 0 2px rgba(255,255,255,.8)}
+.stack>section.card:has(> .tw.bud){width:fit-content;max-width:100%}
+table.t.cresum td.crit{font-weight:700;background:color-mix(in srgb,var(--c) 10%,#fff)}
+table.t.cresum td.crit .sw{margin-right:6px}
+table.t.cresum td.wrap{min-width:180px}

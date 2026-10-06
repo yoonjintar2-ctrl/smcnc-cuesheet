@@ -157,14 +157,16 @@ class XGrid {
     this.ed = $('.xg-ed'); this.findEl = $('.xg-find'); this.listEl = $('.xg-list');
     this.scroll.addEventListener('scroll', () => { if (!this.raf) this.raf = requestAnimationFrame(() => { this.raf = null; this.renderRows(); }); this.closeList(); });
     this.scroll.addEventListener('mousedown', e => this.onDown(e));
-    this.scroll.addEventListener('dblclick', e => { const c = e.target.closest('.xg-c'); if (c) { this.startEdit('edit'); } });
+    // 두 번 누르면 편집 (첫 클릭에 표를 다시 그려 dblclick 대상이 바뀔 수 있어 위치로 판단 · onDown에서도 직접 감지)
+    this.scroll.addEventListener('dblclick', e => { if (this.editing || e.target.closest('.xg-hc,.xg-rn,.xg-corner,.xg-fb,.xg-rz,.xg-head')) return; const rc = this.inner.getBoundingClientRect(); if (e.clientX - rc.left < XG.RN || e.clientY - rc.top < XG.HEAD) return; this.startEdit('edit'); });
     this.scroll.addEventListener('contextmenu', e => { e.preventDefault(); this.menu(e.clientX, e.clientY, e.target.closest('.xg-rn') ? 'row' : e.target.closest('.xg-hc,.xg-corner') ? 'col' : 'cell'); });
     this.ed.addEventListener('keydown', e => this.onKey(e));
     this.ed.addEventListener('compositionstart', () => { this.composing = true; if (!this.editing) this.startEdit('enter', ''); });
     this.ed.addEventListener('compositionend', () => { this.composing = false; this.updateList(); });
     this.ed.addEventListener('input', () => { if (!this.editing && this.ed.value) this.startEdit('enter', null); if (this.editing) this.updateList(); });
     this.ed.addEventListener('copy', e => { if (this.editing) return; e.preventDefault(); e.clipboardData.setData('text/plain', this.copyText()); this.markCopy(); });
-    this.ed.addEventListener('cut', e => { if (this.editing) return; e.preventDefault(); e.clipboardData.setData('text/plain', this.copyText()); if (this.ro) { this.markCopy(); return this.roNote(); } this.clearSel('잘라내기'); });
+    // 잘라내기: 행 전체(또는 여러 행)를 고른 경우엔 그 행 자체를 빼고, 칸만 고른 경우엔 칸을 비움
+    this.ed.addEventListener('cut', e => { if (this.editing) return; e.preventDefault(); e.clipboardData.setData('text/plain', this.copyText()); if (this.ro) { this.markCopy(); return this.roNote(); } this.cutSel(); });
     this.ed.addEventListener('paste', e => { if (this.editing) return; e.preventDefault(); const c = xgClip(e); this.paste(c.text, c.html); });
     this.ed.addEventListener('blur', () => setTimeout(() => { if (this.editing && document.activeElement !== this.ed && !this.composing) this.commit(); if (document.hasFocus() && !this.el.contains(document.activeElement)) this.userSel = false; }, 0));
     this.ddEl.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); this.startEdit('edit'); this.updateList(true); });
@@ -381,6 +383,10 @@ class XGrid {
     }
     if (e.target.closest('.xg-c') || e.target.closest('.xg-selbox') || e.target.closest('.xg-act')) {
       const p = this.pos(e);
+      // 같은 칸을 빠르게 두 번 누르면 편집 상태로
+      const now = Date.now(), ld = this._lastDown;
+      if (!e.shiftKey && ld && now - ld.t < 450 && ld.r === p.r && ld.c === p.c) { this._lastDown = null; this.moveTo(p.r, p.c); this.startEdit('edit'); return; }
+      this._lastDown = { t: now, r: p.r, c: p.c };
       if (e.shiftKey) this.select(this.anchor.r, this.anchor.c, p.r, p.c);
       else this.moveTo(p.r, p.c);
       this.drag = { t: 'cell' }; this.listen();
@@ -428,6 +434,7 @@ class XGrid {
   // ---------- 키보드 ----------
   onKey(e) {
     const k = e.key, ctrl = e.ctrlKey || e.metaKey;
+    this._lastDown = null;   // 사이에 키를 누르면 '두 번 누르기'로 보지 않음
     if (this.editing) {
       if (e.isComposing || e.keyCode === 229) return;
       const lo = !this.listEl.hidden && this.listItems && this.listItems.length;
@@ -500,6 +507,7 @@ class XGrid {
     if (this.cols[ed.c].num && v !== '') { const n = num(v); if (n != null && !/[가-힣a-z]/i.test(v)) v = n; }
     this.applyCells([{ id: ed.id, c: ed.c, n: v }], '입력');
     this.placeEd();
+    if (this.o.onCommit && v !== '') { const row = this.rows[this.idxOf(ed.id)]; if (row) setTimeout(() => this.o.onCommit(row, ed.c, v), 0); }   // 손으로 넣은 값 확인(마스터에 없는 채널 등)
   }
   cancelEdit() { this.editing = null; this.ed.classList.remove('on'); this.ed.value = ''; this.closeList(); this.renderSel(); }
   // 자동완성 목록
@@ -584,39 +592,33 @@ class XGrid {
     for (const row of this.selRows()) for (let c = s.c1; c <= s.c2; c++) if (row.v[c] !== '') ch.push({ id: row.id, c, n: '' });
     this.copyR = null; this.applyCells(ch, label || '지우기');
   }
+  // 잘라내기: 행 전체를 골랐으면 그 행을 빼기(아래 행이 올라옴), 아니면 칸 비우기
+  cutSel() {
+    if (this.ro) return this.roNote();
+    if (this.rowsSelected()) { const n = this.deleteRows('잘라내기'); if (n && this.o.toast) this.o.toast(`${n}행을 잘라냈어요 — 붙여넣을 칸을 고르고 Ctrl+V 하면 그 위에 끼워 넣어요`, 3500); return; }
+    this.clearSel('잘라내기');
+  }
+  // 붙여넣기: 늘 '지금 고른 칸 위에 새 행으로 끼워 넣기' — 기존 칸은 바뀌지 않고 아래로 밀려남 (14차)
   paste(text, html) {
     if (this.ro) return this.roNote();
     let B = xgParseTsv(text); if (!B.length) return;
     if (html) B = xgPrecise(B, html);
-    const s = this.sel; const ops = []; const ch = [];
+    const s = this.sel;
     // 머리글 행·예전 양식 등은 바깥(앱)에서 열을 맞춰 줌 → 행 맨 앞(A열)부터
     const pre = this.o.prepPaste ? this.o.prepPaste(B) : null;
-    if (pre) {
-      B = pre.rows; if (!B.length) { if (this.o.toast) this.o.toast(pre.note || '붙여넣을 행이 없어요'); return; }
-      const r0 = s.r1;
-      const need = r0 + B.length - this.view.length;
-      if (need > 0) { const rows = Array.from({ length: need }, () => this.blankRow()); const at = this.rows.length; this.rows.push(...rows); ops.push({ t: 'ins', at, rows }); this.recalcView(); }
-      B.forEach((br, i) => { const row = this.rowAt(r0 + i); if (!row) return; for (let c = 0; c < this.nc; c++) ch.push({ id: row.id, c, n: this.coerce(c, br[c]) }); });
-      this.copyR = null;
-      this.applyCells(ch, '붙여넣기', ops);
-      this.anchor = { r: r0, c: 0 }; this.select(r0, 0, r0 + B.length - 1, this.nc - 1, { r: r0, c: 0 }); this.ensureVisible(r0, 0);
-      this.flash(ch.filter(x => x.n !== ''));
-      if (this.o.toast && pre.note) this.o.toast(pre.note, 5000);
-      return;
-    }
-    if (B.length === 1 && B[0].length === 1 && (s.r2 > s.r1 || s.c2 > s.c1)) {
-      for (const row of this.selRows()) for (let c = s.c1; c <= s.c2; c++) ch.push({ id: row.id, c, n: this.coerce(c, B[0][0]) });
-      this.applyCells(ch, '붙여넣기'); this.flash(ch); return;
-    }
-    const r0 = s.r1, c0 = s.c1;
-    const need = r0 + B.length - this.view.length;
-    if (need > 0) { const rows = Array.from({ length: need }, () => this.blankRow()); const at = this.rows.length; this.rows.push(...rows); ops.push({ t: 'ins', at, rows }); this.recalcView(); }
-    B.forEach((br, i) => { const row = this.rowAt(r0 + i); if (!row) return; br.forEach((v, j) => { const c = c0 + j; if (c < this.nc) ch.push({ id: row.id, c, n: this.coerce(c, v) }); }); });
-    this.copyR = null;
-    this.applyCells(ch, '붙여넣기', ops);
-    this.select(r0, c0, r0 + B.length - 1, Math.min(this.nc - 1, c0 + B[0].length - 1), { r: r0, c: c0 });
-    this.flash(ch);
-    if (this.o.toast && B.length >= 20) this.o.toast(`${B.length.toLocaleString('ko-KR')}행 × ${Math.min(B[0].length, this.nc - c0)}열을 붙여넣었어요`);
+    let c0 = s.c1;
+    if (pre) { B = pre.rows; c0 = 0; if (!B.length) { if (this.o.toast) this.o.toast(pre.note || '붙여넣을 행이 없어요'); return; } }
+    while (B.length > 1 && B[B.length - 1].every(v => v == null || String(v).trim() === '')) B.pop();
+    const r0 = Math.min(s.r1, this.view.length);
+    const at = r0 < this.view.length ? this.view[r0] : this.rows.length;
+    const rows = B.map(br => { const row = this.blankRow(); br.forEach((v, j) => { const c = c0 + j; if (c < this.nc) row.v[c] = this.coerce(c, v); }); return row; });
+    this.rows.splice(at, 0, ...rows); this.mrows = null; this.copyR = null;
+    this.pushOp({ t: 'ins', at, rows }, '붙여넣기');
+    const vr = this.view.findIndex(di => this.rows[di] === rows[0]);
+    const w = pre ? this.nc : Math.min(this.nc - c0, Math.max(...B.map(r => r.length)));
+    if (vr >= 0) { this.anchor = { r: vr, c: c0 }; this.select(vr, c0, Math.min(this.view.length - 1, vr + rows.length - 1), Math.min(this.nc - 1, c0 + w - 1), { r: vr, c: c0 }); this.ensureVisible(vr, c0); }
+    this.flash(rows.flatMap(r => r.v.map((v, c) => v === '' ? null : { id: r.id, c }).filter(Boolean)));
+    if (this.o.toast) this.o.toast(pre && pre.note ? pre.note + ' · 고른 칸 위에 끼워 넣었어요' : `${rows.length.toLocaleString('ko-KR')}행을 고른 칸 위에 끼워 넣었어요 (기존 행은 아래로)`, pre && pre.note ? 5000 : 2600);
   }
   // 붙여넣기·채우기·바꾸기로 값이 바뀐 칸을 잠깐 반짝
   flash(changes) {
@@ -657,13 +659,13 @@ class XGrid {
     this.rows.splice(at, 0, ...rows);
     this.pushOp({ t: 'ins', at, rows }, '행 삽입');
   }
-  deleteRows() {
+  deleteRows(label) {
     if (this.ro) { this.roNote(); return 0; }
     const ids = new Set(this.selRows().map(r => r.id)); this.mrows = null;
     const items = []; this.rows.forEach((row, at) => { if (ids.has(row.id)) items.push({ at, row }); });
     if (!items.length) return 0;
     for (let k = items.length - 1; k >= 0; k--) this.rows.splice(items[k].at, 1);
-    this.pushOp({ t: 'del', items }, '행 삭제');
+    this.pushOp({ t: 'del', items }, label || '행 삭제');
     this.select(this.sel.r1, this.sel.c1, this.sel.r1, this.sel.c1, { r: this.sel.r1, c: this.sel.c1 });
     return items.length;
   }
@@ -770,7 +772,7 @@ class XGrid {
     if (kind === 'row') items = [
       ro ? null : ['cut', '잘라내기', 'Ctrl+X'], ['copy', '복사', 'Ctrl+C'], ro ? null : ['paste', '붙여넣기', 'Ctrl+V'], '-',
       ro ? null : ['insA', `삽입 (위에 행 ${nRows}개)`], ro ? null : ['del', `삭제 (행 ${nRows}개)`], ro ? null : '-',
-      ro ? null : ['hide', `숨기기 (행 ${nRows}개)`], ro ? null : ['unhide', '숨기기 취소'],
+      ro ? null : ['hide', `숨기기 (행 ${nRows}개)`], ro ? null : ['unhide', '숨기기 취소'], ro || !this.hiddenIds.size ? null : ['unhideAll', `숨긴 행 모두 표시 (${this.hiddenIds.size}행)`],
     ];
     else items = [
       ro ? null : ['cut', '잘라내기', 'Ctrl+X'], ['copy', '복사', 'Ctrl+C'], ro ? null : ['paste', '붙여넣기', 'Ctrl+V'], '-',
@@ -784,11 +786,11 @@ class XGrid {
     const p = this.openPop(html, x, y); p.classList.add('menu');
     p.addEventListener('click', ev => {
       const b = ev.target.closest('[data-m]'); if (!b) return; const m = b.dataset.m; this.closeMenu(); this.focus();
-      if (m === 'copy' || m === 'cut') { const t = this.copyText(); if (navigator.clipboard) navigator.clipboard.writeText(t).catch(() => { }); if (m === 'cut') this.clearSel('잘라내기'); else this.markCopy(); }
+      if (m === 'copy' || m === 'cut') { const t = this.copyText(); if (navigator.clipboard) navigator.clipboard.writeText(t).catch(() => { }); if (m === 'cut') this.cutSel(); else this.markCopy(); }
       if (m === 'paste') { if (navigator.clipboard && navigator.clipboard.readText) navigator.clipboard.readText().then(t => this.paste(t)).catch(() => this.o.toast && this.o.toast('브라우저가 클립보드 읽기를 막았어요. Ctrl+V를 눌러 주세요.')); }
       if (m === 'insA') this.insertRows('above');
       if (m === 'del') { const n = this.deleteRows(); if (n && this.o.toast) this.o.toast(`${n}행을 삭제했어요 · Ctrl+Z로 되돌릴 수 있어요`); }
-      if (m === 'hide') this.hideRows(); if (m === 'unhide') this.unhideRows(false);
+      if (m === 'hide') this.hideRows(); if (m === 'unhide') this.unhideRows(false); if (m === 'unhideAll') this.unhideRows(true);
       if (m === 'asc') this.sortBy(c, false); if (m === 'desc') this.sortBy(c, true);
       if (m === 'fval') this.setFilter(c, new Set([this.fkey(row.v[c])]));
       if (m === 'fclr') this.clearFilters();

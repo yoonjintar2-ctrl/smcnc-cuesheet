@@ -46,13 +46,14 @@ function renameEverywhere(kind, from, to, dry) {
     for (const sh of ['지상파', '케이블']) { const j = colIndex(sh, 'item'); for (const r of S[sh] || []) if (eq(r[j])) set(r, j, sh); }
     const B = S.예산 || []; if (B[0]) B[0].forEach((h, j) => { if (j && eq(h)) set(B[0], j, '예산'); });
     for (const r of S.소재 || []) if (eq(r[0])) set(r, 0, '소재');
-    if (!dry && WS.opsNotes) for (const k of Object.keys(WS.opsNotes)) { const [a, b] = k.split('|'); if (eq(a)) { WS.opsNotes[to + '|' + b] = WS.opsNotes[k]; delete WS.opsNotes[k]; } }
+    if (!dry) for (const o of [WS.opsNotes, WS.opsReach, WS.secPlan, WS.opsCurve]) if (o) for (const k of Object.keys(o)) { const i = k.indexOf('|'); const a = i < 0 ? k : k.slice(0, i), b = i < 0 ? '' : k.slice(i); if (eq(a) && a !== to) { o[to + b] = o[k]; delete o[k]; } }
   } else {
     for (const sh of ['지상파', '케이블']) { const j = colIndex(sh, 'ch'); for (const r of S[sh] || []) if (eq(r[j])) set(r, j, sh); }
     for (const r of (S.예산 || []).slice(1)) if (eq(r[0])) set(r, 0, '예산');
     if (!dry) {
       if (WS.cueOrder && WS.cueOrder[from]) { WS.cueOrder[to] = WS.cueOrder[from]; delete WS.cueOrder[from]; }
-      for (const r of S.목표CPRP || []) if (/지상파/.test(str(r[0])) && eq(r[1])) r[1] = to;
+      const ppNames = new Set((S.채널 || []).map(r => norm(r[3])));
+      for (const r of S.목표CPRP || []) if (eq(r[1]) && (/지상파/.test(str(r[0])) || !ppNames.has(norm(r[1])))) r[1] = to;   // 케이블은 채널별 CPRP 행만 (PP 이름과 같으면 PP 행이라 그대로)
     }
   }
   n.total = n.지상파 + n.케이블 + n.예산 + n.소재;
@@ -85,16 +86,15 @@ const MST_HELP = {
   품목: '약칭이 큐시트·예산·소재 어디서나 쓰는 유일한 이름이에요(별칭은 쓰지 않아요). 정식명이나 예전 이름으로 적힌 곳이 있으면 화면 위 노란 줄로 알려 드리고, 한 번에 약칭으로 고칠 수 있어요. 순서는 요약 표·그래프의 품목 순서예요.',
   채널: '매체(지상파/케이블)와 MPP로 케이블 큐시트의 PP 묶음과 목표 CPRP를 찾고, 요약그룹으로 운영 요약의 방송사(KBS·MBC·SBS·CJ ENM·JTBC·기타)를 묶어요.',
   CM위치: '큐시트에 적힌 CM 위치 표현을 중CM / PIB / 전후CM 중 하나로 분류해요. 중CM 비중 그래프와 3) 표가 이 분류를 써요.',
-  목표CPRP: 'GRP = 예산 ÷ 목표 CPRP(15초 기준) × 초수 환산. 지상파는 채널명, 케이블은 MPP로 찾아요.',
+  목표CPRP: 'GRP = 예산 ÷ 목표 CPRP(15초 기준) × 초수 환산. 지상파는 채널명, 케이블은 채널 이름 행이 있으면 그 값·없으면 PP(MPP)로 찾아요.',
   매칭규칙: '방송사 원본 큐시트를 가져올 때(방송사 큐시트 온보딩) 파일명·시트명으로 채널·품목을 맞추는 규칙이에요. 가져오기 창에서 직접 고른 것이 여기에 쌓여서 다음 달부터 자동으로 맞춰져요. 위에서부터 첫 번째로 맞는 규칙을 써요.',
 };
-function renderMasterForm(el) {
-  const cur = UI.master;
-  const tabs = [['품목', `품목 ${M.MS.items.size}`], ['채널', `채널 ${M.MS.chList.length}`], ['CM위치', `CM 위치 ${(WS.sheets.CM위치 || []).length}`], ['목표CPRP', `목표 CPRP ${(WS.sheets.목표CPRP || []).length}`], ['매칭규칙', `매칭 규칙 ${(WS.sheets.매칭규칙 || []).length}`]];
-  el.innerHTML = `<div class="viewhead"><div><h2>마스터</h2><div class="sub">이름의 기준. 여기 있는 품목·채널만 예산·소재·큐시트에서 고를 수 있어요. 새 달을 만들면 그대로 이어받아요.</div></div><div class="spacer"></div>
-    <label class="advbox" title="요약 제목 · 내려받는 파일 이름에 쓰여요">광고주 <input id="advname" value="${esc(advName())}" ${CLOUD.on ? 'readonly title="온라인에서는 관리자 메뉴의 \'광고주 이름 바꾸기\'로 바꿔요"' : ''}></label>${segHtml('mst', tabs, cur)}</div>
+function renderMasterForm(el, cur) {
+  // 14차: 메뉴마다 한 가지(품목 관리 · 채널 관리 · CM위치 보정 규칙 · 목표 CPRP · 매칭 규칙) — 탭 안 제목·전환 단추 없음
+  cur = cur || el._mst || '품목'; el._mst = cur;
+  // 설명은 각 표 위 안내 줄에 있으니 따로 두지 않음 — 품목 관리만 위쪽에 광고주 이름 칸
+  el.innerHTML = `${cur === '품목' ? `<div class="viewhead"><div class="sub">이름의 기준 — 여기 있는 품목만 예산·소재·큐시트에서 고를 수 있어요. 새 달을 만들면 그대로 이어받아요.</div><div class="spacer"></div><label class="advbox" title="요약 제목 · 내려받는 파일 이름에 쓰여요">광고주 <input id="advname" value="${esc(advName())}" ${CLOUD.on ? 'readonly title="온라인에서는 관리자 메뉴의 \'광고주 이름 바꾸기\'로 바꿔요"' : ''}></label></div>` : ''}
     <div class="formwrap"><section class="card"><div class="bd" id="mbody"></div></section><aside class="side" id="mside"></aside></div>`;
-  bindSeg(el, 'mst', v => { UI.master = v; renderMasterForm(el); });
   const an = el.querySelector('#advname'); if (an && !CLOUD.on) an.onchange = () => { WS.adv = an.value.trim(); App.changed('meta', true); App.toast(`광고주 이름: ${esc(advName())}`); };
   const body = el.querySelector('#mbody');
   ({ 품목: mItems, 채널: mChannels, CM위치: mCm, 목표CPRP: mCprp, 매칭규칙: mRules })[cur](body, el);
@@ -107,9 +107,9 @@ function renderMasterForm(el) {
 }
 function renderMasterSide(el) {
   const side = el.querySelector('#mside'); if (!side) return;
-  const cur = UI.master;
-  let h = `<div class="card"><div class="hd"><h4>${esc(SHEETS[cur].label)}</h4></div><div class="bd small">${esc(MST_HELP[cur])}
-    <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-mx="xlsx">⤓ 마스터 엑셀</button><button class="btn sm ghost" data-mx="reset">${esc(SHEETS[cur].label)} 기본값으로</button></div></div></div>`;
+  const cur = el._mst || '품목';
+  let h = `<div class="card"><div class="hd"><h4>안내</h4></div><div class="bd small">${esc(MST_HELP[cur])}
+    <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-mx="xlsx">⤓ 품목·채널 등 관리 목록 엑셀</button><button class="btn sm ghost" data-mx="reset">${esc(SHEETS[cur].label)} 기본값으로</button></div></div></div>`;
   if (cur === '품목') h += `<div class="card"><div class="hd"><h4>색상 미리보기</h4></div><div class="bd"><div class="chips">${[...M.MS.items.values()].map(it => `<span class="spot" style="--c:${it.light};--b:${it.color};display:inline-block">${esc(it.key)}</span>`).join('')}</div></div></div>`;
   h += App.unknownHtml();
   side.innerHTML = h;
@@ -206,30 +206,37 @@ function mChannels(body, el) {
   const mpps = [...new Set(rows.map(r => str(r[3])).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko'));
   const groups = [...new Set(SUM_GROUPS.concat(rows.map(r => str(r[4])).filter(Boolean)))];
   const isG = r => /지상파/.test(str(r[2]));
-  const sec = (media) => {
-    const idx = rows.map((r, i) => i).filter(i => (media === '지상파') === isG(rows[i]));
-    return `<tr class="grp"><td colspan="9">${media} <span class="muted small">${idx.length}개</span></td></tr>` + idx.map(i => {
-      const r = rows[i]; const name = str(r[0]); const n = U.ch.get(name) || 0, b = U.budCh.get(name) || 0;
-      return `<tr data-i="${i}" data-sec="${media}"><td class="dh" title="끌어서 순서 바꾸기 (같은 매체 안에서)">⋮⋮</td>
+  // 14차: 매체 → PP → 채널. 케이블은 PP마다 묶음 줄(채널 수 · ＋ 이 PP에 채널), 끌어서 순서는 같은 PP 안에서만
+  const rowHtml = (i, media, pp) => {
+    const r = rows[i]; const name = str(r[0]); const n = U.ch.get(name) || 0, b = U.budCh.get(name) || 0;
+    return `<tr data-i="${i}" data-sec="${media}" data-pp="${esc(pp)}"><td class="dh" title="끌어서 순서 바꾸기 (같은 PP 안에서)">⋮⋮</td>
       <td class="in"><input data-f="0" value="${esc(name)}" placeholder="채널명" class="${name ? '' : 'need'}"></td>
       <td class="in"><select data-f="2">${optHtml(['지상파', '케이블'], isG(r) ? '지상파' : '케이블')}</select></td>
-      <td class="in"><input data-f="3" value="${esc(str(r[3]))}" list="dl-mpp" placeholder="${isG(r) ? '' : 'MPP'}"></td>
+      <td class="in"><input data-f="3" value="${esc(str(r[3]))}" list="dl-mpp" placeholder="${isG(r) ? '' : 'PP'}"></td>
       <td class="in"><select data-f="4">${optHtml(groups, str(r[4]) || (isG(r) ? name : '기타'))}</select></td>
       <td class="in wide"><input data-f="1" value="${esc(str(r[1]))}" placeholder="${name ? '' : '다르게 적히는 이름 (쉼표로 구분)'}"></td>
       <td class="use">${n || b ? [n ? fmt.int(n) + '회' : '', b ? fmt.eok(b, 2) : ''].filter(Boolean).join(' · ') : '<span class="muted">-</span>'}</td>
       <td><button class="x" data-del title="삭제">✕</button></td></tr>`;
-    }).join('');
   };
-  body.innerHTML = `<div class="fhd"><div class="muted small">케이블 큐시트는 MPP(=PP)로 먼저 묶이고 그 아래 채널을 골라 봐요. 순서는 표·큐시트의 채널 순서예요 — 왼쪽 ⋮⋮를 끌어 바꿔요.</div><div class="spacer"></div><button class="btn sm" data-add="지상파">＋ 지상파 채널</button><button class="btn sm pri" data-add="케이블">＋ 케이블 채널</button></div>
+  const sec = (media) => {
+    const idx = rows.map((r, i) => i).filter(i => (media === '지상파') === isG(rows[i]));
+    let h = `<tr class="grp"><td colspan="9">${media} <span class="muted small">${media === '케이블' ? `PP ${new Set(idx.map(i => str(rows[i][3]))).size}개 · ` : ''}채널 ${idx.length}개</span></td></tr>`;
+    if (media === '지상파') return h + idx.map(i => rowHtml(i, media, '지상파')).join('');
+    const pps = [...new Set(idx.map(i => str(rows[i][3])))];
+    for (const pp of pps) {
+      const ii = idx.filter(i => str(rows[i][3]) === pp);
+      h += `<tr class="ppgrp"><td colspan="9"><b>${esc(pp || 'PP 없음')}</b> <span class="muted small">채널 ${ii.length}개 · ${esc(ii.map(i => str(rows[i][0])).filter(Boolean).join(', '))}</span><button class="btn sm ghost" data-addpp="${esc(pp)}">＋ 이 PP에 채널</button></td></tr>` + ii.map(i => rowHtml(i, media, pp)).join('');
+    }
+    return h;
+  };
+  body.innerHTML = `<div class="fhd"><div class="muted small">지상파는 채널, 케이블은 <b>PP → 채널</b>로 관리해요. 여기 있는 채널만 지상파·케이블 입력에서 골라 쓸 수 있어요(없는 이름을 쓰면 비슷한 채널을 추천하거나 추가하라고 알려 줘요). 순서는 표·큐시트의 채널 순서 — 왼쪽 ⋮⋮를 끌어 바꿔요.</div><div class="spacer"></div><button class="btn sm" data-add="지상파">＋ 지상파 채널</button><button class="btn sm" data-newpp>＋ 새 PP</button><button class="btn sm pri" data-add="케이블">＋ 케이블 채널</button></div>
   <datalist id="dl-mpp">${mpps.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
-  <div class="tw free"><table class="t form"><thead><tr><th></th><th class="l">채널</th><th class="l">매체</th><th class="l">MPP (PP)</th><th class="l">요약그룹</th><th class="l">별칭</th><th>이번 달</th><th></th></tr></thead><tbody>${sec('지상파')}${sec('케이블')}</tbody></table></div>`;
-  body.querySelectorAll('[data-add]').forEach(b => b.onclick = () => {
-    const g = b.dataset.add === '지상파';
-    const at = g ? rows.reduce((a, r, i) => isG(r) ? i + 1 : a, 0) : rows.length;
-    rows.splice(at, 0, ['', '', b.dataset.add, '', g ? '' : '기타']); App.changed('master', true); renderMasterForm(el);
-    const tr = el.querySelector(`#mbody tr[data-i="${at}"] input[data-f="0"]`); if (tr) { tr.focus(); tr.scrollIntoView({ block: 'center' }); }
-  });
-  dragRows(body.querySelector('tbody'), order => { reorderBy(rows, order); App.changed('master', true); renderMasterForm(el); }, (a, b) => a.dataset.sec === b.dataset.sec);
+  <div class="tw free"><table class="t form mch"><thead><tr><th></th><th class="l">채널</th><th class="l">매체</th><th class="l">PP</th><th class="l">요약그룹</th><th class="l">별칭</th><th>이번 달</th><th></th></tr></thead><tbody>${sec('지상파')}${sec('케이블')}</tbody></table></div>`;
+  const addAt = (at, media, pp) => { rows.splice(at, 0, ['', '', media, pp || '', media === '지상파' ? '' : '기타']); App.changed('master', true); renderMasterForm(el); const tr = el.querySelector(`#mbody tr[data-i="${at}"] input[data-f="0"]`); if (tr) { tr.focus(); tr.scrollIntoView({ block: 'center' }); } };
+  body.querySelectorAll('[data-addpp]').forEach(b => b.onclick = () => { const pp = b.dataset.addpp; let k = -1; rows.forEach((r, i) => { if (!isG(r) && str(r[3]) === pp) k = i; }); addAt(k >= 0 ? k + 1 : rows.length, '케이블', pp); });
+  body.querySelector('[data-newpp]').onclick = () => App.promptText('새 PP', '케이블 PP 이름 (예: CJ ENM)', '', pp => { pp = str(pp); if (!pp) return; if (mpps.some(x => norm(x) === norm(pp))) return App.toast(`'${esc(pp)}'은(는) 이미 있는 PP예요`); addAt(rows.length, '케이블', pp); });
+  body.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { const g = b.dataset.add === '지상파'; addAt(g ? rows.reduce((a2, r, i) => isG(r) ? i + 1 : a2, 0) : rows.length, b.dataset.add, ''); });
+  dragRows(body.querySelector('tbody'), order => { reorderBy(rows, order); App.changed('master', true); renderMasterForm(el); }, (a, b) => a.dataset.sec === b.dataset.sec && a.dataset.pp === b.dataset.pp);
   body.querySelectorAll('tr[data-i]').forEach(tr => {
     const i = +tr.dataset.i, r = rows[i];
     tr.querySelector('[data-del]').onclick = () => { const k = str(r[0]); const n = U.ch.get(k) || 0, b = U.budCh.get(k) || 0; mstDelete(el, '채널', i, k || '빈 행', (n || b) ? [n ? fmt.int(n) + '회 송출' : '', b ? '예산 ' + fmt.eok(b, 2) : ''].filter(Boolean).join('·') + '에' : ''); };
@@ -239,6 +246,7 @@ function mChannels(body, el) {
       if (f === 1) { v = v.split(/[,;/]/).map(x => x.trim()).filter(Boolean).join(', '); inp.value = v; }
       r[f] = v;
       if (f === 2) { if (v === '지상파' && (!str(r[4]) || str(r[4]) === '기타')) r[4] = str(r[0]); App.changed('master', true); renderMasterForm(el); return; }
+      if (f === 3) { App.changed('master', true); renderMasterForm(el); return; }   // PP를 바꾸면 그 PP 묶음으로
       App.changed('master', true);
     }));
   });
@@ -283,11 +291,11 @@ function mCprp(body, el) {
   const gch = M.MS.chList.filter(c => c.media === '지상파').map(c => c.name);
   const miss = new Map();
   for (const c of M.cells) if (c.budget > 0 && !c.cprp) { const pp = c.media === '지상파' ? c.ch : c.mpp; miss.set(c.media + '|' + pp, { media: c.media, pp, b: (miss.get(c.media + '|' + pp) || { b: 0 }).b + c.budget }); }
-  const used = r => { const media = /지상파/.test(str(r[0])) ? '지상파' : '케이블'; return M.cells.filter(c => c.budget > 0 && c.media === media && (norm(media === '지상파' ? c.ch : c.mpp) === norm(r[1]) || norm(c.mpp) === norm(r[1]))); };
+  const used = r => { const media = /지상파/.test(str(r[0])) ? '지상파' : '케이블'; return M.cells.filter(c => c.budget > 0 && c.cprpKey === media + '|' + norm(r[1])); };
   body.innerHTML = `${miss.size ? `<div class="note warn" style="margin-top:0"><b>목표 CPRP가 없는 예산</b> — GRP가 0으로 잡혀요.<div class="unkcm">${[...miss.values()].map(x => `<span class="uc"><b>${esc(x.media)} · ${esc(x.pp)}</b> <span class="muted">예산 ${fmt.eok(x.b, 2)}</span><button class="btn sm" data-madd="${esc(x.media + '|' + x.pp)}">행 추가</button></span>`).join('')}</div></div>` : ''}
-    <div class="fhd"><div class="muted small">15초 기준 CPRP(원). '150만'처럼 써도 돼요.</div><div class="spacer"></div><button class="btn sm pri" data-add>＋ CPRP 추가</button></div>
-    <datalist id="dl-pp-케이블">${pps.map(c => `<option value="${esc(c)}">`).join('')}</datalist><datalist id="dl-pp-지상파">${gch.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
-    <div class="tw free fit"><table class="t form narrow"><thead><tr><th class="l">매체</th><th class="l">PP (지상파는 채널)</th><th>CPRP (원)</th><th>이번 달 적용</th><th></th></tr></thead><tbody>
+    <div class="fhd"><div class="muted small">15초 기준 CPRP(원). '150만'처럼 써도 돼요. 케이블은 PP로 적되, 같은 PP 안에서 채널마다 다르면 채널 이름으로 따로 적으면 그 채널은 그 값을 써요.</div><div class="spacer"></div><button class="btn sm pri" data-add>＋ CPRP 추가</button></div>
+    <datalist id="dl-pp-케이블">${pps.concat(M.MS.chList.filter(c => c.media === '케이블' && !pps.includes(c.name)).map(c => c.name)).map(c => `<option value="${esc(c)}">`).join('')}</datalist><datalist id="dl-pp-지상파">${gch.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
+    <div class="tw free fit"><table class="t form narrow"><thead><tr><th class="l">매체</th><th class="l">PP · 채널</th><th>CPRP (원)</th><th>이번 달 적용</th><th></th></tr></thead><tbody>
     ${rows.map((r, i) => { const media = /지상파/.test(str(r[0])) ? '지상파' : '케이블'; const u = used(r);
       return `<tr data-i="${i}"><td class="in"><select data-f="0">${optHtml(['지상파', '케이블'], media)}</select></td><td class="in"><input data-f="1" value="${esc(str(r[1]))}" list="dl-pp-${media}" class="${str(r[1]) ? '' : 'need'}"></td>
       <td class="in"><input data-f="2" class="r" inputmode="numeric" value="${esc(amtTxt(num(r[2]) == null ? r[2] : num(r[2])))}"></td>
@@ -401,7 +409,7 @@ function renderBudgetForm(el) {
   const T = budTotals();
   const secOf = r => { const c = resolveCh(M.MS, r[0]); return c ? c.media : '미확인'; };
   const present = new Set(rows.map(r => r[0]));
-  const cellCnt = (ch, k) => { const c = M.cellMap.get(ch + '|' + k); return c && c.cnt ? `<small class="cc">${fmt.int(c.cnt)}회</small>` : ''; };
+  const cellCnt = () => '';   // 14차: 채널별 횟수는 표시하지 않음 (예산만 컴팩트하게)
   const colHead = (k, j) => { const it = M.MS.items.get(k); return `<th class="ih${it ? '' : ' unk'}" data-col="${j}" title="${roTab('예산') ? '' : '끌어서 열 순서 바꾸기 · 표 위로 끌어 올리면 열 빼기'}"><div class="ihd">${it ? `<span class="sw" style="background:${it.color}"></span>` : ''}<span class="nm">${esc(k || '(이름 없음)')}</span></div>
     ${it ? '' : `<select data-cmap="${j}" class="mapsel"><option value="">마스터 품목으로…</option>${items.filter(x => !have.has(x.key)).map(x => `<option value="${esc(x.key)}">${esc(x.key)}</option>`).join('')}</select>`}</th>`; };
   let body = '';
@@ -415,18 +423,18 @@ function renderBudgetForm(el) {
       const first = n === 0 || budPP(rows[idx[n - 1]][0]) !== pp;
       let span = 1; if (first) while (n + span < idx.length && budPP(rows[idx[n + span]][0]) === pp) span++;
       const ppTot = first ? idx.slice(n, n + span).reduce((a, k) => a + (T.row[k] || 0), 0) : 0;
-      body += `<tr data-r="${i}" data-pp="${esc(pp)}"${first ? ' class="ppfirst"' : ''}>${first ? `<td class="l ppc" rowspan="${span}"><span class="pn">${esc(sec === '지상파' ? '지상파 3사' : pp || '-')}</span>${span > 1 || sec === '케이블' ? `<small class="pt" data-ppt="${esc(pp)}">${ppTot ? fmt.eok(ppTot, 2) : ''}</small>` : ''}</td>` : ''}<td class="l chn"><span class="nm">${esc(r[0])}</span>${c ? '' : `<select data-rmap="${i}" class="mapsel"><option value="">마스터 채널로…</option>${M.MS.chList.filter(x => !present.has(x.name)).map(x => `<option value="${esc(x.name)}">${esc(x.name)}</option>`).join('')}</select>`}<button class="x" data-rx="${i}" title="행 빼기">✕</button></td>
+      body += `<tr data-r="${i}" data-pp="${esc(pp)}"${first ? ' class="ppfirst"' : ''}>${first ? `<td class="l ppc" rowspan="${span}"><span class="pn">${esc(sec === '지상파' ? '지상파 3사' : pp || '-')}</span>${span > 1 || sec === '케이블' ? `<small class="pt" data-ppt="${esc(pp)}">${ppTot ? fmt.eok(ppTot, 2) : ''}</small>` : ''}</td>` : ''}<td class="l chn">${c && !roTab('예산') ? '<span class="bgrip" title="끌어서 순서 바꾸기 (같은 PP 안에서)">⋮⋮</span>' : ''}<span class="nm">${esc(r[0])}</span>${c ? '' : `<select data-rmap="${i}" class="mapsel"><option value="">마스터 채널로…</option>${M.MS.chList.filter(x => !present.has(x.name)).map(x => `<option value="${esc(x.name)}">${esc(x.name)}</option>`).join('')}</select>`}<button class="x" data-rx="${i}" title="행 빼기">✕</button></td>
         ${cols.map((k, j) => `<td class="in bi"><input data-r="${i}" data-c="${j}" inputmode="numeric" value="${esc(amtTxt(r[j + 1]))}">${cellCnt(r[0], k)}</td>`).join('')}<td class="rt" data-rt="${i}">${T.row[i] ? fmt.won(T.row[i]) : ''}</td></tr>`;
     });
     if (sec !== '미확인') body += `<tr class="add"><td class="l" colspan="2"><button type="button" class="addchbtn" data-addch="${sec}">＋ ${sec} 채널 추가${sec === '케이블' ? ' <small>PP → 채널</small>' : ''}</button></td><td colspan="${cols.length + 1}"></td></tr>`;
     if (sec !== '미확인') body += `<tr class="sub" data-st="${sec}"><td class="l" colspan="2">${sec} 계</td>${cols.map((_, j) => `<td>${(sec === '지상파' ? T.g : T.c)[j] ? fmt.won((sec === '지상파' ? T.g : T.c)[j]) : '-'}</td>`).join('')}<td>${fmt.won(sec === '지상파' ? T.gAll : T.cAll)}</td></tr>`;
   }
   body += `<tr class="tot" data-st="all"><td class="l" colspan="2">합계</td>${cols.map((_, j) => `<td>${fmt.won(T.col[j])}</td>`).join('')}<td>${fmt.won(T.all)}</td></tr>`;
-  el.innerHTML = `<div class="viewhead"><div><h2>당월 예산</h2><div class="sub">${ymLabel()} · 채널 × 품목 예산 (원, VAT 별도)${roTab('예산') ? '' : `. '1.5억', '3000만'처럼 써도 되고, 엑셀 범위를 복사해 칸에 붙여넣으면 그 칸부터 채워져요.`}</div></div><div class="spacer"></div>
+  el.innerHTML = `<div class="viewhead"><div><div class="sub">${ymLabel()} · 채널 × 품목 예산 (원, VAT 별도)${roTab('예산') ? '' : `. '1.5억', '3000만'처럼 써도 되고, 엑셀 범위를 복사해 칸에 붙여넣으면 그 칸부터 채워져요.`}</div></div><div class="spacer"></div>
       <button class="btn sm" data-b="paste">엑셀 표 통째로 붙여넣기</button><button class="btn sm" data-b="fill">기본 채널 넣기</button><button class="btn sm" data-b="xlsx">⤓ 예산 엑셀</button><button class="btn sm ghost" data-b="wipe">금액 비우기</button></div>
     <div class="formwrap"><div class="stack">
       <section class="card itchips"><div class="hd"><h3>품목</h3><span class="sub">누르면 예산표 열로 넣고 빼요. 열 순서가 요약 표·그래프의 품목 순서예요.</span></div><div class="bd"><div class="chips">${items.map(it => `<button class="chipbtn ${have.has(it.key) ? 'on' : ''}" data-it="${esc(it.key)}"><span class="sw" style="background:${it.color}"></span>${esc(it.key)}</button>`).join('')}</div></div></section>
-      <section class="card"><div class="tw free bud"><table class="t form budget"><thead><tr><th class="l pph">PP</th><th class="l chh">채널</th>${cols.map(colHead).join('')}<th>계</th></tr></thead><tbody>${body}</tbody></table></div></section>
+      <section class="card"><div class="tw free bud"><table class="t form budget"><colgroup><col class="cpp"><col class="cch">${cols.map(() => '<col class="cv">').join('')}<col class="cv"></colgroup><thead><tr><th class="l pph">PP</th><th class="l chh">채널</th>${cols.map(colHead).join('')}<th class="rth">계</th></tr></thead><tbody>${body}</tbody></table></div></section>
     </div><aside class="side" id="bside"></aside></div>`;
   if (!cols.length) el.querySelector('.bud').insertAdjacentHTML('afterbegin', '<div class="empty">위에서 이번 달 품목을 눌러 열을 만들고, 채널을 추가해 금액을 넣으세요.</div>');
   const tb = el.querySelector('table.budget');
@@ -503,7 +511,37 @@ function renderBudgetForm(el) {
   el.querySelector('[data-b="paste"]').onclick = () => budPasteDialog();
   renderBudgetSide(el);
   if (roTab('예산')) lockForm(el);
-  el._refresh = () => { el.querySelectorAll('td.bi').forEach(td => { const inp = td.querySelector('input'); const r = WS.sheets.예산[+inp.dataset.r + 1]; const k = WS.sheets.예산[0][+inp.dataset.c + 1]; const old = td.querySelector('.cc'); if (old) old.remove(); const h = cellCnt(r && r[0], k); if (h) td.insertAdjacentHTML('beforeend', h); }); renderBudgetSide(el); };
+  el._refresh = () => renderBudgetSide(el);
+  if (!roTab('예산')) bindBudRowDrag(tb);
+}
+// 14차: 예산표 채널 행 끌어서 순서 바꾸기 — 같은 PP 묶음 안에서만 (지상파 ↔ 케이블, PP ↔ PP로는 못 옮김)
+// 예산표 순서는 채널 관리의 채널 순서를 따르므로, 놓으면 그 PP 안의 채널 순서를 바꿈 (요약·큐시트 채널 순서도 같이)
+function bindBudRowDrag(tb) {
+  tb.querySelectorAll('.bgrip').forEach(g => g.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return; e.preventDefault();
+    const tr = g.closest('tr[data-r]'); const pp = tr.dataset.pp;
+    const block = []; let a = tr; while (a.previousElementSibling && a.previousElementSibling.matches('tr[data-r]') && a.previousElementSibling.dataset.pp === pp) a = a.previousElementSibling;
+    for (let b = a; b && b.matches('tr[data-r]') && b.dataset.pp === pp; b = b.nextElementSibling) block.push(b);
+    if (block.length < 2) { App.toast('같은 PP 안에 옮길 다른 채널이 없어요'); return; }
+    const line = document.createElement('div'); line.className = 'brline'; document.body.appendChild(line);
+    tr.classList.add('bdrag'); document.body.classList.add('rowdragging');
+    let to = block.indexOf(tr);
+    const mv = ev => {
+      const ys = block.map(b => b.getBoundingClientRect());
+      to = ys.findIndex(r => ev.clientY < r.top + r.height / 2); if (to < 0) to = block.length;
+      const ref = to < block.length ? ys[to].top : ys[ys.length - 1].bottom; const tr0 = tb.getBoundingClientRect();
+      Object.assign(line.style, { top: (ref + window.scrollY - 1) + 'px', left: (tr0.left + window.scrollX) + 'px', width: tr0.width + 'px' });
+    };
+    const up = () => {
+      removeEventListener('pointermove', mv); removeEventListener('pointerup', up); line.remove(); tr.classList.remove('bdrag'); document.body.classList.remove('rowdragging');
+      const from = block.indexOf(tr); let t = to > from ? to - 1 : to; if (t === from) return;
+      const names = block.map(b => str(WS.sheets.예산[+b.dataset.r + 1][0])); const [x] = names.splice(from, 1); names.splice(t, 0, x);
+      const CH = WS.sheets.채널; const idx = names.map(n => CH.findIndex(r => (resolveCh(M.MS, r[0]) || {}).name === n)); if (idx.some(i => i < 0)) return;
+      const pos = idx.slice().sort((p, q) => p - q); const moved = idx.map(i => CH[i]); pos.forEach((p, k) => { CH[p] = moved[k]; });
+      App.changed('master'); App.toast(`${esc(x)} 순서를 바꿨어요 (채널 관리 순서도 같이)`);
+    };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up); mv(e);
+  }));
 }
 function bindColDrag(tb, cols, onMove, onDel) {
   const ths = [...tb.querySelectorAll('thead th.ih')];
@@ -549,7 +587,7 @@ function renderBudgetSide(el) {
   const warn = M.issues.filter(i => i.sheet === '예산');
   side.innerHTML = `<div class="card"><div class="hd"><h4>예산 합계</h4></div><div class="bd"><dl class="kv"><dt>전체</dt><dd>${fmt.won(T.all)}원</dd><dt>지상파</dt><dd>${fmt.won(T.gAll)}원 <span class="muted">(${fmt.eok(T.gAll, 2)})</span></dd><dt>케이블</dt><dd>${fmt.won(T.cAll)}원 <span class="muted">(${fmt.eok(T.cAll, 2)})</span></dd></dl>
     <div class="mini" style="margin-top:10px">${cols.map((k, j) => `<div class="r"><span>${esc(k)}</span><span class="b"><span style="width:${T.col[j] / mx * 100}%;background:${itemColor(k)}"></span></span><span class="v">${fmt.dec(T.col[j] / 1e8, 2)}억</span></div>`).join('')}</div></div></div>
-    <div class="card"><div class="hd"><h4>확인 필요 ${warn.length ? `<span class="badge warn">${warn.length}</span>` : ''}</h4></div><div class="bd">${warn.length ? `<div class="issues">${warn.slice(0, 60).map(i => `<div class="iss"><span class="sev ${i.sev}"></span><span>${esc(i.msg)}</span></div>`).join('')}</div>` : '<span class="muted small">문제 없어요. 칸 아래 작은 회색 숫자는 이 채널×품목의 이번 달 송출 횟수예요.</span>'}</div></div>`;
+    <div class="card"><div class="hd"><h4>확인 필요 ${warn.length ? `<span class="badge warn">${warn.length}</span>` : ''}</h4></div><div class="bd">${warn.length ? `<div class="issues">${warn.slice(0, 60).map(i => `<div class="iss"><span class="sev ${i.sev}"></span><span>${esc(i.msg)}</span></div>`).join('')}</div>` : '<span class="muted small">문제 없어요.</span>'}</div></div>`;
 }
 // 엑셀 표 통째로 붙여넣기
 function parseBudgetTable(text) {
@@ -623,11 +661,15 @@ function creSecShares(rr) {
 function secPlanHtml(k, rr) {
   const plan = (WS.secPlan || {})[k] || null, der = creSecShares(rr);
   const secs = [...new Set(Object.keys(der).concat(Object.keys(plan || {})).map(Number))].filter(x => x > 0).sort((a, b) => a - b);
-  if (secs.length < 2 && !plan) return '';
+  if (secs.length < 2 && !plan && !['지상파', '케이블'].some(m => (WS.secPlan || {})[k + '|' + m])) return '';
   const pl = M.secPlanOf(k), fac = pl ? fmt.dec(pl.factor, 3) : '-';
+  // 매체별 값(예전 달: 지상파·케이블 비중이 다름)이 있으면 그 줄도 보여 줌
+  const media = ['지상파', '케이블'].filter(m => (WS.secPlan || {})[k + '|' + m]).map(m => { const o = WS.secPlan[k + '|' + m], p2 = M.secPlanOf(k, m);
+    const ss = [...new Set(secs.concat(Object.keys(o).map(Number)))].sort((a, b) => a - b);
+    return `<div class="secplan sub" data-sp="${esc(k + '|' + m)}"><b>${m}만</b> ${ss.map(sec => `<label>${sec}초 <span class="in pc"><input data-sps="${sec}" class="r" inputmode="decimal" value="${o[sec] != null ? esc(pctTxt(o[sec])) : ''}" placeholder="0"><span>%</span></span></label>`).join('')}<span class="muted">→ ×${p2 ? fmt.dec(p2.factor, 3) : '-'} · 이 매체는 위 값 대신 이 값 (모두 비우면 위 값을 따름)</span></div>`; }).join('');
   return `<div class="secplan" data-sp="${esc(k)}"><b>GRP 계산 초수 비중</b> <span class="muted">(예산)</span>
     ${secs.map(sec => `<label>${sec}초 <span class="in pc"><input data-sps="${sec}" class="r" inputmode="decimal" value="${plan && plan[sec] != null ? esc(pctTxt(plan[sec])) : ''}" placeholder="${der[sec] != null ? esc(pctTxt(der[sec])) : '0'}"><span>%</span></span></label>`).join('')}
-    <span class="muted">→ 15초 환산 ×${fac} · ${plan ? '직접 넣은 값' : '비워 두면 소재 금액 비중으로'} · 엑셀 ‘품목별 집행 기간 및 소재’ 표의 예산 비중과 같은 값</span></div>`;
+    <span class="muted">→ 15초 환산 ×${fac} · ${plan ? '직접 넣은 값' : '비워 두면 소재 금액 비중으로'} · 엑셀 ‘품목별 집행 기간 및 소재’ 표의 예산 비중과 같은 값</span></div>${media}`;
 }
 function renderCreForm(el) {
   if (creNormalize()) App.changed('소재', true);
@@ -658,7 +700,7 @@ function renderCreForm(el) {
         <td><button class="x" data-del="${i}" title="삭제">✕</button></td></tr>`; }).join('')}
       </tbody><tfoot><tr class="sub"><td class="l" colspan="3">합계</td><td data-s4></td><td data-s5></td><td></td><td colspan="3"></td></tr></tfoot></table>${secPlanHtml(k, idx.map(i => rows[i]))}</section>`;
   };
-  el.innerHTML = `<div class="viewhead"><div><h2>당월 소재</h2><div class="sub">${ymLabel()} · 품목별 운영 소재와 비중. 비중은 % 숫자로 (50 = 50%). 지상파 실제는 지상파 송출 중 그 소재로 나간 비율이에요.</div></div><div class="spacer"></div>
+  el.innerHTML = `<div class="viewhead"><div><div class="sub">${ymLabel()} · 품목별 운영 소재와 비중. 비중은 % 숫자로 (50 = 50%). 지상파 실제는 지상파 송출 중 그 소재로 나간 비율이에요.</div></div><div class="spacer"></div>
       <select class="btn sm" id="creadd"><option value="">＋ 품목 추가…</option>${avail.map(k => `<option value="${esc(k)}">${esc(k)}${M.budgetItems.includes(k) ? ' (예산 있음)' : ''}</option>`).join('')}</select><button class="btn sm" data-c="xlsx">⤓ 소재 엑셀</button></div>
     ${missing.length ? `<div class="note warn">예산은 있는데 소재가 없는 품목: ${missing.map(k => `<button class="chipbtn" data-addit="${esc(k)}"><span class="sw" style="background:${itemColor(k)}"></span>${esc(k)} 추가</button>`).join(' ')}</div>` : ''}
     <div class="crecards">${keys.map(card).join('') || '<section class="card"><div class="empty">위의 ＋ 품목 추가로 시작하세요. 예산에 넣은 품목은 노란 안내에서 바로 추가할 수 있어요.</div></section>'}</div>`;

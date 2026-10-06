@@ -254,7 +254,8 @@ function renderSummary(root) {
   <section class="card" style="margin-bottom:16px"><div class="hd"><h3>예산 및 보너스</h3><span class="sub">원, VAT 별도</span><div class="spacer"></div>
     ${segHtml('metric', [['budget', '예산'], ['bonus', '보너스'], ['value', '예산+보너스'], ['rate', '보너스율']], UI.metric)} ${xlBtn('t1')}</div><div class="bd" id="t1"></div></section>
   <section class="card"><div class="hd"><h3>송출 횟수</h3><span class="sub">주차별 송출수 · 소재 길이 · 주말 여부 · CM 위치별 비중</span><div class="spacer"></div>${xlBtn('tc')}</div><div class="bd">
-    ${chipsHtml('data-tc', [['all', '전체 품목']].concat(items.map(k => [k, k, itemColor(k)])), UI.tcItem)}<div id="tc" style="margin-top:10px"></div></div></section>`;
+    ${chipsHtml('data-tc', [['all', '전체 품목']].concat(items.map(k => [k, k, itemColor(k)])), UI.tcItem)}<div id="tc" style="margin-top:10px"></div></div></section>
+  <section class="card" style="margin-top:16px"><div class="hd"><h3>당월 소재</h3><span class="sub">품목별 운영 소재 · 금액/횟수 비중 · 지상파 실제 = 지상파 송출 중 그 소재로 나간 비율</span><div class="spacer"></div>${xlBtn('cre', '당월 소재 엑셀')}</div><div class="bd" style="padding:0">${creSummaryHtml()}</div></section>`;
   const rerender = () => { const y = window.scrollY; renderSummary(root); window.scrollTo(0, y); };
   bindSeg(root, 'media', v => { UI.media = v; rerender(); });
   bindSeg(root, 'metric', v => { UI.metric = v; root.querySelector('#t1').innerHTML = tableHtml(table1(cells, UI.metric), v2 => UI.metric === 'rate' ? fmt.pct(v2) : moneyTxt(v2)); root.querySelectorAll('[data-seg="metric"] button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); });
@@ -426,6 +427,7 @@ function exportSummary(which, cells, items) {
   if (which === 'tc') xrDownload([xrOpsSheet('tc')], null, xrName('송출횟수'));
   if (which === 'ops') xrDownload([xrOpsSheet('ops')], null, xrName('운영요약'));
   if (which === 'sumall') xrDownload([xrOpsSheet()], null, xrName('요약'));
+  if (which === 'cre') xrDownload([xrCreSheet()], null, xrName('소재'));
 }
 
 // ---------- 큐시트 공통 (Q-Mate 편성표 디자인: 진한 머리글 · 품목 색 상자 · 본방 강조) ----------
@@ -627,4 +629,20 @@ function bindOnboarding(root) {
     if (a === 'onboard') OBUI.open();
     else if (a.startsWith('tab-')) App.go(a.slice(4));
   });
+}
+
+// 요약 탭 '당월 소재' (14차: 당월 운영 메뉴는 관리자만 보므로 뷰어도 요약에서 소재를 봄)
+function creSummaryHtml() {
+  const by = groupBy(M.creatives, c => c.item || c.itemRaw);
+  if (!by.size) return '<div class="empty">당월 소재가 아직 없어요</div>';
+  const pool = groupBy(M.spots.filter(s => s.src === '지상파' && s.item), s => s.item);
+  const ord = k => { const b = M.budgetItems.indexOf(k); if (b >= 0) return b; const it = M.MS.items.get(k); return it ? 100 + it.order : 999; };
+  let body = '';
+  for (const [k, l] of [...by].sort((a, b) => ord(a[0]) - ord(b[0]))) {
+    const p = pool.get(k) || [];
+    body += l.map((c, i) => { const hit = p.filter(s => creMatch(c.cre, s.cre)).length; return `<tr>${i ? '' : `<td class="mg crit" rowspan="${l.length + 1}" style="--c:${itemColor(k)}"><span class="sw" style="background:${itemColor(k)}"></span>${esc(k)}</td>`}<td>${esc(c.period)}</td><td>${c.sec ? c.sec + '초' : ''}</td><td>${esc(c.cre)}</td><td>${c.share == null ? '' : fmt.pct(c.share)}</td><td>${c.cshare == null ? '' : fmt.pct(c.cshare)}</td><td>${p.length ? `${fmt.pct(hit / p.length)} <span class="muted">(${hit}회)</span>` : '<span class="muted">-</span>'}</td><td>${esc(c.reg)}</td><td class="wrap">${esc(c.note)}</td></tr>`; }).join('');
+    const sh = l.filter(c => c.share != null), cs = l.filter(c => c.cshare != null);
+    body += `<tr class="sub"><td colspan="3">${esc(k)} 계</td><td>${sh.length ? fmt.pct(sum(sh, c => c.share)) : ''}</td><td>${cs.length ? fmt.pct(sum(cs, c => c.cshare)) : ''}</td><td colspan="3"></td></tr>`;
+  }
+  return `<div class="tw free"><table class="t ctr cresum"><thead><tr><th>품목</th><th>운영기간</th><th>초수</th><th>소재</th><th>금액 비중</th><th>횟수 비중</th><th>지상파 실제</th><th>심의번호</th><th>비고</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }

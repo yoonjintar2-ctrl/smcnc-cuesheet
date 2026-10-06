@@ -2,7 +2,10 @@
 let WS = null, M = null, MVER = 0;
 const REPORT = (typeof window !== 'undefined' && window.__REPORT__) || null;
 const GRID_SHEETS = ['지상파', '케이블'];
-const FORM_TABS = { master: el => renderMasterForm(el), 예산: el => renderBudgetForm(el), 소재: el => renderCreForm(el) };
+// 14차: 마스터를 메뉴별로 나눔 — 품목 관리(master) · 채널 관리(mch) · CM위치 보정 규칙(mcm) · 목표 CPRP(mcprp) · 매칭 규칙(mrule)
+const MST_TAB = { master: '품목', mch: '채널', mcm: 'CM위치', mcprp: '목표CPRP', mrule: '매칭규칙' };
+const MST_OF = Object.fromEntries(Object.entries(MST_TAB).map(([t, s]) => [s, t]));
+const FORM_TABS = { master: el => renderMasterForm(el, '품목'), mch: el => renderMasterForm(el, '채널'), mcm: el => renderMasterForm(el, 'CM위치'), mcprp: el => renderMasterForm(el, '목표CPRP'), mrule: el => renderMasterForm(el, '매칭규칙'), 예산: el => renderBudgetForm(el), 소재: el => renderCreForm(el) };
 function fixWS(w) {
   w.sheets = w.sheets || {};
   for (const k of ALL_SHEETS) if (!w.sheets[k]) w.sheets[k] = k === '예산' ? [['채널']] : (DEFAULT_MASTER[k] ? DEFAULT_MASTER[k].map(r => r.slice()) : []);
@@ -76,15 +79,16 @@ const Store = {
 // ---------- 앱 ----------
 const App = {
   tab: null, lastVersionAt: 0, dirtyV: false, months: [], panes: {}, grids: {}, scrollMem: {}, pend: null, selRow: {},
-  // 메뉴: 평소엔 분류(입력 · 운영사항 · 큐시트 · 점검)만 한 줄 → 누르면 전체 메뉴가 한 판에 펼쳐짐 (미디어 대시보드와 같은 방식)
+  // 메뉴: 평소엔 분류(입력 · 당월 운영 · 큐시트 · 점검)만 한 줄 → 누르면 전체 메뉴가 한 판에 펼쳐짐 (미디어 대시보드와 같은 방식)
+  // 14차: 입력 = 품목·채널·CM위치·목표 CPRP·매칭 규칙(관리자 전용) · 당월 운영 = 예산·소재·지상파·케이블·누적리치(관리자 전용) · 뷰어는 큐시트만
   TABS: [
-    { id: 'input', g: '입력', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M3.2 14.2 12.6 4.8l2.6 2.6-9.4 9.4H3.2z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M11 6.4l2.6 2.6"/>', items: [['master', '마스터'], ['지상파', '지상파'], ['케이블', '케이블'], ['reach', '누적리치']] },
-    { id: 'plan', g: '운영사항', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 3.4h11.2v13.4H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 7.4h5.6M7.2 10.4h5.6M7.2 13.4h3.4"/>', items: [['예산', '당월 예산'], ['소재', '당월 소재']] },
+    { id: 'input', g: '입력', note: '관리자 전용', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M3.2 14.2 12.6 4.8l2.6 2.6-9.4 9.4H3.2z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M11 6.4l2.6 2.6"/>', items: [['master', '품목 관리'], ['mch', '채널 관리'], ['mcm', 'CM위치 보정 규칙'], ['mcprp', '목표 CPRP'], ['mrule', '매칭 규칙']] },
+    { id: 'plan', g: '당월 운영', note: '관리자 전용', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4.4 3.4h11.2v13.4H4.4z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.2 7.4h5.6M7.2 10.4h5.6M7.2 13.4h3.4"/>', items: [['예산', '당월 예산'], ['소재', '당월 소재'], ['지상파', '지상파'], ['케이블', '케이블'], ['reach', '누적리치']] },
     { id: 'cue', g: '큐시트', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M2.8 3.6h14.4v12.8H2.8z"/><path fill="none" stroke="currentColor" stroke-width="1.7" d="M2.8 7.6h14.4M7.6 7.6v8.8"/>', items: [['summary', '요약'], ['cueall', '전체 큐시트'], ['cueg', '지상파 큐시트'], ['cuec', '케이블 큐시트'], ['cal', '큐시트 캘린더']] },
     { id: 'chk', g: '점검', ic: '<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 10.4l3.6 3.6L16 5.6"/>', items: [['issues', '확인 필요'], ['history', '변경 이력']] },
   ],
-  // 지금 보여 줄 분류 (뷰어: 운영사항 · 큐시트만)
-  areas() { return readOnly() && !REPORT ? this.TABS.filter(a => a.id === 'plan' || a.id === 'cue') : this.TABS; },
+  // 지금 보여 줄 분류 (뷰어: 큐시트만)
+  areas() { return readOnly() && !REPORT ? this.TABS.filter(a => a.id === 'cue') : this.TABS; },
   tabAllowed(tab) { return this.areas().some(a => a.items.some(x => x[0] === tab)); },
 
   async init() {
@@ -175,7 +179,7 @@ const App = {
       if (ch.length) this.toast(`다른 관리자(${esc([...new Set(ch.map(k => st[k].updated_by || ''))].join(', '))})가 ${ch.map(k => this.partLabel(k)).join('·')}을(를) 바꿨어요 <button class="btn sm" onclick="App.reloadCloud()">새로 불러오기</button>`, 12000);
     } catch (e) { }
   },
-  partLabel(k) { return { meta: '요약 설정', master: '마스터', reach: '누적리치' }[k] || k; },
+  partLabel(k) { return { meta: '요약 설정', master: '품목·채널 관리', reach: '누적리치' }[k] || k; },
   async reloadCloud() { const w = await CLOUD.load(CLOUD.camp.id, WS.ym); if (w) { WS = w; this.noFlash(); this.dataReplaced(); this.toast('최신 내용으로 다시 불러왔어요'); } },
   async cloudSave(force) {
     if (!CLOUD.admin || !CLOUD.camp || !WS) return;
@@ -241,7 +245,8 @@ const App = {
       if (readOnly()) return '';
       const lk = LOCK.other(id); if (lk) return `<span class="badge lk" title="${esc(lk)}님이 작업 중">🔒 ${esc(lk)}</span>`;
       if (cnt[id]) return `<span class="badge">${fmt.int(cnt[id])}</span>`;
-      if (id === 'master' && unkN) return `<span class="badge err" title="마스터에 없는 이름">${unkN}</span>`;
+      if (id === 'master' && unk.items.size) return `<span class="badge err" title="품목 관리에 없는 이름">${unk.items.size}</span>`;
+      if (id === 'mch' && unk.chs.size) return `<span class="badge err" title="채널 관리에 없는 이름">${unk.chs.size}</span>`;
       if (id === 'issues' && todo) return `<span class="badge ${err ? 'err' : warn ? 'warn' : ''}" title="확인 전 ${todo}건">${todo}</span>`;
       return '';
     };
@@ -256,9 +261,9 @@ const App = {
       nav.innerHTML = `<div class="arearow">${areas.map(a => {
         const on = a === curA; const cur = on ? (a.items.find(x => x[0] === this.tab) || [])[1] : '';
         const dot = a.id === 'chk' && err && !readOnly() ? `<span class="badge err">${err}</span>` : '';
-        return `<button type="button" class="area${on ? ' on' : ''}" data-area="${a.id}" aria-haspopup="menu" aria-expanded="false">${svg(a)}<span class="al">${a.g}</span>${cur ? `<span class="acur">${cur}</span>` : ''}${dot}${cv}</button>`;
+        return `<button type="button" class="area${on ? ' on' : ''}" data-area="${a.id}" aria-haspopup="menu" aria-expanded="false">${svg(a)}<span class="al">${a.g}</span>${a.note ? `<small class="anote">(${a.note})</small>` : ''}${cur ? `<span class="acur">${cur}</span>` : ''}${dot}${cv}</button>`;
       }).join('')}
-        <div class="megapop" role="menu">${areas.map(a => `<div class="subgrp${a === curA ? ' cur' : ''}" data-area="${a.id}"><div class="subttl" data-home="${a.items[0][0]}">${svg(a)}<span>${a.g}</span></div>
+        <div class="megapop" role="menu">${areas.map(a => `<div class="subgrp${a === curA ? ' cur' : ''}" data-area="${a.id}"><div class="subttl" data-home="${a.items[0][0]}">${svg(a)}<span>${a.g}</span>${a.note ? `<small class="anote">(${a.note})</small>` : ''}</div>
           <div class="subbar">${a.items.map(([id, t]) => `<button type="button" class="${this.tab === id ? 'on' : ''}" data-tab="${id}"><span>${t}</span>${badge(id)}</button>`).join('')}</div></div>`).join('')}</div></div>`;
       const close = () => { delete nav.dataset.pop; nav.querySelectorAll('.area').forEach(x => x.setAttribute('aria-expanded', 'false')); };
       nav.querySelectorAll('.area').forEach(b => b.onclick = e => {
@@ -342,6 +347,7 @@ const App = {
       else if (tab === 'cal') renderCal(el);
       else if (FORM_TABS[tab]) FORM_TABS[tab](el);
       if (!readOnly() && LOCK.blocked(tab)) lockForm(el);
+      el.classList.toggle('lockdim', !readOnly() && LOCK.blocked(tab));   // 다른 관리자가 편집 중이면 탭 전체를 옅은 회색으로
     } catch (e) { console.error(e); el.innerHTML = `<div class="card"><div class="empty">화면을 그리다 오류가 났어요: ${esc(e.message)}</div></div>`; }
     el.dataset.ver = M.ver;
     if (prev && prev.size) { let n = 0; const now = ckSnapshot(el); for (const [k, v] of now) if (prev.has(k) && prev.get(k) !== v) n++; if (n && n <= 300) ckFlash(el, prev); }
@@ -513,6 +519,10 @@ const App = {
     document.addEventListener('keydown', e => {
       const ctrl = e.ctrlKey || e.metaKey;
       if (ctrl && !e.shiftKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); if (!readOnly()) this.manualSave(); return; }
+      // 14차: 품목·채널 관리 등 화면 입력 칸에서 Esc → 편집 끝(값 반영 후 칸에서 빠져나와 처음 들어왔을 때처럼)
+      if (e.key === 'Escape' && !e.defaultPrevented && !document.querySelector('.modal-bg, .calpop')) {
+        const t = e.target; if (t && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName) && t.closest('.pane') && !t.closest('.xg') && t.type !== 'checkbox') { e.preventDefault(); t.blur(); window.getSelection && window.getSelection().removeAllRanges(); return; }
+      }
       const g = this.grids[this.tab]; if (!g || document.querySelector('.modal-bg')) return;
       const t = e.target; if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
       if (ctrl && /^[fhzya]$/i.test(e.key)) { g.focus(); g.onKey(e); }
@@ -571,6 +581,7 @@ const App = {
     const el = this.paneEl(name);
     if (!this.grids[name]) this.mountGrid(name, el);
     else { this.renderSide(name); this.gridStat(name); this.grids[name].setRO(!readOnly() && LOCK.blocked(name)); }
+    this.paneEl(name).classList.toggle('lockdim', !readOnly() && LOCK.blocked(name));
     this.sizeGrid(name);
     this.grids[name].focus();
   },
@@ -582,12 +593,12 @@ const App = {
   mountGrid(name, el) {
     const def = SHEETS[name];
     const B = (a, t, tip) => `<button class="btn sm" data-a="${a}" title="${esc(tip || '')}">${t}</button>`;
-    el.innerHTML = `<div class="sheetwrap"><section class="card sheetcard"><div class="hd"><h3>${def.label}</h3><span class="sub tnum" data-stat></span><div class="spacer"></div><span class="hint">${esc(def.hint)}</span>
+    el.innerHTML = `<div class="sheetwrap"><section class="card sheetcard"><div class="hd"><span class="sub tnum" data-stat></span><div class="spacer"></div><span class="hint">${esc(def.hint)}</span>
       <div class="gridbar">
         <div class="grp">${B('undo', '↶ 되돌리기', 'Ctrl+Z')}${B('redo', '↷ 다시', 'Ctrl+Y')}</div>
         <div class="grp">${B('find', '찾기', 'Ctrl+F')}${B('replace', '찾아바꾸기', 'Ctrl+H')}</div>
         <div class="grp fgrp"><span class="glab">필터</span>${B('bon', '본방만', name === '지상파' ? '본방 행만 보기 (지상파는 재방 표시가 없는 정규 편성 = 본방)' : '프로그램명에 <본방>·<생방>이 있는 행만 보기')}${B('mid', '중CM만', 'CM 위치가 중CM인 행만 보기')}${B('fclr', '필터 해제', '모든 열의 필터를 해제')}</div>
-        <div class="grp">${B('all', '전체 선택', 'Ctrl+A')}${B('hide', '행 숨기기', '선택한 행을 숨겨요 (집계에는 포함)')}${B('unhide', '숨긴 행 표시', '숨긴 행을 모두 다시 보여줘요')}${B('add', '＋ 10행', '끝에 빈 행 10개')}</div>
+        <div class="grp">${B('all', '전체 선택', 'Ctrl+A')}${B('add', '＋ 10행', '끝에 빈 행 10개')}</div>
         <div class="grp">${B('xlsx', '⤓ 이 시트 엑셀', '이 시트만 엑셀로 (숨긴 행 유지)')}<button class="btn sm ghost" data-a="wipe">시트 비우기</button></div>
         <span class="gridstat" data-gs></span>
       </div></div>
@@ -603,11 +614,43 @@ const App = {
       prepPaste: B => this.prepPaste(name, B),
       normalize: (col, v) => (col.k === 'start' || col.k === 'end') ? normTime(v) : v,
       onRo: () => this.toast(LOCK.blockedMsg(name), 3000),
+      onCommit: (row, c, v) => this.checkChannel(name, row, c, v),
     });
     this.grids[name] = g;
     g.setRO(!readOnly() && LOCK.blocked(name));
     el.querySelectorAll('.gridbar [data-a]').forEach(b => { b.addEventListener('mousedown', e => e.preventDefault()); b.onclick = () => this.gridAction(name, b.dataset.a); });
     this.renderSide(name); this.gridStat(name);
+  },
+  // 14차: 입력 시트에 채널 관리에 없는 채널을 직접 쓰면 → 비슷한 채널 추천 / 채널 관리에 추가 / 그대로 두기
+  checkChannel(name, row, c, v) {
+    const col = SHEETS[name].cols[c]; if (!col || col.k !== 'ch' || readOnly()) return;
+    const raw = str(v); if (!raw || resolveCh(M.MS, raw)) return;
+    const media = SHEETS[name].media, g = this.grids[name];
+    const sugg = nameSuggest(raw, M.MS.chList.filter(x => x.media === media).map(x => x.name), 5);
+    const pps = [...new Set(M.MS.chList.filter(x => x.media === '케이블').map(x => x.mpp).filter(Boolean))];
+    this.modal(`<div class="hd"><h3>‘${esc(raw)}’은(는) 채널 관리에 없어요</h3><div class="small muted">${media} 입력 시트 · 채널 관리에 있는 채널만 집계·큐시트에 들어가요.</div></div>
+      <div class="bd">${sugg.length ? `<div class="small" style="margin-bottom:6px"><b>이 채널인가요?</b> 누르면 바로 고쳐요</div><div class="chips sugg">${sugg.map(x => `<button class="chipbtn" data-sg="${esc(x)}">${esc(x)}</button>`).join('')}</div>` : '<div class="small muted">비슷한 채널이 없어요.</div>'}
+        <div class="addch"><div class="small" style="margin:14px 0 6px"><b>새 채널로 채널 관리에 추가</b></div>
+          <label>채널 <input id="nc-name" value="${esc(raw)}"></label>
+          ${media === '케이블' ? `<label>PP <input id="nc-pp" list="nc-pps" placeholder="예: CJ ENM"><datalist id="nc-pps">${pps.map(x => `<option value="${esc(x)}">`).join('')}</datalist></label>` : ''}
+          <label>요약그룹 <select id="nc-grp">${SUM_GROUPS.map(x => `<option ${x === (media === '지상파' ? (SUM_GROUPS.includes(raw) ? raw : '기타') : '기타') ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
+          <button class="btn sm pri" id="nc-add">추가</button></div></div>
+      <div class="ft"><button class="btn" data-x>그대로 두기</button></div>`, (box, close) => {
+      box.querySelectorAll('[data-sg]').forEach(b => b.onclick = () => { close(true); g.applyCells([{ id: row.id, c, n: b.dataset.sg }], '채널 고치기'); this.toast(`‘${esc(raw)}’ → ‘${esc(b.dataset.sg)}’로 고쳤어요`); });
+      box.querySelector('#nc-add').onclick = () => {
+        const nm = box.querySelector('#nc-name').value.trim(); if (!nm) return;
+        if (resolveCh(M.MS, nm)) { close(true); g.applyCells([{ id: row.id, c, n: resolveCh(M.MS, nm).name }], '채널 고치기'); return; }
+        const pp = media === '케이블' ? ((box.querySelector('#nc-pp') || {}).value || '').trim() : '';
+        if (media === '케이블' && !pp) { this.toast('PP를 적어 주세요 (예: CJ ENM)'); return; }
+        const rows = WS.sheets.채널; const isG = r => /지상파/.test(str(r[2]));
+        const nr = [nm, '', media, pp, box.querySelector('#nc-grp').value];
+        const at = media === '지상파' ? rows.reduce((a2, r, i) => isG(r) ? i + 1 : a2, 0) : (() => { let k = -1; rows.forEach((r, i) => { if (!isG(r) && str(r[3]) === pp) k = i; }); return k >= 0 ? k + 1 : rows.length; })();
+        rows.splice(at, 0, nr); close(true);
+        if (nm !== raw) g.applyCells([{ id: row.id, c, n: nm }], '채널 고치기');
+        this.changed('master'); this.toast(`채널 관리에 ‘${esc(nm)}’${pp ? ` (PP ${esc(pp)})` : ''}을(를) 추가했어요`);
+      };
+      setTimeout(() => { const b = box.querySelector('[data-sg]'); if (b) b.focus(); }, 30);
+    });
   },
   // 엑셀에서 복사한 블록 정리: ① 예전 가로형 지상파 표 → 1행 1송출 ② 머리글 행이 있으면 열 이름으로 맞추고 머리글은 빼기
   prepPaste(name, B) {
@@ -677,14 +720,13 @@ const App = {
     const n = g.rows.reduce((a, r) => a + (g.isBlank(r) ? 0 : 1), 0), hid = g.hiddenCount(), f = g.fcount();
     const shown = g.view.reduce((a, di) => a + (g.isBlank(g.rows[di]) ? 0 : 1), 0);
     const iss = M.issues.filter(i => i.sheet === name && i.row >= 0); const e = iss.filter(i => i.sev === 'err').length, w = iss.filter(i => i.sev === 'warn').length;
-    el.querySelector('[data-stat]').innerHTML = `${fmt.int(n)}행${f || hid ? ` · 보이는 행 ${fmt.int(shown)}` : ''}${e ? ` · <span style="color:#8f3d35">오류 ${e}</span>` : ''}${w ? ` · <span style="color:#8a5a25">주의 ${w}</span>` : ''}`;
+    el.querySelector('[data-stat]').innerHTML = `${fmt.int(n)}행${f || hid ? ` · 보이는 행 ${fmt.int(shown)}` : ''}${hid ? ` · 숨긴 행 ${fmt.int(hid)} <span class="muted">(행 머리글 우클릭 → 숨기기 취소)</span>` : ''}${e ? ` · <span style="color:#8f3d35">오류 ${e}</span>` : ''}${w ? ` · <span style="color:#8a5a25">주의 ${w}</span>` : ''}`;
     this.filterSummary(name, g, el);
     const btn = a => el.querySelector(`[data-a="${a}"]`);
-    btn('unhide').textContent = hid ? `숨긴 행 표시 (${hid})` : '숨긴 행 표시'; btn('unhide').disabled = !hid;
     btn('fclr').textContent = f ? `필터 해제 (${f})` : '필터 해제'; btn('fclr').disabled = !f; btn('fclr').classList.toggle('on', !!f);
     btn('bon').classList.toggle('on', g.preds.has('bon')); btn('mid').classList.toggle('on', g.preds.has('mid'));
     btn('undo').disabled = !g.undoS.length || g.ro; btn('redo').disabled = !g.redoS.length || g.ro;
-    ['hide', 'add', 'wipe'].forEach(k => { const b = btn(k); if (b) b.disabled = g.ro; });
+    ['add', 'wipe'].forEach(k => { const b = btn(k); if (b) b.disabled = g.ro; });
     // 엑셀 상태 표시줄처럼: 선택 범위 크기·합계
     const s = g.sel; const rs = g.selCount(), cs = s.c2 - s.c1 + 1;
     let txt = '';
@@ -951,7 +993,7 @@ const App = {
       ev.preventDefault(); ev.stopPropagation();
       const s = d.dataset.s, r = +d.dataset.r, col = d.dataset.c || null;
       if (GRID_SHEETS.includes(s)) { this.go(s); if (r >= 0) this.grids[s].gotoData(r, col ? Math.max(0, colIndex(s, col)) : 0); }
-      else if (MASTER_SHEETS.includes(s)) { UI.master = s; this.go('master', true); }
+      else if (MST_OF[s]) this.go(MST_OF[s], true);
       else if (FORM_TABS[s]) this.go(s);
     });
   },
@@ -960,7 +1002,7 @@ const App = {
   async handleFiles(files, restore) {
     if (OBUI.bg) return OBUI.add(files);
     this.toast('파일을 읽는 중…', 2000);
-    const raw = [];
+    const raw = [], bulk = [];
     for (const f of files) {
       try {
         const buf = new Uint8Array(await f.arrayBuffer());
@@ -969,9 +1011,12 @@ const App = {
         if (res.kind === 'legacy') { this.toast(`<b>${esc(f.name)}</b>은(는) 예전 통합 큐시트 양식이라 여기서 넣지 않아요. 이 도구에서 받은 <b>엑셀 백업</b> 파일이나 방송사 원본 큐시트만 넣을 수 있어요.`, 7000); continue; }
         if (restore && res.kind !== 'workspace') { this.toast(`<b>${esc(f.name)}</b>은(는) 이 도구의 백업 파일이 아니에요. 방송사 원본이면 ‘방송사 큐시트 온보딩’으로 넣어 주세요.`, 6000); continue; }
         if (!Object.keys(res.parts).some(k => ['지상파', '케이블', '예산', '소재', 'master', 'reach'].includes(k))) { raw.push(f); continue; }   // 방송사 원본 큐시트로 보고 '방송사 큐시트 온보딩' 창으로
+        if (restore && res.kind === 'workspace' && res.parts.ym && files.length > 1) { bulk.push({ name: f.name, res }); continue; }
         await this.importDialog(f.name, res);
       } catch (e) { console.error(e); this.toast(`${esc(f.name)}을(를) 읽지 못했어요: ${esc(e.message)}`, 6000); }
     }
+    if (bulk.length === 1) await this.importDialog(bulk[0].name, bulk[0].res);
+    else if (bulk.length) await this.bulkRestoreDialog(bulk);
     if (raw.length) { this.toast(`방송사 원본 큐시트 ${raw.length}개로 보고 '방송사 큐시트 온보딩' 창에서 열었어요`, 4000); OBUI.open(raw); }
   },
   importDialog(fileName, res) {
@@ -985,11 +1030,12 @@ const App = {
     if (P.소재) opts.push(['소재', `소재 ${P.소재.length}행`, '소재 시트를 교체']);
     if (P.reach) opts.push(['reach', `누적리치 ${Object.keys(P.reach).length}개 그룹`, '커브를 교체']);
     if (P.master) opts.push(['master', '마스터 (새 이름만 추가)', '기존 품목·채널·색상은 그대로 두고 없는 것만 추가']);
+    if (P.master && res.kind === 'workspace') opts.push(['masterAll', '마스터를 파일 값으로 바꾸기', '품목·채널·CM위치·목표 CPRP를 파일과 똑같이 (지난 달 백업을 그대로 되살릴 때)', true]);
     const diffYm = P.ym && P.ym !== WS.ym;
     const pym = P.ym ? parseYM(P.ym) : null;
     return new Promise(resolve => {
       this.modal(`<div class="hd"><h3>백업 넣기 · ${esc(fileName)}</h3><div class="small muted">${res.kind === 'workspace' ? '이 도구에서 받은 엑셀 백업 파일이에요.' : '시트 머리글로 내용을 판별했어요.'}</div></div>
-        <div class="bd">${opts.map(([k, t, s]) => `<label class="opt"><input type="checkbox" data-k="${k}" checked><span><b>${t}</b><small>${s}</small></span></label>`).join('')}
+        <div class="bd">${opts.map(([k, t, s, off]) => `<label class="opt"><input type="checkbox" data-k="${k}"${off ? '' : ' checked'}><span><b>${t}</b><small>${s}</small></span></label>`).join('')}
         ${diffYm ? `<div class="note warn">파일은 <b>${pym.y}년 ${pym.m}월</b>, 지금 화면은 ${parseYM(WS.ym).m}월이에요.</div>
           <label class="opt"><input type="radio" name="ymsel" value="file" checked><span><b>${pym.m}월 작업으로 넣기</b><small>${this.months.includes(P.ym) ? '저장된 그 달 작업에 넣어요' : '새 달을 만들어 넣어요'}</small></span></label>
           <label class="opt"><input type="radio" name="ymsel" value="cur"><span><b>지금 화면(${parseYM(WS.ym).m}월)에 넣기</b></span></label>` : ''}
@@ -1005,7 +1051,7 @@ const App = {
       }, () => resolve(false));
     });
   },
-  async applyImport(fileName, P, pick, toFile) {
+  async applyImport(fileName, P, pick, toFile, quiet) {
     if (toFile) {
       await this.flushSave();
       let w = await Store.load(P.ym);
@@ -1026,19 +1072,52 @@ const App = {
     if (pick.includes('지상파') && P.지상파) fillGroundKind(WS.sheets.지상파);
     if (pick.includes('케이블') && P.cueOrder) WS.cueOrder = P.cueOrder;
     if (pick.includes('reach') && P.reach) { WS.reach = P.reach; WS.reachMeta = P.reachMeta || {}; }
-    if (pick.includes('master') && P.master) this.mergeMaster(P.master);
+    if (pick.includes('masterAll') && P.master) { for (const k of MASTER_SHEETS) if (P.master[k]) WS.sheets[k] = deepClone(P.master[k]); if (P.start) WS.start = P.start; if (P.end) WS.end = P.end; if (P.adv) WS.adv = P.adv; }
+    else if (pick.includes('master') && P.master) this.mergeMaster(P.master);
     if (P.itemLegacy) { WS.itemLegacy = WS.itemLegacy || {}; for (const k in P.itemLegacy) WS.itemLegacy[k] = addAlias(WS.itemLegacy[k] || '', P.itemLegacy[k]); }
     if (P.opsNotes && pick.includes('지상파') && pick.includes('케이블')) WS.opsNotes = P.opsNotes;
     if (P.opsReach && pick.includes('지상파') && pick.includes('케이블')) WS.opsReach = P.opsReach;
     if (P.opsCurve && pick.includes('지상파') && pick.includes('케이블')) WS.opsCurve = P.opsCurve;
     if (P.reviewOk && pick.includes('지상파') && pick.includes('케이블')) WS.reviewOk = P.reviewOk;
-    if (P.secPlan && pick.includes('소재')) WS.secPlan = P.secPlan;
+    if (pick.includes('소재')) WS.secPlan = P.secPlan || (pick.includes('masterAll') ? {} : WS.secPlan);
+    if (pick.includes('masterAll') && pick.includes('지상파') && pick.includes('케이블')) { WS.opsNotes = P.opsNotes || {}; WS.opsReach = P.opsReach || {}; WS.opsCurve = P.opsCurve || {}; WS.reviewOk = P.reviewOk || {}; }
     const Mb = compute(fixWS(before));
     this.dataReplaced();
     const d = diffModels(Mb, M);
     await this.saveVersion(`백업 넣기: ${fileName}`, true, d);
     await this.flushSave(); if (DB.ok) await DB.put('kv', WS.ym, 'lastYm');
-    this.toast(`<b>${esc(fileName)}</b> 반영 · ${diffSummary(d)}`, 6000);
+    if (!quiet) this.toast(`<b>${esc(fileName)}</b> 반영 · ${diffSummary(d)}`, 6000);
+    return d;
+  },
+  // 여러 달 백업 파일을 한 번에: 각 파일을 그 달 작업으로 통째로 (지금 내용은 변경 이력에 버전으로 남김)
+  bulkRestoreDialog(list) {
+    list.sort((a, b) => a.res.parts.ym < b.res.parts.ym ? -1 : 1);
+    const dup = list.filter((x, i) => list.findIndex(y => y.res.parts.ym === x.res.parts.ym) !== i);
+    const lab = ym => { const p = parseYM(ym); return `${p.y}년 ${p.m}월`; };
+    return new Promise(resolve => {
+      this.modal(`<div class="hd"><h3>백업 파일 ${list.length}개 넣기</h3><div class="small muted">이 도구에서 받은 엑셀 백업 파일이에요. 파일마다 그 달 작업으로 넣어요.</div></div>
+        <div class="bd"><table class="bulkt"><thead><tr><th class="l">달</th><th class="l">파일</th><th>지상파</th><th>케이블</th><th></th></tr></thead><tbody>
+        ${list.map(x => { const P = x.res.parts; return `<tr><td class="l"><b>${lab(P.ym)}</b></td><td class="l small">${esc(x.name)}</td><td>${fmt.int((P.지상파 || []).length)}</td><td>${fmt.int((P.케이블 || []).length)}</td><td class="small muted">${this.months.includes(P.ym) ? '저장된 내용을 바꿈' : '새로 만듦'}</td></tr>`; }).join('')}
+        </tbody></table>
+        ${dup.length ? `<div class="note warn">같은 달 파일이 둘 이상이에요 (${[...new Set(dup.map(x => lab(x.res.parts.ym)))].join(', ')}) — 뒤 파일이 남아요.</div>` : ''}
+        <label class="opt"><input type="checkbox" id="br-all" checked><span><b>달 전체를 파일 내용으로 (마스터·목표 CPRP·리치 직접 입력·주요 프로그램 포함)</b><small>끄면 입력 시트만 바꾸고 마스터는 새 이름만 추가해요</small></span></label>
+        <div class="note">넣기 전 상태는 달마다 변경 이력에 버전으로 남겨 둬요.</div></div>
+        <div class="ft"><button class="btn" data-x>취소</button><button class="btn pri" id="br-ok">${list.length}개 달 넣기</button></div>`, (box, close) => {
+        box.querySelector('#br-ok').onclick = async () => {
+          const all = box.querySelector('#br-all').checked; close(true);
+          const back = WS.ym; let ok = 0;
+          for (const x of list) {
+            const P = x.res.parts;
+            const pick = ['지상파', '케이블', '예산', '소재', 'reach', 'master'].filter(k => P[k]).concat(all ? ['masterAll'] : []);
+            this.toast(`${lab(P.ym)} 넣는 중… (${ok + 1}/${list.length})`, 3000);
+            try { await this.applyImport(x.name, P, pick, P.ym !== WS.ym, true); ok++; } catch (e) { console.error(e); this.toast(`${esc(x.name)}: ${esc(e.message)}`, 6000); }
+          }
+          if (back !== WS.ym && this.months.includes(back)) await this.switchMonth(back);
+          this.toast(`백업 파일 ${ok}개를 넣었어요 (${list.map(x => parseYM(x.res.parts.ym).m + '월').join('·')})`, 6000);
+          resolve(true);
+        };
+      }, () => resolve(false));
+    });
   },
   mergeMaster(pm) {
     const MS = buildMaster(WS);

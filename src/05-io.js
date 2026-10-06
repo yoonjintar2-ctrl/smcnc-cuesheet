@@ -177,6 +177,8 @@ function readFileParts(buf, fileName) {
       if (k === 'ym') parts.ym = str(v);
       if (k === 'reachPeriod' && str(v)) (parts._rm = parts._rm || {}).period = str(v);
       if (k === 'reachTarget' && str(v)) (parts._rm = parts._rm || {}).target = str(v);
+      if ((k === 'start' || k === 'end') && num(v)) parts[k] = num(v);
+      if (k === 'adv' && str(v)) parts.adv = str(v);
     }
   }
   for (const name of wb.SheetNames) {
@@ -345,7 +347,7 @@ function cueOrderSheet(WS) {
   return { name: '케이블순서', aoa, widths: [14, 6, 70] };
 }
 function metaSheet(WS, which) {
-  return { name: '_meta', aoa: [['key', 'value'], ['app', '코웨이 TV 큐시트 ' + APP_VERSION], ['ym', WS.ym], ['savedAt', new Date().toISOString()], ['sheets', which.join(',')], ['reachPeriod', (WS.reachMeta || {}).period || ''], ['reachTarget', (WS.reachMeta || {}).target || '']], widths: [14, 40] };
+  return { name: '_meta', aoa: [['key', 'value'], ['app', '코웨이 TV 큐시트 ' + APP_VERSION], ['ym', WS.ym], ['savedAt', new Date().toISOString()], ['sheets', which.join(',')], ['reachPeriod', (WS.reachMeta || {}).period || ''], ['reachTarget', (WS.reachMeta || {}).target || ''], ['start', WS.start || ''], ['end', WS.end || ''], ['adv', WS.adv || '']], widths: [14, 40] };
 }
 function saveWorkspaceXlsx(WS, M, which, suffix) {
   const sheets = workspaceSheets(WS, M, which);

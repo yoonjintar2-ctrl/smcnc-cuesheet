@@ -82,6 +82,8 @@ function parseDateVal(v, ym) {
   if (m && +m[2] <= 12) return { y: 2000 + +m[1], m: +m[2], d: +m[3] };
   m = s.match(/^(\d{1,2})[/.\-월]\s*(\d{1,2})/);
   if (m) return { y: ym ? ym.y : null, m: +m[1], d: +m[2] };
+  m = s.match(/^(\d{2})(\d{2})$/);   // '0301' (월일 네 자리)
+  if (m && +m[1] >= 1 && +m[1] <= 12 && +m[2] >= 1 && +m[2] <= 31) return { y: ym ? ym.y : null, m: +m[1], d: +m[2] };
   m = s.match(/^(\d{1,2})일?$/);
   if (m && ym) return { y: ym.y, m: ym.m, d: +m[1] };
   return null;
@@ -175,4 +177,13 @@ function cleanProg(p) {
   s = s.replace(/★|☆/g, '');
   s = s.replace(/\s+/g, ' ').trim();
   return s;
+}
+
+// 비슷한 이름 추천: 공백·대소문자 무시, 포함 관계·글자 편집 거리로 점수 (14차: 채널 확인 팝업)
+// 포함 보너스는 길이 비율만큼 (짧은 이름 'tvN'이 'tvN Shw' 안에 들어 있다고 'tvN Show'보다 앞에 오지 않게)
+function nameSuggest(raw, list, n = 5) {
+  const N = x => String(x || '').replace(/\s+/g, '').toLowerCase(); const q = N(raw); if (!q) return [];
+  const lev = (a, b) => { const m = a.length, k = b.length; if (!m) return k; if (!k) return m; let prev = Array.from({ length: k + 1 }, (_, j) => j); for (let i = 1; i <= m; i++) { const cur = [i]; for (let j = 1; j <= k; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = cur; } return prev[k]; };
+  return list.map(x => { const t = N(x); let sc = lev(q, t) / Math.max(q.length, t.length); if (t.includes(q) || q.includes(t)) sc -= 0.5 * Math.min(q.length, t.length) / Math.max(q.length, t.length); if (t[0] === q[0]) sc -= 0.1; return { x, sc }; })
+    .filter(o => o.sc < 0.7).sort((a, b) => a.sc - b.sc).slice(0, n).map(o => o.x);
 }
