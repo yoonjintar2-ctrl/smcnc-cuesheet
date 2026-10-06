@@ -46,6 +46,7 @@ function ftipHide() { if (FTIP) FTIP.style.display = 'none'; }
 // ---------- 3D 도넛 : 각도 = 예산 비중, 위로 솟은 반투명 기둥 = 보너스 금액(끄면 기둥 없음) ----------
 // 조각에 grp(매체)가 있으면 묶음 사이를 살짝 띄우고 묶음째 바깥으로 조금 밀어냄 (지상파 / 케이블 규모가 한눈에)
 const DN_BASE = '#3a3a3c';
+const DN_MEDC = { 지상파: '#2c2c2e', 케이블: '#a1a1a6' };   // 17차: 매체 띠·상자 색 (지상파 진하게 · 케이블 옅게 — 매체 꼬리표와 같은 규칙)
 // 처음엔 12시부터 펼친 뒤 기둥이 솟고(intro), 품목·매체를 바꾸면 이전 모양에서 새 값으로 부드럽게 바뀜
 const DN = { last: null };
 function donut3D(host, slices, opts = {}) {
@@ -55,12 +56,14 @@ function donut3D(host, slices, opts = {}) {
     st = host._dn = { host, cv: host.querySelector('canvas'), tip: host.querySelector('.ctip'), hover: -1, sweep: 1, rise: 1, cur: null, stop: null };
     st.cv.addEventListener('mousemove', e => dnMove(st, e));
     st.cv.addEventListener('mouseleave', () => { st.hover = -1; st.tip.style.display = 'none'; dnDraw(st); });
+    // 17차: 숨은 탭에서 그려졌거나 창 크기가 바뀌면 보일 때 폭에 맞춰 다시 그림
+    if (typeof ResizeObserver !== 'undefined') {
+      st.ro = new ResizeObserver(() => { if (!host.isConnected) return st.ro.disconnect(); const w = host.clientWidth; if (w > 20 && Math.abs(w - st.W) > 2 && st.cur) { dnLayout(st); dnDraw(st); } });
+      st.ro.observe(host);
+    }
   }
-  const W = host.clientWidth || 460, H = opts.height || 340;
-  st.W = W; st.H = H; st.ctx = setupCanvas(st.cv, W, H);
-  const R = Math.min(W * (opts.rScale || 0.27), opts.rMax || 150);
-  st.g = { R, r: R * (opts.hole || 0.55), t: 0.5, H0: opts.h0 || 16, cx: W / 2, cy: H * (opts.cyR || 0.66) };
-  st.opts = opts;
+  st.opts = opts; dnLayout(st);
+  const H = st.H;
   const HMAX = Math.min(120, H * 0.36);
   const metric = s => Math.max(0, s.extra || 0);
   const mx = Math.max(1e-9, ...slices.map(metric));
@@ -78,6 +81,13 @@ function donut3D(host, slices, opts = {}) {
     });
   }
   if (!opts.own) DN.last = tgt;
+}
+function dnLayout(st) {
+  const host = st.host, opts = st.opts || {};
+  const W = host.clientWidth || 460, H = opts.autoH ? Math.max(220, host.clientHeight || 260) : (opts.height || 340);
+  st.W = W; st.H = H; st.ctx = setupCanvas(st.cv, W, H);
+  const R = Math.min(W * (opts.rScale || 0.27), opts.rMax || 150);
+  st.g = { R, r: R * (opts.hole || 0.55), t: 0.5, H0: opts.h0 || 16, cx: W / 2, cy: H * (opts.cyR || 0.66) };
 }
 function dnGeo(st) {
   const { R, r, t, cx, cy } = st.g; const O0 = { x: 0, y: 0 };
@@ -97,7 +107,7 @@ function dnDraw(st) {
   if (!(total > 0)) { st.S = []; ctx.fillStyle = '#929292'; ctx.font = '13px ' + ff; ctx.textAlign = 'center'; ctx.fillText('예산 데이터가 없어요', W / 2, H / 2); return; }
   // 매체 묶음 사이 틈(GAP) · 묶음 바깥 밀기(EX)
   const vg = [...new Set(st.cur.filter(s => s.value > 0).map(s => s.grp || ''))];
-  const nb = vg.length > 1 ? vg.length : 0, GAP = nb ? 0.075 : 0, EX = nb ? 6 : 0, span = Math.PI * 2 - nb * GAP;
+  const nb = vg.length > 1 ? vg.length : 0, GAP = nb ? 0.15 : 0, EX = nb ? 9 : 0, span = Math.PI * 2 - nb * GAP;   // 17차: 지상파·케이블 틈을 넓힘
   let a = -Math.PI / 2 + GAP / 2 * st.sweep, pg = null;
   const S = st.S = st.cur.map(s => { if (s.value > 0) { if (pg != null && (s.grp || '') !== pg) a += GAP * st.sweep; pg = s.grp || ''; } const a0 = a; a += (s.value / total) * span * st.sweep; return { ...s, a0, a1: a, mid: (a0 + a) / 2, o: { x: 0, y: 0 } }; });
   if (EX) for (const g of vg) { const ss = S.filter(s => (s.grp || '') === g && s.value > 0); const gm = (Math.min(...ss.map(s => s.a0)) + Math.max(...ss.map(s => s.a1))) / 2; const o = { x: Math.cos(gm) * EX, y: Math.sin(gm) * EX * t }; S.forEach(s => { if ((s.grp || '') === g) s.o = o; }); }
@@ -106,8 +116,18 @@ function dnDraw(st) {
   const lift = i => (i === hover ? 7 : 0);
   // 1) 바탕(예산) — 안쪽 벽(뒤) → 바깥 벽(앞) → 윗면
   for (const [i, s] of S.entries()) for (const [x0, x1] of G.clip(s.a0, s.a1, false)) { ctx.fillStyle = shade(s.color, -0.35); ctx.fill(G.wall(x0, x1, r, lift(i), H0 + lift(i), s.o)); }
+  // 17차: 매체 묶음 끝 단면 (넓힌 틈 사이로 보이는 면)
+  const grpEnds = nb ? vg.map(g => { const ss = S.filter(s => (s.grp || '') === g && s.value > 0); return ss.length ? { g, ss, a0: ss[0].a0, a1: ss[ss.length - 1].a1, o: ss[0].o } : null; }).filter(Boolean) : [];
+  for (const e of grpEnds) for (const [s, ang] of [[e.ss[0], e.a0], [e.ss[e.ss.length - 1], e.a1]]) { const i = S.indexOf(s); ctx.fillStyle = shade(s.color, -0.3); ctx.fill(G.poly([G.P(ang, r, lift(i), s.o), G.P(ang, R, lift(i), s.o), G.P(ang, R, H0 + lift(i), s.o), G.P(ang, r, H0 + lift(i), s.o)])); }
   for (const [i, s] of S.entries()) for (const [x0, x1] of G.clip(s.a0, s.a1, true)) { ctx.fillStyle = shade(s.color, -0.22); ctx.fill(G.wall(x0, x1, R, lift(i), H0 + lift(i), s.o)); }
   for (const [i, s] of S.entries()) { if (s.a1 - s.a0 < 0.002) continue; const p = G.top(s, H0 + lift(i)); ctx.fillStyle = i === hover ? shade(s.color, 0.08) : s.color; ctx.fill(p); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.2; ctx.stroke(p); }
+  // 17차: 매체 묶음(지상파/케이블)마다 바깥을 따라 굵은 띠 (지상파 = 진한 회색 · 케이블 = 옅은 회색, 위 모서리의 매체 상자와 같은 색)
+  if (nb && st.sweep > 0.98) for (const e of grpEnds) {
+    if (!e.g) continue; const n = Math.max(8, Math.ceil((e.a1 - e.a0) / 0.03));
+    ctx.strokeStyle = DN_MEDC[e.g] || '#8e8e93'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath();
+    for (let k = 0; k <= n; k++) { const ang = e.a0 + 0.02 + (e.a1 - e.a0 - 0.04) * k / n; const q = G.P(ang, R + 8, H0 * (1 - Math.sin(ang)) / 2, e.o); k ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }
+    ctx.stroke(); ctx.lineCap = 'butt';
+  }
   // 2) 보너스 — 반투명 기둥, 뒤에서 앞으로
   const order = S.map((s, i) => i).sort((x, y) => Math.sin(S[x].mid) - Math.sin(S[y].mid));
   for (const i of order) {
@@ -146,23 +166,19 @@ function dnDraw(st) {
     ctx.strokeText(l1, tx, ty1); ctx.fillStyle = '#262626'; ctx.fillText(l1, tx, ty1);
     ctx.font = '11px ' + ff; ctx.strokeText(l2, tx, ty2); ctx.fillStyle = '#616161'; ctx.fillText(l2, tx, ty2);
   }
-  // 15차: 매체 묶음(지상파/케이블)이 있으면 묶음 바깥을 따라 옅은 점선 호 + 매체 이름(방송사 레이블과 가장 먼 자리)
+  // 17차: 매체 상자 — 묶음이 있는 쪽 위 모서리에 '지상파 44% · 12.0억' (띠와 같은 색)
   if (nb && st.sweep > 0.98) {
-    const mids = S.filter(s => s.value / total >= 0.035).map(s => s.mid);
-    const angD = (x, y) => { let d = Math.abs(x - y) % (Math.PI * 2); return d > Math.PI ? Math.PI * 2 - d : d; };
-    for (const g of vg) {
-      const ss = S.filter(s => (s.grp || '') === g && s.value > 0); if (!ss.length || !g) continue;
-      const a0 = Math.min(...ss.map(s => s.a0)), a1 = Math.max(...ss.map(s => s.a1)), o = ss[0].o;
-      ctx.strokeStyle = 'rgba(120,120,126,.38)'; ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]);
-      ctx.beginPath(); G.arc(a0 + 0.03, a1 - 0.03, R + 9, 0, o).forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.stroke(); ctx.setLineDash([]);
-      if (a1 - a0 < 0.35) continue;
-      let best = null, bs = -1;
-      for (let t = a0 + 0.14; t <= a1 - 0.14; t += 0.02) { const sc = mids.length ? Math.min(...mids.map(m => angD(t, m))) : 1; if (sc > bs) { bs = sc; best = t; } }
-      if (best == null) best = (a0 + a1) / 2;
-      const cs = Math.cos(best), sn = Math.sin(best), p = G.P(best, R + 16, 0, o);
-      ctx.textAlign = cs > 0.25 ? 'left' : cs < -0.25 ? 'right' : 'center'; ctx.font = '600 11px ' + ff;
-      const ty = p[1] + (sn > 0 ? 10 : -3);
-      ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.strokeText(g, p[0], ty); ctx.fillStyle = '#8e8e93'; ctx.fillText(g, p[0], ty);
+    const used = { L: 0, R: 0 };
+    for (const e of grpEnds) {
+      if (!e.g) continue; const v = sum(e.ss, s => s.value), gm = (e.a0 + e.a1) / 2, side = Math.cos(gm) >= 0 ? 'R' : 'L';
+      const l1 = `${e.g} ${Math.round(v / total * 100)}%`, l2 = (st.opts && st.opts.valFmt) ? st.opts.valFmt(v) : fmt.eok(v, 1);
+      ctx.font = '700 12px ' + ff; const w1 = ctx.measureText(l1).width; ctx.font = '11px ' + ff; const w2 = ctx.measureText(l2).width;
+      const bw = Math.max(w1, w2) + 18, bh = 36, bx = side === 'R' ? W - bw - 4 : 4, by = 4 + used[side] * (bh + 6); used[side]++;
+      const dark = e.g === '지상파', col = DN_MEDC[e.g] || '#8e8e93';
+      ctx.fillStyle = dark ? col : '#ececee'; roundRect(ctx, bx, by, bw, bh, 7); ctx.fill();
+      if (!dark) { ctx.strokeStyle = col; ctx.lineWidth = 1.5; roundRect(ctx, bx + 0.75, by + 0.75, bw - 1.5, bh - 1.5, 6.5); ctx.stroke(); }
+      ctx.textAlign = 'left'; ctx.fillStyle = dark ? '#fff' : '#2c2c2e'; ctx.font = '700 12px ' + ff; ctx.fillText(l1, bx + 9, by + 15);
+      ctx.fillStyle = dark ? 'rgba(255,255,255,.78)' : '#58585c'; ctx.font = '11px ' + ff; ctx.fillText(l2, bx + 9, by + 29);
     }
   }
   // 가운데 글자 (지금 그려지는 값 기준)
@@ -234,25 +250,36 @@ function itemBars(host, rows, opts = {}) {
   // 데이터 레이블: ① 예산 = 진한 막대 안 끝 ② 보너스 = 옅은 막대 안 끝 ③ 예산+보너스(밸류) = 막대 바깥, 품목 색 글자
   //   막대가 짧아 글자가 안 들어가면 ①은 옅은 막대 시작 쪽으로, ②는 숨김(마우스를 올리면 툴팁에 다 나옴)
   const els = [...host.querySelectorAll('.ibr')].map(r => ({ trk: r.querySelector('.trk'), bb: r.querySelector('.bb'), bx: r.querySelector('.bx'), lbb: r.querySelector('.lbb'), lbx: r.querySelector('.lbx'), lbv: r.querySelector('.lbv') }));
+  // 17차: 숨은 탭에서 그려지면(폭 0) 글자 자리를 잴 수 없어 막대 시작에 몰려 겹쳤음 → 폭을 못 재면 글자를 숨겼다가, 보이거나 폭이 바뀌면 다시 잼
+  //       막대가 좁아 예산·보너스·합계 글자가 겹치면 보너스 글자는 표시하지 않음
   const set = (vals) => {
+    host._vals = vals;
     rows.forEach((x, i) => {
       const e = els[i], v = vals[i]; const wb = v.b / mx * 100, wx = Math.max(0, v.x) / mx * 100;
       e.bb.style.width = wb + '%'; e.bx.style.left = wb + '%'; e.bx.style.width = wx + '%';
       // 15차: 예산·보너스가 맞닿는 쪽은 각지게 → 한 막대처럼
       e.bb.style.borderRadius = wx > 0.05 ? '4px 0 0 4px' : '4px'; e.bx.style.borderRadius = wb > 0.05 ? '0 4px 4px 0' : '4px';
-      const TW = e.trk.clientWidth || 1, pb = TW * wb / 100, px = TW * wx / 100;
       e.lbb.textContent = v.b > 0 ? fmt.eok(v.b, 1) : '';
+      e.lbx.textContent = v.x > 0.5e6 ? '+' + fmt.eok(v.x, 1) : '';
+      e.lbv.textContent = v.b + v.x > 0 ? fmt.eok(v.b + Math.max(0, v.x), 1) : '';
+      const TW = e.trk.clientWidth;
+      if (!(TW > 40)) { for (const l of [e.lbb, e.lbx, e.lbv]) l.style.visibility = 'hidden'; return; }
+      const pb = TW * wb / 100, px = TW * wx / 100;
       const bw = e.lbb.offsetWidth; const inB = bw + 12 <= pb;
       e.lbb.classList.toggle('out', !inB); e.lbb.style.color = inB ? '#fff' : shade(x.color, -0.42);
-      e.lbb.style.left = inB ? (pb - bw - 7) + 'px' : (pb + 6) + 'px';
-      e.lbx.textContent = v.x > 0.5e6 ? '+' + fmt.eok(v.x, 1) : '';
+      e.lbb.style.left = inB ? (pb - bw - 7) + 'px' : (pb + 6) + 'px'; e.lbb.style.visibility = '';
       const xw = e.lbx.offsetWidth, used = inB ? pb : pb + 6 + bw;
       const okX = xw && pb + px - xw - 8 > used + 6;
       e.lbx.style.visibility = okX ? '' : 'hidden'; e.lbx.style.left = (pb + px - xw - 7) + 'px'; e.lbx.style.color = shade(x.color, isLight(x.color) ? -0.34 : -0.14);   // 다른 레이블처럼 품목 색 계열
-      e.lbv.textContent = v.b + v.x > 0 ? fmt.eok(v.b + Math.max(0, v.x), 1) : '';
-      e.lbv.style.left = Math.max(pb + px + 7, inB ? 0 : pb + 6 + bw + 8) + 'px';   // 예산 글자가 막대 밖이면 그 뒤에 (겹치지 않게)
+      e.lbv.style.left = Math.max(pb + px + 7, inB ? 0 : pb + 6 + bw + 8) + 'px'; e.lbv.style.visibility = '';   // 예산 글자가 막대 밖이면 그 뒤에 (겹치지 않게)
     });
+    host._tw = els.length ? els[0].trk.clientWidth : 0;
   };
+  if (host._ro) host._ro.disconnect();
+  if (typeof ResizeObserver !== 'undefined') {
+    host._ro = new ResizeObserver(() => { if (!host.isConnected) return host._ro.disconnect(); const w = els.length ? els[0].trk.clientWidth : 0; if (w !== host._tw && host._vals) set(host._vals); });
+    host._ro.observe(host);
+  }
   const target = rows.map(x => ({ b: x.budget, x: Math.max(0, x.bonus) }));
   const prev = !opts.intro && BARS.last ? rows.map(x => BARS.last.get(x.k) || { b: 0, x: 0 }) : null;
   if (host._stop) host._stop();
@@ -404,12 +431,15 @@ function cmRows(cells, unit) {
   }
   return [...m.values()].map(x => ({ ...x, sm: x.n ? x.mid / x.n : 0, sp: x.n ? x.pib / x.n : 0, sf: x.n ? x.fb / x.n : 0 }));
 }
-function cmStackHtml(cells, unit, sort) {
+function cmStackHtml(cells, unit, merge) {
   const rows = cmRows(cells, unit);
   if (!rows.length) return { html: '<div class="empty">송출 데이터가 없어요</div>', rows };
-  const key = { mid: r => r.sm, prem: r => r.sm + r.sp, n: r => r.n }[sort] || (r => r.sm);
+  // 17차: 정렬은 중CM 비중 순 (합쳐보기면 중CM+PIB 비중 순) · 합쳐보기 = 중CM·PIB를 한 막대로
+  const key = merge ? r => r.sm + r.sp : r => r.sm;
   const ordered = [];
-  const bar = (r, min) => `<div class="trk"><i class="mid" data-w="${(r.sm * 100).toFixed(2)}">${r.sm >= min ? Math.round(r.sm * 100) + '%' : ''}</i><i class="pib" data-w="${(r.sp * 100).toFixed(2)}">${r.sp >= min ? Math.round(r.sp * 100) + '%' : ''}</i><i class="fb">${r.sf >= min + 0.03 ? Math.round(r.sf * 100) + '%' : ''}</i></div>`;
+  const bar = (r, min) => merge
+    ? `<div class="trk"><i class="mid" data-w="${((r.sm + r.sp) * 100).toFixed(2)}">${r.sm + r.sp >= min ? Math.round((r.sm + r.sp) * 100) + '%' : ''}</i><i class="pib" data-w="0"></i><i class="fb">${r.sf >= min + 0.03 ? Math.round(r.sf * 100) + '%' : ''}</i></div>`
+    : `<div class="trk"><i class="mid" data-w="${(r.sm * 100).toFixed(2)}">${r.sm >= min ? Math.round(r.sm * 100) + '%' : ''}</i><i class="pib" data-w="${(r.sp * 100).toFixed(2)}">${r.sp >= min ? Math.round(r.sp * 100) + '%' : ''}</i><i class="fb">${r.sf >= min + 0.03 ? Math.round(r.sf * 100) + '%' : ''}</i></div>`;
   const media = ['지상파', '케이블'].filter(m => rows.some(r => r.media === m));
   // ① 매체 합계: 따로 상자에 크게 (세부 막대와 한눈에 구분)
   let tot = '';

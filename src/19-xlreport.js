@@ -1,6 +1,6 @@
 // ===== 19-xlreport.js : 보고용 엑셀 =====
 // 모든 시트 공통: 눈금선 없음 · A열 여백(너비 3) · 1·3행 높이 2(비움) · 2행 = 시트 제목 · 값은 가운데 정렬 · 엑셀 차트(웹 그래프를 엑셀 차트로)
-// 16차: 머리말 ⤓ 하나로 전체 파일만 — 운영 요약 · 예산표 · 소재 운영 · 큐시트 캘린더(M월) · 지상파 큐시트(M월) · 케이블 큐시트(M월) PP별 · 전체 큐시트(M월)
+// 16차: 머리말 ⤓ 하나로 전체 파일만 — 운영 요약 · 소재 운영 · 큐시트 캘린더(M월) · 지상파 큐시트(M월) · 케이블 큐시트(M월) PP별 · 전체 큐시트(M월)
 //       (+ 다시 넣기용 데이터는 숨김 시트 — 관리자만) · 줄바꿈이 필요한 칸은 줄 높이를 글자 길이로 계산해서 잘리지 않게
 const XRF = '맑은 고딕';
 const ZF = '#,##0;-#,##0;"-"';   // 0은 '-'로
@@ -53,6 +53,7 @@ function xrTextW(str, sz, bold) {
   return w * (sz || 10) / 10 * (bold ? 1.06 : 1);
 }
 function xrToSheet(b) {
+  xrFit(b);
   const ws = {};
   for (const [k, x] of b.cells) {
     const [r, c] = k.split(',').map(Number);
@@ -100,7 +101,7 @@ function xrChart(sp) {
   const dl = (show, pos) => show ? `<c:dLbls><c:numFmt formatCode="${xmlEsc(sp.type === 'doughnut' ? '0%' : fmt)}" sourceLinked="0"/><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>${xrTx(sp.lblSz || 800, sp.lblColor || (sp.type === 'doughnut' || sp.group === 'stacked' ? 'FFFFFF' : '616161'), true)}${pos ? `<c:dLblPos val="${pos}"/>` : ''}<c:showLegendKey val="0"/><c:showVal val="${sp.type === 'doughnut' ? 0 : 1}"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="${sp.type === 'doughnut' ? 1 : 0}"/><c:showBubbleSize val="0"/>${sp.type === 'doughnut' ? '<c:showLeaderLines val="0"/>' : ''}</c:dLbls>` : '<c:dLbls><c:delete val="1"/></c:dLbls>';
   // 칸 색이 진하면 흰 글자, 옅으면 진한 글자 (점마다)
   const inkOf = hex => { const c = hexToRgb('#' + xrHex(hex)) || [128, 128, 128]; return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255 > 0.6 ? '262626' : 'FFFFFF'; };
-  const ptLbls = (s, pos) => (sp.type === 'doughnut' || sp.group === 'stacked') && s.pts ? s.pts.map((col, k) => col ? `<c:dLbl><c:idx val="${k}"/><c:numFmt formatCode="${xmlEsc(sp.type === 'doughnut' ? '0%' : fmt)}" sourceLinked="0"/><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>${xrTx(sp.lblSz || 800, inkOf(col), true)}${pos ? `<c:dLblPos val="${pos}"/>` : ''}<c:showLegendKey val="0"/><c:showVal val="${sp.type === 'doughnut' ? 0 : 1}"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="${sp.type === 'doughnut' ? 1 : 0}"/><c:showBubbleSize val="0"/></c:dLbl>` : '').join('') : '';
+  const ptLbls = (s, pos) => (sp.type === 'doughnut' || sp.group === 'stacked') && s.pts ? s.pts.map((col, k) => s.hideBelow != null && !(s.vals[k] >= s.hideBelow) ? `<c:dLbl><c:idx val="${k}"/><c:delete val="1"/></c:dLbl>` : col ? `<c:dLbl><c:idx val="${k}"/><c:numFmt formatCode="${xmlEsc(sp.type === 'doughnut' ? '0%' : fmt)}" sourceLinked="0"/><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>${xrTx(sp.lblSz || 800, inkOf(col), true)}${pos ? `<c:dLblPos val="${pos}"/>` : ''}<c:showLegendKey val="0"/><c:showVal val="${sp.type === 'doughnut' ? 0 : 1}"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="${sp.type === 'doughnut' ? 1 : 0}"/><c:showBubbleSize val="0"/></c:dLbl>` : '').join('') : '';
   const dl2 = (s, show, pos) => show ? dl(true, pos).replace('<c:dLbls>', '<c:dLbls>' + ptLbls(s, pos)) : dl(false);
   const ser = (s, i) => `<c:ser><c:idx val="${i}"/><c:order val="${i}"/><c:tx><c:v>${xmlEsc(s.name)}</c:v></c:tx>${xrFill(s.color)}${sp.type === 'bar' ? '<c:invertIfNegative val="0"/>' : ''}${(s.pts || []).map((col, k) => col ? `<c:dPt><c:idx val="${k}"/>${sp.type === 'bar' ? '<c:invertIfNegative val="0"/><c:bubble3D val="0"/>' : '<c:bubble3D val="0"/>'}${xrFill(col)}</c:dPt>` : '').join('')}${dl2(s, sp.labels !== false && s.labels !== false, sp.type === 'bar' ? (sp.group === 'stacked' ? 'ctr' : 'outEnd') : null)}<c:cat>${xrStrLit(sp.cats)}</c:cat><c:val>${xrNumLit(s.vals, fmt)}</c:val></c:ser>`;
   let plot;
@@ -110,11 +111,14 @@ function xrChart(sp) {
     const ax = (id, cross, pos, cat) => cat
       ? `<c:catAx><c:axId val="${id}"/><c:scaling><c:orientation val="${sp.dir === 'bar' ? 'maxMin' : 'minMax'}"/></c:scaling><c:delete val="0"/><c:axPos val="${pos}"/><c:numFmt formatCode="General" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:spPr><a:ln w="9525"><a:solidFill><a:srgbClr val="D0D0D0"/></a:solidFill></a:ln></c:spPr>${xrTx(900, '616161', false)}<c:crossAx val="${cross}"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:noMultiLvlLbl val="0"/></c:catAx>`
       : `<c:valAx><c:axId val="${id}"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="${sp.hideVal ? 1 : 0}"/><c:axPos val="${pos}"/><c:majorGridlines><c:spPr><a:ln w="6350"><a:solidFill><a:srgbClr val="EFEFEF"/></a:solidFill></a:ln></c:spPr></c:majorGridlines><c:numFmt formatCode="${xmlEsc(fmt)}" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:spPr><a:ln><a:noFill/></a:ln></c:spPr>${xrTx(800, '929292', false)}<c:crossAx val="${cross}"/><c:crosses val="${sp.dir === 'bar' ? 'max' : 'autoZero'}"/><c:crossBetween val="between"/></c:valAx>`;
-    plot = `<c:barChart><c:barDir val="${sp.dir || 'col'}"/><c:grouping val="${sp.group || 'clustered'}"/><c:varyColors val="0"/>${sp.series.map(ser).join('')}<c:gapWidth val="${sp.gap || 60}"/>${sp.group === 'stacked' ? '<c:overlap val="100"/>' : '<c:overlap val="-10"/>'}<c:axId val="5001"/><c:axId val="5002"/></c:barChart>`
+    // 17차: totals = 쌓은 막대 위 합계 레이블 (선·점 없는 꺾은선 계열의 값 레이블을 막대 위에) — 범례에서는 뺌
+    const nS = sp.series.length;
+    const tot = sp.totals ? `<c:lineChart><c:grouping val="standard"/><c:varyColors val="0"/><c:ser><c:idx val="${nS}"/><c:order val="${nS}"/><c:tx><c:v>합계</c:v></c:tx><c:spPr><a:ln w="12700"><a:noFill/></a:ln></c:spPr><c:marker><c:symbol val="none"/></c:marker><c:dLbls><c:numFmt formatCode="${xmlEsc(fmt)}" sourceLinked="0"/><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>${xrTx(900, '262626', true)}<c:dLblPos val="t"/><c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbls><c:cat>${xrStrLit(sp.cats)}</c:cat><c:val>${xrNumLit(sp.totals, fmt)}</c:val><c:smooth val="0"/></c:ser><c:marker val="1"/><c:axId val="5001"/><c:axId val="5002"/></c:lineChart>` : '';
+    plot = `<c:barChart><c:barDir val="${sp.dir || 'col'}"/><c:grouping val="${sp.group || 'clustered'}"/><c:varyColors val="0"/>${sp.series.map(ser).join('')}<c:gapWidth val="${sp.gap || 60}"/>${sp.group === 'stacked' ? '<c:overlap val="100"/>' : '<c:overlap val="-10"/>'}<c:axId val="5001"/><c:axId val="5002"/></c:barChart>` + tot
       + ax(5001, 5002, sp.dir === 'bar' ? 'l' : 'b', true) + ax(5002, 5001, sp.dir === 'bar' ? 't' : 'l', false);
   }
   const title = sp.title ? `<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="1100" b="1"/></a:pPr><a:r><a:rPr lang="ko-KR" sz="1100" b="1"><a:solidFill><a:srgbClr val="262626"/></a:solidFill><a:latin typeface="${XRF}"/><a:ea typeface="${XRF}"/></a:rPr><a:t>${xmlEsc(sp.title)}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title><c:autoTitleDeleted val="0"/>` : '<c:autoTitleDeleted val="1"/>';
-  const legend = sp.legend ? `<c:legend><c:legendPos val="${sp.legend}"/><c:overlay val="0"/>${xrTx(900, '616161', false)}</c:legend>` : '';
+  const legend = sp.legend ? `<c:legend><c:legendPos val="${sp.legend}"/>${sp.totals && sp.type !== 'doughnut' ? `<c:legendEntry><c:idx val="${sp.series.length}"/><c:delete val="1"/></c:legendEntry>` : ''}<c:overlay val="0"/>${xrTx(900, '616161', false)}</c:legend>` : '';
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><c:roundedCorners val="0"/><c:chart>${title}<c:plotArea><c:layout/>${plot}<c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr></c:plotArea>${legend}<c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/></c:chart><c:spPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:ln w="9525"><a:solidFill><a:srgbClr val="E3E3E3"/></a:solidFill></a:ln></c:spPr>${xrTx(900, '616161', false)}</c:chartSpace>`;
 }
@@ -175,17 +179,33 @@ const xrMon = () => `(${M.ym.m}월)`;
 const xrSheetName = n => String(n).replace(/[:\\\/?*\[\]]/g, ' ').slice(0, 31);
 
 // ---------- 표 쓰기 ----------
-// 계층 표(구분·PP·채널 + 값 열): table1 / tableCnt 결과 → 시트. 묶음 머리글(groups)이 있으면 2줄 머리글
-function xrHierTable(b, r0, c0, T, numFmt) {
-  const nv = T.head.length - 3; let r = r0;
+// 계층 표(구분·PP·채널 + 값 열): table1 / tableCnt 결과 → 시트
+//   T.top(맨 위 제목 줄) · T.groups(묶음 줄) · T.head(값 머리글) — 있는 만큼 머리글 줄이 늘어남
+//   o.span = 값 하나가 차지하는 칸 수(가는 칸 여러 개를 병합) · o.groupStyle(g) / o.subStyle(h) = 머리글 칸 서식(품목 색 등) · o.subSz = 값 머리글 글자 크기
+function xrHierTable(b, r0, c0, T, numFmt, o = {}) {
+  const k = o.span || 1, nv = T.head.length - 3; let r = r0;
+  const vc = j => c0 + 3 + j * k;
   const gs = new Set(); if (T.groups) { let j = 0; for (const [, n] of T.groups) { gs.add(j); j += n; } }
-  const gEdge = (s, j) => gs.has(j) && j > 0 ? xs2(s, { border: { left: { style: 'medium', color: { rgb: '7F7F7F' } } } }) : s;
+  if (T.top) { let j = 0; for (const [, n] of T.top) { gs.add(j); j += n; } }
+  const edge = s => xs2(s, { border: { left: { style: 'medium', color: { rgb: '7F7F7F' } } } });
+  const gEdge = (s, j) => gs.has(j) && j > 0 ? edge(s) : s;
+  const putV = (rr, j, v, st, z, fill) => { b.put(rr, vc(j), v, gEdge(st, j), z); if (k > 1) b.merge(rr, vc(j), rr, vc(j) + k - 1, fill || st); };
+  const nh = (T.top ? 1 : 0) + (T.groups ? 1 : 0) + 1;
+  for (let q = 0; q < 3; q++) { b.put(r, c0 + q, T.head[q] === 'MPP' ? 'PP' : T.head[q], XRS.head); if (nh > 1) b.merge(r, c0 + q, r + nh - 1, c0 + q, XRS.head); }
+  const top = xs2(XRS.head, { fill: { fgColor: { rgb: '2C2C2E' } }, border: xrBd('5A5A5E') });
+  if (T.top) {
+    let j = 0;
+    for (const [t, n, down] of T.top) { b.put(r, vc(j), t, gEdge(top, j)); b.merge(r, vc(j), down && T.groups ? r + 1 : r, vc(j + n) - 1, top); j += n; }
+    b.heights[r] = 20; r++;
+  }
   if (T.groups) {
-    for (let k = 0; k < 3; k++) { b.put(r, c0 + k, T.head[k] === 'MPP' ? 'PP' : T.head[k], XRS.head); b.merge(r, c0 + k, r + 1, c0 + k, XRS.head); }
-    let j = 0; for (const [g, n] of T.groups) { b.put(r, c0 + 3 + j, g, gEdge(XRS.head, j)); b.merge(r, c0 + 3 + j, r, c0 + 3 + j + n - 1, XRS.head); j += n; }
-    T.head.slice(3).forEach((h, k) => b.put(r + 1, c0 + 3 + k, T.headSub && T.headSub[k] ? `${h}\n${T.headSub[k]}` : h, gEdge(XRS.head, k)));
-    b.heights[r + 1] = T.headSub ? 30 : 20; r += 2;
-  } else { T.head.forEach((h, k) => b.put(r, c0 + k, h === 'MPP' ? 'PP' : h, XRS.head)); b.heights[r] = 22; r += 1; }
+    let j = 0;
+    const wSpan = (c1, c2) => { let w = 0; for (let c = c1; c <= c2; c++) w += b.widths[c] || 12; return w; };
+    for (const [g, n] of T.groups) { if (g != null) { const st = xrHeadFit(o.groupStyle ? o.groupStyle(g) : XRS.head, g, wSpan(vc(j), vc(j + n) - 1)); b.put(r, vc(j), g, gEdge(st, j)); b.merge(r, vc(j), r, vc(j + n) - 1, st); } j += n; }
+    b.heights[r] = 20; r++;
+  }
+  T.head.slice(3).forEach((h, q) => { let st = o.subStyle ? o.subStyle(h, q) : XRS.head; if (o.subSz) st = xs2(st, { font: { sz: o.subSz } }); let w = 0; for (let c = vc(q); c < vc(q) + k; c++) w += b.widths[c] || 12; st = xrHeadFit(st, h, w); putV(r, q, h, st, undefined, st); });
+  b.heights[r] = 20; r++;
   const { s0, s1 } = spans(T.rows);
   T.rows.forEach((row, i) => {
     const st = row.t === 'sub' ? XRS.subt : row.t === 'tot' ? XRS.tot : XRS.cell;
@@ -194,10 +214,36 @@ function xrHierTable(b, r0, c0, T, numFmt) {
       if (s1[i]) { b.put(r, c0 + 1, row.lab[1], XRS.lab); if (s1[i] > 1) b.merge(r, c0 + 1, r + s1[i] - 1, c0 + 1, XRS.lab); }
       b.put(r, c0 + 2, row.lab[2], XRS.cell);
     } else { b.put(r, c0, row.lab[0], st); b.merge(r, c0, r, c0 + 2, st); }
-    row.vals.forEach((v, j) => b.put(r, c0 + 3 + j, v == null ? '-' : v, gEdge(st, j), numFmt(j, v)));
+    row.vals.forEach((v, j) => putV(r, j, v == null ? '-' : v, st, numFmt(j, v), st));
     r++;
   });
-  return { r, c1: c0 + 2 + nv };
+  return { r, c1: vc(nv) - 1 };
+}
+// 머리글이 칸 너비에 한 줄로 안 들어가면 글자를 조금 줄임(최소 8) — 엑셀에서 머리글이 두 줄로 꺾이지 않게
+function xrFitSz(text, width, base, min) {
+  base = base || 10; min = min || 8; const lines = String(text).split('\n');
+  for (let sz = base; sz >= min; sz -= 0.5) if (lines.every(l => xrTextW(l, sz, true) * 1.04 <= width - 1.2)) return sz;
+  return min;
+}
+const xrHeadFit = (st, text, width) => { const base = (st.font && st.font.sz) || 10, sz = xrFitSz(text, width, base); return sz === base ? st : xs2(st, { font: { sz } }); };
+// 품목 머리글 칸: 품목 색 바탕 · 흰 글자 (옅은 색은 어둡게)
+function xrItemHead(item) { const c = itemColor(item); return xs2(XRS.head, { fill: { fgColor: { rgb: hexRgb(isLight(c) ? shade(c, -0.32) : c) } }, border: xrBd('FFFFFF') }); }
+// 열 너비 → 화면 픽셀 (엑셀 기본: 7 × 너비 + 5)
+const xrPx = w => Math.round(w * 7 + 5);
+// c1 열부터 px 픽셀쯤 되는 곳의 열 번호 (차트 오른쪽 끝)
+function xrColTo(b, c1, px) { let c = c1, acc = 0; for (;;) { const w = xrPx(b.widths[c] || 12); if (acc + w / 2 > px) return c; acc += w; c++; } }
+// 줄바꿈 없이 들어가야 하는 이름 칸(채널·PP·품목 등): 가장 긴 글자에 맞춰 열 너비를 넓힘 (b.fit = 열 번호들)
+function xrFit(b) {
+  if (!b.fit || !b.fit.length) return;
+  const hm = new Set(); for (const m of b.merges) if (m.s.c !== m.e.c) for (let r = m.s.r; r <= m.e.r; r++) for (let c = m.s.c; c <= m.e.c; c++) hm.add(r + ',' + c);
+  for (const [k, x] of b.cells) {
+    const c = +k.split(',')[1]; if (!b.fit.includes(c) || hm.has(k) || typeof x.v !== 'string' || !x.v.trim()) continue;
+    const st = x.s || XRS.cell; if (!st.alignment || st.alignment.wrapText == null) continue;   // 제목·구역 이름(옆 칸으로 넘쳐 보이는 글자)은 빼고
+    const sz = (st.font && st.font.sz) || 10, bold = !!(st.font && st.font.bold);
+    const ind = st.alignment.indent ? st.alignment.indent * 1.3 : 0;
+    const need = Math.max(...x.v.split('\n').map(seg => xrTextW(seg, sz, bold))) * 1.04 + 1.6 + ind;
+    if (need > (b.widths[c] || 12)) b.widths[c] = Math.min(b.fitMax || 30, Math.ceil(need * 2) / 2);
+  }
 }
 
 // 주요 프로그램(자동 값): 칸 너비에 한 줄로 들어가게 단가 높은 순으로 넣고 끝에 ' 등' (화면과 같은 방식)
@@ -207,19 +253,24 @@ function xrFitProgs(list, avail) {
   for (let i = 1; i < list.length; i++) { const x = t + ', ' + list[i]; if (xrTextW(x + ' 등', 10) * 1.04 > avail - 1.2) break; t = x; }
   return t + ' 등';
 }
-// ---------- ① 운영 요약 (운영 요약 표 → 예산 및 보너스 표·차트 → 송출 횟수 표·차트) ----------
-function xrOpsSheet(only) {
+// ---------- ① 운영 요약 (운영 요약 표 → 예산 및 보너스 표·차트 → 송출 횟수 차트·표) ----------
+// 17차: E열부터 가는 칸(너비 6)을 깔고 표마다 필요한 만큼 병합 — 운영 요약 값 = 2칸 · 예산 표 값 = 3칸 · 송출 횟수 = 1칸
+//       (그래서 품목별 송출 횟수 표를 가로로 펼쳐도 위 표가 넓어지지 않음) · 차트는 한 화면(약 1,780px) 안에
+function xrOpsSheet() {
   const cells = M.cells, items = itemsIn(cells);
-  const b = XRSheet('운영 요약', xrTitle(only === 't1' ? '예산 및 보너스' : only === 'tc' ? '송출 횟수' : '운영 요약'));
-  b.widths = [3, 11, 15, 10].concat(Array(40).fill(14));
-  const Tc = tableCnt(cells, 'all');
+  const b = XRSheet('운영 요약', xrTitle('운영 요약'));
+  const U = 6;
+  b.widths = [3, 11, 15, 10].concat(Array(160).fill(U));
+  b.fit = [1, 2, 3];
   let r = 3;
-  const secRow = (t, note) => { b.put(r, 1, t, XRS.sec); if (note) { b.put(r, 4, note, XRS.note); } b.heights[r] = 26; r++; };
-  // 운영 요약 표 — 16차: 위 제목·설명 줄 없이 바로 표 · 같은 카테고리는 A열 병합(품목 요약 줄까지) · 품목은 B열 병합 · 요약 줄 이름 B~C · 합계 A~C · 주요 프로그램은 J~M(왼쪽 정렬)
-  if (!only || only === 'ops') {
-    const PL = 13, progW = [10, 11, 12, 13].reduce((a, c) => a + b.widths[c], 0) - 1.5;   // 14×4 = 56
+  const secRow = t => { b.put(r, 1, t, XRS.sec); b.heights[r] = 26; r++; };
+  // 운영 요약 표 — 같은 카테고리는 B열 병합(품목 요약 줄까지) · 품목은 C열 병합 · 요약 줄 이름 C~D · 합계 B~D · 값 2칸씩 · 주요 프로그램 10칸(왼쪽 정렬)
+  {
+    const VC = k => 4 + k * 2, PC = VC(6), PL = PC + 9, progW = 10 * U - 1.5;
     const T = opsTable();
-    T.head.forEach((h, k) => b.put(r, 1 + k, h, XRS.head)); b.merge(r, 10, r, PL, XRS.head); b.heights[r] = 22; r++;
+    for (let k = 0; k < 3; k++) b.put(r, 1 + k, T.head[k], XRS.head);
+    T.head.slice(3, 9).forEach((h, k) => { b.put(r, VC(k), h, XRS.head); b.merge(r, VC(k), r, VC(k) + 1, XRS.head); });
+    b.put(r, PC, T.head[9], XRS.head); b.merge(r, PC, r, PL, XRS.head); b.heights[r] = 22; r++;
     const left = st => xs2(st, { alignment: { horizontal: 'left', indent: 1 } });
     const NF = ['0.00', '#,##0', '0.0', '0.0', '0.0', '0.0'];
     for (const row of T.rows) {
@@ -230,56 +281,73 @@ function xrOpsSheet(only) {
         b.put(r, 3, row.vals[2], XRS.cell);
       } else if (row.t === 'sub') { b.put(r, 2, row.vals[1], st); b.merge(r, 2, r, 3, st); }
       else { b.put(r, 1, row.vals[0], st); b.merge(r, 1, r, 3, st); }
-      row.vals.slice(3, 9).forEach((v, k) => b.put(r, 4 + k, v == null || v === '' ? (row.t === 'tot' ? '' : '-') : v, st, NF[k]));
+      row.vals.slice(3, 9).forEach((v, k) => { b.put(r, VC(k), v == null || v === '' ? (row.t === 'tot' ? '' : '-') : v, st, NF[k]); b.merge(r, VC(k), r, VC(k) + 1, st); });
       let txt = '';
       if (row.t === 'row') { const x = row.src; txt = x.manual ? x.progs : xrFitProgs(x.autoList || [], progW); }
-      b.put(r, 10, txt, left(st)); b.merge(r, 10, r, PL, left(st));
+      b.put(r, PC, txt, left(st)); b.merge(r, PC, r, PL, left(st));
       r++;
     }
     r += 1;
   }
-  // 예산 및 보너스
-  if (!only || only === 't1') {
-    secRow('예산 및 보너스', '원, VAT 별도 · 보너스 = 예산+보너스(밸류) − 예산');
-    for (const [m, t] of [['budget', '예산 (원)'], ['bonus', '보너스 (원)'], ['value', '예산+보너스 (원)'], ['rate', '보너스율']]) {
-      b.put(r, 1, t, XRS.sec2); b.heights[r] = 20; r++;
-      const o = xrHierTable(b, r, 1, table1(cells, m), () => m === 'rate' ? '0%' : ZF); r = o.r + 1;
-    }
+  // 예산 및 보너스 — 17차: 표 위 '예산 (원)' 같은 줄 대신 표 머리글 맨 위에 무엇의 표인지(예산 · 보너스 · 예산+보너스 · 보너스율)
+  secRow('예산 및 보너스');
+  for (const [m, t] of [['budget', '예산'], ['bonus', '보너스'], ['value', '예산+보너스'], ['rate', '보너스율']]) {
+    const T1 = table1(cells, m); T1.top = [[t, T1.head.length - 3]];
+    const o = xrHierTable(b, r, 1, T1, () => m === 'rate' ? '0%' : ZF, { span: 3, subStyle: h => M.MS.items.has(h) ? xrItemHead(h) : XRS.head }); r = o.r + 1;
+  }
+  const rB = r, HB = Math.max(16, items.length * 2 + 6); r += HB + 2;
+  // 송출 횟수 — 차트(주차별 · 초수별 · 요일별 · 중CM) → 품목별 주차 송출수 표 → 품목별 소재 길이 · 주말 · CM 위치 표
+  secRow('송출 횟수');
+  const rC = r, HC = 17; r += HC + 1;
+  const W = M.weeks, nW = W.length;
+  const its = items.filter(k => cells.some(c => c.item === k && c.cnt > 0)), blocks = its.concat(['전체']);
+  const pick = (list, k) => k === '전체' ? list : list.filter(c => c.item === k);
+  const has = rr => sum(rr.cells, c => c.cnt) > 0;
+  const blockStyle = g => g === '전체' ? xs2(XRS.head, { fill: { fgColor: { rgb: '3A3A3C' } } }) : xrItemHead(g);
+  // ⓐ 주차별 송출수: [품목마다 1주~N주·계] + [전체]
+  const TA = { head: ['구분', 'MPP', '채널'].concat(blocks.flatMap(() => W.map(w => `${w.n}주`).concat(['계']))),
+    top: [['주차별 송출수 (품목별)', blocks.length * (nW + 1)]], groups: blocks.map(k => [k, nW + 1]),
+    rows: hierRows(cells, list => blocks.flatMap(k => { const l = pick(list, k); return W.map((_, i) => sum(l, c => c.wk[i])).concat([aggCells(l).cnt || 0]); }), has) };
+  r = xrHierTable(b, r, 1, TA, () => ZF, { groupStyle: blockStyle, subSz: 9 }).r + 1;
+  // ⓑ 소재 길이(품목마다 초수별 · 전체) + 주말 여부 + CM 위치 (전체)
+  const secs = [...new Set(cells.flatMap(c => Object.keys(c.sec).filter(k => c.sec[k] > 0).map(Number)))].filter(x => x > 0).sort((a, c) => a - c);
+  const nS = secs.length;
+  const TB = { head: ['구분', 'MPP', '채널'].concat(blocks.flatMap(() => secs.map(x => `${x}초`)), ['주중', '주말', '주말\n비중', '중CM', 'PIB', '전후\nCM 등', '중CM\n비중', '중CM\n+PIB\n비중']),
+    top: [['소재 길이 (품목별 초수)', blocks.length * nS], ['주말 여부', 3, true], ['CM 위치', 5, true]].filter(x => x[1] > 0),
+    groups: blocks.map(k => [k, nS]).concat([[null, 3], [null, 5]]).filter(x => x[1] > 0),
+    rows: hierRows(cells, list => {
+      const out = []; for (const k of blocks) { const a = aggCells(pick(list, k)); secs.forEach(x => out.push(a.sec[x] || 0)); }
+      const a = aggCells(list), n = a.cnt || 0, mid = a.cmc.중CM || 0, pib = a.cmc.PIB || 0;
+      return out.concat([a.wd, a.we, n ? a.we / n : null, mid, pib, n - mid - pib, n ? mid / n : null, n ? (mid + pib) / n : null]);
+    }, has) };
+  const pctB = new Set([blocks.length * nS + 2, blocks.length * nS + 6, blocks.length * nS + 7]);
+  r = xrHierTable(b, r, 1, TB, j => pctB.has(j) ? '0%' : ZF, { groupStyle: blockStyle, subSz: 9 }).r + 1;
+  // 차트 — 열 너비가 정해진 뒤(이름 칸 맞춤) 화면 픽셀로 자리 잡기
+  xrFit(b);
+  {
     const iv = items.map(k => { const cc = cells.filter(c => c.item === k); return { k, b: sum(cc, c => c.budget) / 1e8, x: sum(cc, c => c.bonus) / 1e8 }; });
-    const H = Math.max(16, items.length * 2 + 6);
+    const mxv = Math.max(0, ...iv.map(x => x.b + Math.max(0, x.x)));
+    const c1 = xrColTo(b, 1, 820), c2 = xrColTo(b, c1, 480);
     b.chart(xrChart({ type: 'bar', dir: 'bar', group: 'stacked', title: '품목별 예산·보너스 (억원)', cats: iv.map(x => x.k), fmt: '0.0', legend: 'b', gap: 45,
-      series: [{ name: '예산', color: '#575757', vals: iv.map(x => x.b), pts: iv.map(x => itemColor(x.k)) }, { name: '보너스', color: '#d2d2d2', vals: iv.map(x => x.x), pts: iv.map(x => itemLight(x.k)), labels: true }], lblColor: '262626' }), 1, r, 8, r + H);
+      // 17차: 막대가 너무 짧으면(가장 긴 막대의 5% 미만) 그 레이블은 숨김 — 글자가 겹치지 않게
+      series: [{ name: '예산', color: '#575757', vals: iv.map(x => x.b), pts: iv.map(x => itemColor(x.k)), hideBelow: mxv * 0.05 }, { name: '보너스', color: '#d2d2d2', vals: iv.map(x => x.x), pts: iv.map(x => itemLight(x.k)), labels: true, hideBelow: mxv * 0.05 }], lblColor: '262626' }), 1, rB, c1, rB + HB);
     const steps = [0, 0.18, 0.34, 0.48, 0.6, 0.7, 0.78];
     const gv = SUM_GROUPS.map((g, i) => ({ g, v: sum(cells.filter(c => c.group === g), c => c.budget), col: i === 0 ? '#575757' : tint('#575757', steps[i] || 0.8) })).filter(x => x.v > 0);
-    b.chart(xrChart({ type: 'doughnut', title: '방송사별 예산 비중', cats: gv.map(x => x.g), legend: 'r', series: [{ name: '예산', color: '#575757', vals: gv.map(x => x.v), pts: gv.map(x => x.col) }] }), 9, r, 15, r + H);
-    r += H + 2;
+    b.chart(xrChart({ type: 'doughnut', title: '방송사별 예산 비중', cats: gv.map(x => x.g), legend: 'r', series: [{ name: '예산', color: '#575757', vals: gv.map(x => x.v), pts: gv.map(x => x.col) }] }), c1, rB, c2, rB + HB);
   }
-  // 송출 횟수
-  if (!only || only === 'tc') {
-    secRow('송출 횟수', '주차별 송출수 · 소재 길이 · 주말 여부 · CM 위치별 비중');
-    const W = M.weeks, H = 17;
-    // 16차: 주차별 송출 그래프를 표 위로 (화면과 같은 순서)
-    b.chart(xrChart({ type: 'bar', dir: 'col', group: 'stacked', title: '주차별 송출 (품목별)', cats: W.map(w => `${w.n}주 (${w.range})`), legend: 'b', gap: 55, labels: false,
-      series: items.map(k => ({ name: k, color: itemColor(k), vals: W.map((_, i) => sum(cells.filter(c => c.item === k), c => c.wk[i])) })) }), 1, r, 9, r + H);
-    const A = aggCells(cells); const secs = Object.keys(A.sec).map(Number).filter(x => x > 0 && A.sec[x] > 0).sort((a, b2) => a - b2);
+  {
+    const A = aggCells(cells); const sx = Object.keys(A.sec).map(Number).filter(x => x > 0 && A.sec[x] > 0).sort((a, c) => a - c);
     const mid = A.cmc.중CM || 0, pib = A.cmc.PIB || 0;
-    b.chart(xrChart({ type: 'doughnut', title: '초수별 노출수', cats: secs.map(x => x + '초'), legend: 'b', series: [{ name: '초수', color: '#13958a', vals: secs.map(x => A.sec[x]), pts: secs.map(secColor) }] }), 9, r, 13, r + H);
-    b.chart(xrChart({ type: 'doughnut', title: '요일별 노출수', cats: ['주중', '주말'], legend: 'b', series: [{ name: '요일', color: MIXC.wd, vals: [A.wd, A.we], pts: [MIXC.wd, MIXC.we] }] }), 13, r, 17, r + H);
-    b.chart(xrChart({ type: 'doughnut', title: `중CM 비중 (${fmt.int(A.cnt)}회)`, cats: ['중CM', 'PIB', '전후CM 등'], legend: 'b', series: [{ name: '중CM', color: CMC.mid, vals: [mid, pib, Math.max(0, A.cnt - mid - pib)], pts: [CMC.mid, CMC.pib, CMC.fb] }], lblColor: '262626' }), 17, r, 21, r + H);
-    r += H + 1;
-    const o = xrHierTable(b, r, 1, Tc, j => Tc.pctCols.includes(j) ? '0%' : ZF); r = o.r + 1;
+    const wv = W.map((_, i) => sum(cells, c => c.wk[i]));
+    const c1 = xrColTo(b, 1, 760), c2 = xrColTo(b, c1, 330), c3 = xrColTo(b, c2, 330), c4 = xrColTo(b, c3, 330);
+    // 17차: 주차별 막대 위에 합계 레이블
+    b.chart(xrChart({ type: 'bar', dir: 'col', group: 'stacked', title: '주차별 송출 (품목별)', cats: W.map(w => `${w.n}주 (${w.range})`), legend: 'b', gap: 55, labels: false, totals: wv,
+      series: items.map(k => ({ name: k, color: itemColor(k), vals: W.map((_, i) => sum(cells.filter(c => c.item === k), c => c.wk[i])) })) }), 1, rC, c1, rC + HC);
+    b.chart(xrChart({ type: 'doughnut', title: '초수별 노출수', cats: sx.map(x => x + '초'), legend: 'b', series: [{ name: '초수', color: '#13958a', vals: sx.map(x => A.sec[x]), pts: sx.map(secColor) }] }), c1, rC, c2, rC + HC);
+    b.chart(xrChart({ type: 'doughnut', title: '요일별 노출수', cats: ['주중', '주말'], legend: 'b', series: [{ name: '요일', color: MIXC.wd, vals: [A.wd, A.we], pts: [MIXC.wd, MIXC.we] }] }), c2, rC, c3, rC + HC);
+    b.chart(xrChart({ type: 'doughnut', title: `중CM 비중 (${fmt.int(A.cnt)}회)`, cats: ['중CM', 'PIB', '전후CM 등'], legend: 'b', series: [{ name: '중CM', color: CMC.mid, vals: [mid, pib, Math.max(0, A.cnt - mid - pib)], pts: [CMC.mid, CMC.pib, CMC.fb] }], lblColor: '262626' }), c3, rC, c4, rC + HC);
   }
   b.maxR = Math.max(b.maxR, r);
-  return b;
-}
-
-// ---------- ② 예산표 ----------
-function xrBudgetSheet() {
-  const b = XRSheet('예산표', xrTitle('예산'));
-  const T = table1(M.cells.filter(c => c.budget > 0), 'budget');
-  b.widths = [3, 10, 15, 15].concat(T.items.map(() => 14), [15]);
-  b.put(3, 1, '채널 × 품목 예산 (원, VAT 별도)', XRS.note); b.heights[3] = 22;
-  xrHierTable(b, 4, 1, T, () => ZF);
   return b;
 }
 
@@ -296,11 +364,12 @@ function xrGroundSheet() {
   const b = XRSheet(xrSheetName(`지상파 큐시트${xrMon()}`), xrTitle('지상파 큐시트'));
   const W = M.weeks, sp = M.spots.filter(s => s.src === '지상파');
   const chs = [...new Set(sp.map(s => s.ch))].sort((a, c) => chOrd(a) - chOrd(c));
-  b.widths = [3, 8, 8, 36, 5, 7, 7, 5.5, 5.5, 12.5, 5.5, 12.5, 10, 7, 11, 13].concat(W.map(() => 22), [8, 8, 12]);
+  b.widths = [3, 8, 8, 44, 5, 7, 7, 5.5, 5.5, 12.5, 5.5, 12.5, 10, 7, 12.5, 13].concat(W.map(() => 22), [8, 8, 12]);
+  b.fit = [1, 2, 4, 5, 6, 7, 12, 13, 15].concat(W.map((_, k) => 16 + k)); b.fitMax = 30;   // 17차: 방송사 · 구분 · 요일 · 시작/종료 · 시급 · CM 순서 · 집행일자 · 주차 칸 글자는 한 줄로
   let r = 3;
   const G = M.gSettle;
   if (G && G.rows.length) {
-    b.put(r, 1, '지상파 정산', XRS.sec); b.put(r, 4, '연계 = (KBS+MBC 유상 금액)×20% + SBS 예산×10% · CM지정비 = 단가×지정율 (KBS 유상은 ÷0.85)', XRS.note); b.heights[r] = 26; r++;
+    b.put(r, 1, '지상파 정산', XRS.sec); b.heights[r] = 26; r++;
     const hdr = ['구분'].concat(G.rows.map(x => x.ch), ['3사 계']);
     const vc = k => 4 + k * 3;
     hdr.forEach((h, k) => { if (k === 0) { b.put(r, 1, h, XRS.head); b.merge(r, 1, r, 3, XRS.head); } else { b.put(r, vc(k - 1), h, XRS.head); b.merge(r, vc(k - 1), r, vc(k - 1) + 2, XRS.head); } }); r++;
@@ -313,18 +382,18 @@ function xrGroundSheet() {
     line('예비비 (예산 − 유상 − CM지정비 − 연계)', G.rows.map(() => '').concat([Math.round(G.reserve)]), XRS.subt);
     r++;
   }
-  b.put(r, 1, '큐시트', XRS.sec); b.put(r, 4, '같은 프로그램·시간·단가는 한 줄로 묶고 주차 칸에 [품목] 소재 초수 · 분홍 = 중CM·본방', XRS.note); b.heights[r] = 26; r++;
+  b.put(r, 1, '큐시트', XRS.sec); b.heights[r] = 26; r++;
   // 2줄 머리글
   const one = ['방송사', '구분', '프로그램', '요일', '시작', '종료', '시급', '초수', '단가', '횟수', '금액'];
   one.forEach((h, k) => { b.put(r, 1 + k, h, XRS.head); b.merge(r, 1 + k, r + 1, 1 + k, XRS.head); });
   b.put(r, 12, 'CM지정', XRS.head); b.merge(r, 12, r, 14, XRS.head);
-  ['CM 순서', '지정율', '지정금액\n(원)'].forEach((h, k) => b.put(r + 1, 12 + k, h, XRS.head));
+  ['CM 순서', '지정율', '지정금액'].forEach((h, k) => b.put(r + 1, 12 + k, h, XRS.head));
   b.put(r, 15, '집행일자', XRS.head); b.merge(r, 15, r + 1, 15, XRS.head);
   W.forEach((w, k) => { b.put(r, 16 + k, `${w.label}차\n${w.range}`, XRS.head); b.merge(r, 16 + k, r + 1, 16 + k, XRS.head); });
   const cA = 16 + W.length;
   b.put(r, cA, 'A.R(%)', XRS.head); b.merge(r, cA, r + 1, cA, XRS.head);
   b.put(r, cA + 1, '예상 효과', XRS.head); b.merge(r, cA + 1, r, cA + 2, XRS.head);
-  b.put(r + 1, cA + 1, 'Eq GRP', XRS.head); b.put(r + 1, cA + 2, 'CPRP (원)', XRS.head);
+  b.put(r + 1, cA + 1, 'Eq GRP', XRS.head); b.put(r + 1, cA + 2, 'CPRP', XRS.head);
   b.heights[r] = 20; b.heights[r + 1] = 32; r += 2;
   const all = { n: 0, paid: 0, desig: 0, eq: 0, wk: W.map(() => 0) };
   for (const ch of chs) {
@@ -370,18 +439,18 @@ function xrCableSheet(chs, pp) {
   const b = XRSheet(xrSheetName(`케이블 큐시트${xrMon()}${pp ? ' ' + pp : ''}`), xrTitle(`케이블 큐시트${pp ? ' · ' + pp : ''}`));
   const W = M.weeks, sp = M.spots.filter(s => s.src === '케이블');
   // 열: B 본방 · C 프로그램명 · D 요일 · E 시작 · F 종료 · G 시급 · H 횟수 · I~ 주차
-  b.widths = [3, 6, 38, 6, 7, 7, 6, 6].concat(W.map(() => 22));
+  b.widths = [3, 6, 38, 6, 7, 7, 6, 6].concat(W.map(() => 24));
   const wc = 8, last = 7 + W.length;
   let r = 3;
-  b.put(r, 1, '채널마다 품목별 예산 → 큐시트 · 본방·생방 → 15초 평단가 높은 순 · 분홍 = 본방·생방 · 주차 칸 = [품목] 초수 CM위치', XRS.note); b.heights[r] = 22; r++;
+  b.fit = [1, 3, 4, 5, 6].concat(W.map((_, k) => wc + k)); b.fitMax = 30;   // 17차: 본방 · 요일 · 시작/종료 · 시급 · 주차 칸 글자는 한 줄로
   if (!chs.length) { b.put(r, 1, '케이블 송출이 없어요', XRS.note); return b; }
   for (const ch of chs) {
     const list = sp.filter(s => s.ch === ch);
     const cc = M.cells.filter(c => c.ch === ch && (c.budget || c.cnt));
-    r++;
+    if (ch !== chs[0]) r++;
     b.put(r, 1, `${ch}  ·  ${fmt.int(sum(list, s => s.cnt))}회 · 예산 ${fmt.eok(sum(cc, c => c.budget), 2)} · 보너스 ${fmt.eok(sum(cc, c => c.bonus), 2)}`, XRS.sec); b.heights[r] = 26; r++;
     // 예산표: [B~C 품목] [D~F 예산] [G~H 횟수] [I 보너스] [J 보너스율] [K 집행 기간] [L~ 소재]
-    const cols = [[1, 2, '품목'], [3, 5, '예산 (원)'], [6, 7, '횟수'], [wc, wc, '보너스 (원)'], [wc + 1, wc + 1, '보너스율'], [wc + 2, wc + 2, '집행 기간'], [wc + 3, Math.max(wc + 3, last), '소재']];
+    const cols = [[1, 2, '품목'], [3, 5, '예산'], [6, 7, '횟수'], [wc, wc, '보너스'], [wc + 1, wc + 1, '보너스율'], [wc + 2, wc + 2, '집행 기간'], [wc + 3, Math.max(wc + 3, last), '소재']];
     const put = (c1, c2, v, st, z) => { b.put(r, c1, v, st, z); if (c2 > c1) b.merge(r, c1, r, c2, st); };
     cols.forEach(([c1, c2, h]) => put(c1, c2, h, XRS.head)); b.heights[r] = 22; r++;
     for (const c of cc) {
@@ -415,7 +484,7 @@ function xrCreSheet() {
   const b = XRSheet('소재 운영', xrTitle('소재 운영'));
   b.widths = [3, 14, 16, 7, 22, 10, 10, 12, 16, 30];
   let r = 3;
-  b.put(r, 1, '품목별 운영 소재 · 금액/횟수 비중 · 지상파 실제 = 지상파 송출 중 그 소재로 나간 비율', XRS.note); b.heights[r] = 22; r++;
+  b.fit = [1, 2, 3, 4, 5, 6, 7, 8];   // 17차: 품목 · 운영기간 · 초수 · 소재 · 비중 · 심의번호는 한 줄로
   ['품목', '운영기간', '초수', '소재', '금액 비중', '횟수 비중', '지상파 실제', '심의번호', '비고'].forEach((h, k) => b.put(r, 1 + k, h, XRS.head)); b.heights[r] = 22; r++;
   const cr = M.creatives; const by = groupBy(cr, c => c.item || c.itemRaw);
   const pool = groupBy(M.spots.filter(s => s.src === '지상파' && s.item), s => s.item);
@@ -446,7 +515,6 @@ function xrCalSheet(weeks) {
   const base = { font: { name: XRF, sz: 9, color: { rgb: '262626' } }, alignment: { horizontal: 'center', vertical: 'center', wrapText: false } };
   const box = (j, lastRow, fill) => { const o = JSON.parse(JSON.stringify(base)); o.border = { left: j === 0 ? bdS : none, right: j === NC - 1 ? bdS : none, top: none, bottom: lastRow ? bdS : none }; if (fill) o.fill = { fgColor: { rgb: fill } }; return o; };
   let r = 3;
-  b.put(r, 1, '날짜 칸마다 그날 나간 광고를 시작 시간 순으로 — 시간 · 채널 · 품목 · 프로그램 · CM 위치 (분홍 = 중CM)', XRS.note); b.heights[r] = 22; r++;
   CAL_WD.forEach((w, i) => { const c = 1 + i * NC; const st = xs2(XRS.head, { fill: { fgColor: { rgb: i >= 5 ? '5A2B3A' : '2C2C2E' } } }); b.put(r, c, w, st); b.merge(r, c, r, c + NC - 1, st); }); b.heights[r] = 22; r++;
   for (const wk of weeks) {
     wk.forEach((c, i) => {
@@ -482,7 +550,7 @@ function xrCueAllSheet() {
   const cols = [['media', '구분', 7], ['ch', '방송사', 14], ['item', '품목', 13], ['prog', '편성명', 44], ['date', '날짜', 11], ['dow', '요일', 5], ['start', '시작시간', 8], ['end', '종료시간', 8], ['sec', '초수', 5], ['cre', '소재', 16], ['cm', 'CM 위치', 12]];
   b.widths = [3, 6].concat(cols.map(c => c[2]));
   let r = 3;
-  b.put(r, 1, `${fmt.int(rows.length)}회 · 지상파·케이블을 섞어 날짜 → 시작 시간 순 · 1행 = 1회 송출`, XRS.note); b.heights[r] = 22; r++;
+  b.fit = [3, 4, 7, 8, 9, 10, 11, 12]; b.fitMax = 40;   // 17차: 방송사 · 품목 · 소재 · CM 위치 한 줄로
   const h0 = r;
   ['No'].concat(cols.map(c => c[1])).forEach((h, k) => b.put(r, 1 + k, h, XRS.head)); b.heights[r] = 22; r++;
   const serial = d => (Date.UTC(M.ym.y, M.ym.m - 1, d) - Date.UTC(1899, 11, 30)) / 86400000;
@@ -516,8 +584,8 @@ function xrDataSheets(which) {
   sheets.push(metaSheet(WS, which));
   return sheets;
 }
-// 머리말 ⤓ '큐시트 엑셀 받기' (16차: 하나뿐) — 보고용 시트 + 숨김 데이터(관리자만, 이 파일을 ＋로 그대로 다시 넣을 수 있음)
-function xrReportBuilders() { return [xrOpsSheet(), xrBudgetSheet(), xrCreSheet(), xrCalSheet(), xrGroundSheet()].concat(xrCableSheets(), [xrCueAllSheet()]); }
+// 머리말 ⤓ '큐시트 엑셀 받기' (16차: 하나뿐 · 17차: 예산표 시트 뺌 — 운영 요약의 예산 표와 같음) — 보고용 시트 + 숨김 데이터(관리자만, 이 파일을 ＋로 그대로 다시 넣을 수 있음)
+function xrReportBuilders() { return [xrOpsSheet(), xrCreSheet(), xrCalSheet(), xrGroundSheet()].concat(xrCableSheets(), [xrCueAllSheet()]); }
 function xrFullBytes(noData) { return xrBookBytes(xrReportBuilders(), noData ? null : xrDataSheets(ALL_SHEETS)); }
 function downloadFullReport() {
   try { saveBlob(new Blob([xrFullBytes(readOnly())], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), xrFileName()); App.toast('큐시트 엑셀을 내려받았어요'); }

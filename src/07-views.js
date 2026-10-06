@@ -1,5 +1,5 @@
 // ===== 07-views.js : 결과 화면 (요약 · 지상파/케이블 큐시트) =====
-const UI = { cmUnit: 'pp', cmSort: 'mid', tab: 'summary', media: 'all', dnMedia: 'all', metric: 'budget', tcItem: 'all', cabPP: null, cabCh: 'all', gCh: 'all', issueSev: 'all', reachG: '지상파케이블', master: '품목', donutItem: 'all', donutBonus: true, dailyFocus: null, mxSec: 'all', mxDow: 'all' };
+const UI = { cmUnit: 'pp', cmMerge: false, tab: 'summary', media: 'all', dnMedia: 'all', metric: 'budget', tcItem: 'all', cabPP: null, cabCh: 'all', gCh: 'all', issueSev: 'all', reachG: '지상파케이블', master: '품목', donutItem: 'all', donutBonus: true, dailyFocus: null, mxSec: 'all', mxDow: 'all' };
 const CHARTS = {};
 function killCharts(...keys) { for (const k of (keys.length ? keys : Object.keys(CHARTS))) { try { if (CHARTS[k] && CHARTS[k].destroy) CHARTS[k].destroy(); } catch (e) { } delete CHARTS[k]; } }
 const CHART_INK = { muted: '#929292', grid: '#e9e9e9', ink2: '#616161' };
@@ -271,8 +271,8 @@ function renderSummary(root) {
     <section class="card mixcard"><div class="hd"><h3>요일별 노출수</h3><div class="spacer"></div>${segHtml('mxdow', [['all', '전체'], ['지상파', '지상파'], ['케이블', '케이블']], UI.mxDow || 'all')}</div><div class="bd"><div class="mxd" id="sq-dow"></div></div></section>
     <section class="card mixcard"><div class="hd"><h3>중CM 비중</h3><div class="spacer"></div>${segHtml('mxcm', [['all', '전체'], ['지상파', '지상파'], ['케이블', '케이블']], UI.mxCm || 'all')}</div><div class="bd"><div class="mxd" id="sq-cm"></div></div></section>
     <section class="card cmcard"><div class="hd"><h3>중CM · PIB 비중</h3><span class="sub">송출 횟수 기준</span></div><div class="bd">
-      <div class="cmctl"><div class="cmlg"><span><span class="sw" style="background:${CMC.mid}"></span>중CM</span><span><span class="sw" style="background:${CMC.pib}"></span>PIB</span><span><span class="sw" style="background:${CMC.fb}"></span>전후CM 등</span></div><div class="spacer"></div>
-        ${segHtml('cmunit', [['pp', 'PP별'], ['ch', '채널별']], UI.cmUnit)} ${segHtml('cmsort', [['mid', '중CM 순'], ['prem', '중CM+PIB 순'], ['n', '송출 순']], UI.cmSort)}</div>
+      <div class="cmctl"><div class="cmlg" id="cmlg"></div><div class="spacer"></div>
+        ${segHtml('cmunit', [['pp', 'PP별'], ['ch', '채널별']], UI.cmUnit)} <label class="tgl" title="중CM과 PIB를 한 막대로 합쳐 보기"><input type="checkbox" id="cm-merge" ${UI.cmMerge ? 'checked' : ''}><span class="tk"></span>중CM+PIB 합쳐보기</label></div>
       <div id="cmshare"></div></div></section>
   </div>
   <section class="card" style="margin-bottom:16px"><div class="hd"><h3>주차별 송출 수</h3><span class="sub" id="dailysub"></span><div class="spacer"></div><span class="dcount tnum" id="dcount"></span>
@@ -311,10 +311,15 @@ function renderSummary(root) {
     const steps = [0, 0.18, 0.34, 0.48, 0.6, 0.7, 0.78];
     const gl = SUM_GROUPS.concat([...new Set(dCells.map(c => c.group))].filter(g => g && !SUM_GROUPS.includes(g)));
     const sl = [];
+    // 17차: 지상파·케이블이 함께 있으면 지상파 조각은 진한 쪽, 케이블 조각은 옅은 쪽 색으로 (매체가 한눈에 갈리게)
+    const two = ['지상파', '케이블'].every(md => dCells.some(c => c.media === md && c.budget > 0));
+    const gSteps = { 지상파: [0, 0.14, 0.27, 0.38], 케이블: [0.48, 0.58, 0.66, 0.73, 0.79, 0.84] }, gk = { 지상파: 0, 케이블: 0 };
     for (const md of ['지상파', '케이블']) for (const gn of gl) {
       if (!dCells.some(c => c.media === md && c.group === gn)) continue;
       const x = cs.filter(c => c.media === md && c.group === gn); const b = sum(x, c => c.budget), bo = sum(x, c => c.bonus);
-      const gi = SUM_GROUPS.indexOf(gn); sl.push({ label: gn, grp: md, value: b, extra: bo, rate: b ? bo / b : 0, color: gi === 0 ? base : tint(base, steps[gi < 0 ? 6 : gi] || 0.8) });
+      const gi = SUM_GROUPS.indexOf(gn), k = gk[md]++;
+      const tv = two ? (gSteps[md][k] != null ? gSteps[md][k] : (md === '지상파' ? 0.42 : 0.88)) : (gi === 0 ? 0 : steps[gi < 0 ? 6 : gi] || 0.8);
+      sl.push({ label: gn, grp: md, value: b, extra: bo, rate: b ? bo / b : 0, color: tv ? tint(base, tv) : base });
     }
     const shown = sl.filter(x => x.value > 0);
     const B = sum(sl, x => x.value), X = sum(sl, x => x.extra);
@@ -336,10 +341,14 @@ function renderSummary(root) {
     onTick: txt => { dcount.textContent = txt; } });
   root.querySelector('#dailysub').textContent = '왼쪽 주차를 누르면 그 주 강조 · 오른쪽 = 일별';
   // 중CM 비중 (PP별 미니 도넛)
-  const drawCm = () => { const box = root.querySelector('#cmshare'); const o = cmStackHtml(cells, UI.cmUnit, UI.cmSort); box.innerHTML = o.html; cmStackBind(box, o.rows, UI.cmUnit); };
+  // 17차: 정렬 단추 대신 '중CM+PIB 합쳐보기' (켜면 중CM·PIB를 한 막대로, 합친 비중 순)
+  const drawCm = () => {
+    const box = root.querySelector('#cmshare'); const o = cmStackHtml(cells, UI.cmUnit, !!UI.cmMerge); box.innerHTML = o.html; cmStackBind(box, o.rows, UI.cmUnit);
+    root.querySelector('#cmlg').innerHTML = (UI.cmMerge ? `<span><span class="sw" style="background:${CMC.mid}"></span>중CM+PIB</span>` : `<span><span class="sw" style="background:${CMC.mid}"></span>중CM</span><span><span class="sw" style="background:${CMC.pib}"></span>PIB</span>`) + `<span><span class="sw" style="background:${CMC.fb}"></span>전후CM 등</span>`;
+  };
   drawCm();
   bindSeg(root, 'cmunit', v => { UI.cmUnit = v; root.querySelectorAll('[data-seg="cmunit"] button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); drawCm(); });
-  bindSeg(root, 'cmsort', v => { UI.cmSort = v; root.querySelectorAll('[data-seg="cmsort"] button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); drawCm(); });
+  root.querySelector('#cm-merge').onchange = e => { UI.cmMerge = e.target.checked; drawCm(); };
   // 16차: 초수별 · 요일별 노출수 · 중CM 비중(전체/지상파/케이블) = 작은 3D 도넛 3칸 한 줄 · 레이블은 위·아래로 세로 설명선
   const sub = m => !m || m === 'all' ? cells : cells.filter(c => c.media === m);
   const drawSec = first => { const a = aggCells(sub(UI.mxSec)); const secs = Object.keys(a.sec).map(Number).filter(x => x > 0 && a.sec[x] > 0).sort((p, q) => p - q);
@@ -355,10 +364,9 @@ function renderSummary(root) {
 }
 // 정사각형 칸 3D 도넛 — 방송사별 예산·보너스와 같은 그림(기둥 없음) · 바깥 레이블 = 이름 %·횟수 · 가운데 = 가장 큰 조각 비중
 function sqDonut(host, parts, o) {
-  const H = Math.max(220, host.clientHeight || 260);
   const tot = sum(parts, p => p.value);
   const top = parts.slice().sort((a, b) => b.value - a.value)[0];
-  donut3D(host, parts.map(p => ({ label: p.label, value: p.value, extra: 0, rate: 0, color: p.color })), { bonus: false, own: true, height: H, intro: o.intro, rScale: 0.36, rMax: 118, hole: 0.5, h0: 12, cyR: 0.5, vlabel: true,
+  donut3D(host, parts.map(p => ({ label: p.label, value: p.value, extra: 0, rate: 0, color: p.color })), { bonus: false, own: true, autoH: true, intro: o.intro, rScale: 0.36, rMax: 118, hole: 0.5, h0: 12, cyR: 0.5, vlabel: true,
     valFmt: v => `${fmt.int(v)}회`,
     center: o.center || (() => [tot && top ? fmt.pct(top.value / tot) : '-', top ? top.label : '']),
     tip: (s, t) => `<b>${esc(s.label)}</b><div>${fmt.int(s.value)}회 <span class="m">(${fmt.pct(t ? s.value / t : 0)})</span></div>` });
@@ -523,9 +531,16 @@ function renderCueG(root) {
       <tr><th class="h2 cmoh">CM 순서</th><th class="h2">지정율</th><th class="h2 dsh">지정금액<span class="rg">(원)</span></th><th class="h2">Eq GRP</th><th class="h2">CPRP (원)</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
   }
   root.innerHTML = html;
-  keepMergedVisible(root); cueHpager(root);
+  cgOneLine(root); keepMergedVisible(root); cueHpager(root);
   bindChips(root, '[data-gch]', v => { UI.gCh = v; renderCueG(root); });
   bindChipBar(root, 'g', () => { const y = window.scrollY; renderCueG(root); window.scrollTo(0, y); });
+}
+// 17차: 주차 칸 글자 · CM 순서는 표가 화면 폭 안에 들어가면 한 줄로(.nw), 넘치면 예전처럼 필요한 곳만 두 줄 (창 폭이 바뀌면 다시 판단)
+function cgOneLine(root) {
+  const t = root.querySelector('table.cg'); if (!t) return;
+  const fit = () => { if (!t.isConnected) return; t.classList.add('nw'); if (t.offsetWidth > t.parentElement.clientWidth + 1) t.classList.remove('nw'); };
+  fit();
+  if (typeof ResizeObserver !== 'undefined') { let lw = t.parentElement.clientWidth; const ro = new ResizeObserver(() => { if (!t.isConnected) return ro.disconnect(); const w = t.parentElement.clientWidth; if (Math.abs(w - lw) > 1) { lw = w; fit(); } }); ro.observe(t.parentElement); }
 }
 // 지상파 큐시트 한 채널의 줄: 같은 프로그램·시간·단가·유상/보너스·CM지정은 한 줄로. 구분(정기물 등)은 비면 위 값을 이어받아 셀 병합
 // 오른쪽 계산 열은 기존 지상파 시트와 같게: 지정금액 = 단가×지정율(KBS 유상은 ÷0.85) · Eq GRP = A.R × 초수/15 · CPRP = (금액+지정금액) ÷ Eq GRP

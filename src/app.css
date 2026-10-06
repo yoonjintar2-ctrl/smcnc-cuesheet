@@ -1377,6 +1377,9 @@ table.t.cue.qm.cg td.cmo{white-space:normal;word-break:keep-all;min-width:62px}
 table.t.cue.qm.cg td.cmo .cmtag{white-space:normal}
 table.t.cue.qm.cg th.dsh{width:72px}
 table.t.cue.qm.cg td.wk{min-width:124px}
+/* 17차: 표가 화면 폭 안에 들어가면(.nw — cgOneLine 이 재서 붙임) 주차 칸 글자 · CM 순서를 한 줄로 */
+table.t.cue.qm.cg.nw td.wk .spot.ibox{white-space:nowrap}
+table.t.cue.qm.cg.nw td.cmo,table.t.cue.qm.cg.nw td.cmo .cmtag{white-space:nowrap}
 .obbg.pick{align-items:center}
 .obm.modal.pick{height:auto;width:min(720px,100%)}
 .obm.pick .obb{flex:none;padding:28px 24px 30px}
